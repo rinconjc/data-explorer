@@ -1,0 +1,17 @@
+<form class="form-signin">
+  <h2 class="form-signin-heading">{{heading || 'Please sign in'}}</h2>
+
+  <alert ng-show="alertText" type="warning">{{alertText}}</alert>
+  
+  <label for="inputUserName" class="sr-only">Email address</label>
+  <input ng-if="useEmail" type="email" ng-model="login.email" id="inputUserName" class="form-control" placeholder="Email address" required="" autofocus="">
+  <input ng-if="!useEmail" type="text" ng-model="login.userName" id="inputUserName" class="form-control" placeholder="User Name" required="" autofocus="">
+  <label for="inputPassword" class="sr-only">Password</label>
+  <input type="password" ng-model="login.password" id="inputPassword" class="form-control" placeholder="Password" required="">
+  <div class="checkbox" ng-if="allowRemember">
+    <label>
+      <input type="checkbox" value="remember-me"> Remember me
+    </label>
+  </div>
+  <button class="btn btn-lg btn-primary btn-block" type="button" ng-click="_doLogin(login)">Sign in</button>
+</form>

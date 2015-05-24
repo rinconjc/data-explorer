@@ -1,0 +1,29 @@
+
+<div class="row">
+  <div class="col-md-3">
+    <h4>Tables</h4>
+    <select class="form-control" ng-options="table for table in tables" multiple ng-model="selected" ng-change="tableSelected()" >
+      
+    </select>
+  </div>
+  <div class="col-md-9">
+    <tabset>
+      <tab heading="SQL">
+        <div class="btn-group" role="group" aria-label="...">
+          <button type="button" class="btn btn-default" ng-click="execute()">Execute</button>
+          <button type="button" class="btn btn-default" ng-click="save()">Save</button>
+          <button type="button" class="btn btn-default" ng-click="clear()">Clear</button>
+        </div>
+        <textarea class="form-control" rows="10" ng-model="sql.text"></textarea>
+        <br/>
+        <div ng-show="rowsAffected"  class="text-left">{{rowsAffected}}</div>
+        <p ng-show="error" class="text-left">{{error}}</p>
+        <ng-table ng-show="resultData" class="table-bordered" columns="resultData.columns" data="resultData.rows"/>
+      </tab>
+      <tab heading="Table Preview" ng-if="selected">
+        <ng-table class="table-bordered" columns="data.columns" data="data.rows"/>
+      </tab>
+    </tabset>
+    
+  </div>
+</div>
