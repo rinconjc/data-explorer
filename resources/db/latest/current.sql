@@ -3,11 +3,11 @@ full_name varchar(100),
 active bit, primary key (id));
 
 create table data_source(id int not null identity,
-name varchar(50),
-dbms varchar(50),
+name varchar(50) not null,
+dbms varchar(50) not null,
 user_name varchar(60),
 password varchar(20),
-url varchar(250),
+url varchar(250) not null,
 app_user_id int,
 primary key (id),
 foreign key (app_user_id) references app_user (id));
