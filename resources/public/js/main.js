@@ -37,9 +37,11 @@ angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'data-table'
                 return res.data;
             });
         }
+
         isLoggedIn().then(function(user){
             $rootScope.user = user;
             $scope.datasources = DataSource.query();
+            $scope.$digest();
         },function(e){
             $location.path('/login');
         });
