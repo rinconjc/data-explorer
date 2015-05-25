@@ -14,6 +14,7 @@
             [dbquery.model :refer :all]
             [clojure.core.cache :as cache]))
 
+
 (def ds-cache (atom (cache/lru-cache-factory {})))
 
 (defn with-cache [cref item value-fn]
@@ -24,7 +25,7 @@
   )
 
 (defn get-ds [ds-id]
-  (with-cache ds-cache ds-id #(-> (k/select data_source (k/where {:id ds-id}))
+  (with-cache ds-cache ds-id #(-> (k/select data_source (k/where {:id %}))
                                   first
                                   mk-ds))
   )
@@ -99,5 +100,5 @@
 (defn in-dev? [] true)
 
 (defn -main []
-  (sync-db 2 "dev")
+  (sync-db 3 "dev")
   (run-server (reload/wrap-reload all-routes) {:port 3000}))

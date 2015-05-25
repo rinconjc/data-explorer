@@ -66,11 +66,12 @@
 
 (defn mk-ds [{:keys [dbms url user_name password]}]
   "Creates a datasource"
-  (if-let [ds (condp = dbms
+  (if-let [ds (case dbms
                 "H2" (doto (JdbcDataSource.)
                        (.setUrl (str "jdbc:h2:" url))
                        (.setUser user_name)
-                       (.setPassword password)))]
+                       (.setPassword password))
+                "ORACLE" (doto ()))]
     (try
       (def con (.getConnection ds))
       {:datasource ds}
