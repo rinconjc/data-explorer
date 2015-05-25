@@ -47,6 +47,9 @@
                                   {:body user :session (assoc session :user user)}
                                   {:status 401 :body "invalid user or password"})
                                 (fn [e] {:status 500 :body (.getMessage e)}))))
+
+  (GET "/logout" req (assoc (redirect "/") :session nil))
+
   (GET "/user" req (if-let [user (get-in req [:session :user])]
                      {:body user}
                      {:status 401 :body "user not logged in"}))
@@ -57,7 +60,7 @@
                                   user-id (get-in req [:session :user :id])]
                               (if-let [ds (:datasource ds-res)]
                                 (try-let [id (k/insert data_source (k/values (assoc ds-data :app_user_id user-id)))]
-                                         {:body (map-key id "scope_identity()" :id)}
+                                         {:body (first (vals id))}
                                          #({:status 500 :body (.getMessage %)}))
                                 {:status 400 :body (:error ds-res)}
                                 )
@@ -79,12 +82,12 @@
                                   ))
 
            (GET "/tables" req (if-let [ds (get-ds ds-id)]
-                                    (try-let [ts (tables ds)]
-                                             {:body ts}
-                                             (fn [e] {:status 500 :body (.getMessage e)}))
-                                    {:status 500 :body "default data source not available"}))
+                                (try-let [ts (tables ds)]
+                                         {:body ts}
+                                         (fn [e] {:status 500 :body (.getMessage e)}))
+                                {:status 500 :body "default data source not available"}))
 
-           (GET "/tablesxx/:name" [name] (fn [req] {:body  (table-data (get-ds ds-id) name)})))
+           (GET "/tables/:name" [name] (fn [req] {:body  (table-data (get-ds ds-id) name)})))
 
   )
 

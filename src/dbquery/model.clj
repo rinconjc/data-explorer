@@ -30,7 +30,7 @@
 (declare data_source app_user query query_params)
 
 (defentity data_source
-  (entity-fields :id :name :user_name :password :url)
+  (entity-fields :id :name :dbms :user_name :password :url)
   (belongs-to app_user)
   (many-to-many query :data_source_query)
   (many-to-many app_user :user_data_source)
@@ -60,4 +60,5 @@ WHERE ud.DATA_SOURCE_ID=d.ID AND ud.APP_USER_ID=?)" [user-id user-id]] :results)
   )
 
 (defn map-key [m key1 key2]
-  (assoc m key2 (m key1)))
+  (assoc (dissoc m key1) key2 (m key1)))
+
