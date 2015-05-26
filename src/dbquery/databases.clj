@@ -1,12 +1,12 @@
 (ns dbquery.databases
   (:require [clojure.tools.logging :as log]
             [clojure.java.jdbc :refer :all])
-  (:import [org.h2.jdbcx JdbcDataSource])
+  (:import [org.h2.jdbcx JdbcDataSource]
+           [oracle.jdbc.pool OracleDataSource])
   )
 
 
-(defmacro try-let
-  [binding then elsefn]
+(defmacro try-let [binding then elsefn]
   `(try
      (let [~(first binding)  ~(second binding)]
        ~then
@@ -14,7 +14,7 @@
      (catch Exception ex#
        (~elsefn ex#)
        )))
-  
+
 
 (defmacro with-recovery
   "tries to eval body, it recovers by evaluating the alternative"
@@ -71,7 +71,10 @@
                        (.setUrl (str "jdbc:h2:" url))
                        (.setUser user_name)
                        (.setPassword password))
-                "ORACLE" (doto ()))]
+                "ORACLE" (doto (OracleDataSource.)
+                           (.setURL (str "jdbc:oracle:thin:@" url))
+                           (.setUser user_name)
+                           (.setPassword password)))]
     (try
       (def con (.getConnection ds))
       {:datasource ds}
@@ -104,7 +107,7 @@
             has-rs (.execute stmt sql)]
         (if (empty? sqls)
           (if has-rs
-            (read-rs (.getResultSet stmt))
+            (read-rs (.getResultSet stmt) 100)
             (.getUpdateCount stmt)
             )
           (recur (first sqls) (rest sqls)))

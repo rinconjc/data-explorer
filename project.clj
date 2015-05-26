@@ -18,6 +18,7 @@
                  [org.clojure/java.jdbc "0.3.6"]
                  [crypto-password "0.1.3"]
                  [org.clojure/core.cache "0.6.4"]]
+  :resource-paths ["lib/*" "resources"]
   :main ^:skip-aot dbquery.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}}

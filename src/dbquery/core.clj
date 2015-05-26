@@ -13,7 +13,8 @@
             [korma.core :as k]
             [dbquery.model :refer :all]
             [clojure.core.cache :as cache]))
-
+;;; sync db
+(sync-db 3 "dev")
 
 (def ds-cache (atom (cache/lru-cache-factory {})))
 

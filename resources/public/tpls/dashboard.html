@@ -1,6 +1,19 @@
 <h1 class="page-header">Data Explorer</h1>
 
-<h2>Databases</h2>
-<p ng-if="!databases">No databases defined... <a class="btn-link" href="#/connect">Add a new database</a></p>
-<h2>Recent Queries</h2>
+<div class="panel panel-default">
+  <div class="panel-heading">Databases</div>
+  <div class="panel-body">
+    <p ng-if="!datasources">No databases defined... <a class="btn-link" href="#/connect">Add a new database</a></p>
+    <ul>
+      <li ng-repeat="ds in datasources"><a class="btn-link" href="#/dash/{{ds.id}}">{{ds.name}}</a></li>
+    </ul>
+  </div>
+</div>
+
+<div class="panel panel-default">
+  <div class="panel-heading">Recent Queries</div>
+  <div class="panel-body">
+  </div>
+</div>
+
 

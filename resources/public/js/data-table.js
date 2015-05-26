@@ -8,7 +8,7 @@ angular.module('data-table',[])
             },
             replace:true,
             transclude:true,
-            template:'<table class="table {{class}}" data-len="{{columns.length}}"><thead><tr><th ng-repeat="col in columns">{{col}}</th></tr></thead><tbody><tr ng-repeat="row in data"><td ng-repeat="item in row">{{item}}</td></tr></tbody></table>',
+            template:'<table class="table {{class}}" data-len="{{columns.length}}"><thead><tr><th ng-repeat="col in columns">{{col}}</th></tr></thead><tbody><tr ng-repeat="row in data"><td ng-repeat="item in row track by $index">{{item}}</td></tr></tbody></table>',
             controller:function($scope){
                 
             }

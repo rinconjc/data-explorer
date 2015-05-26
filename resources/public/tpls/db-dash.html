@@ -2,7 +2,7 @@
 <div class="row">
   <div class="col-md-3">
     <h4>Tables</h4>
-    <select class="form-control" ng-options="table for table in tables" multiple ng-model="selected" ng-change="tableSelected()" >
+    <select class="form-control" ng-options="table for table in tables" multiple ng-model="selected" ng-change="tableSelected()" size="20" >
       
     </select>
   </div>
@@ -21,7 +21,9 @@
         <ng-table ng-show="resultData" class="table-bordered" columns="resultData.columns" data="resultData.rows"/>
       </tab>
       <tab heading="Table Preview" ng-if="selected">
-        <ng-table class="table-bordered" columns="data.columns" data="data.rows"/>
+        <div class="table-responsive">          
+          <ng-table class="table-bordered" columns="data.columns" data="data.rows"/>
+        </div>
       </tab>
     </tabset>
     

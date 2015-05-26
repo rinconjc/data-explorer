@@ -6,7 +6,7 @@ angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'data-table'
     })
     .config(function($routeProvider){
         $routeProvider
-            .when('/', {templateUrl:'tpls/dashboard.html', controller:'MainCtrl'})
+            .when('/', {templateUrl:'tpls/dashboard.html'})
             .when('/login', {template:'<login-form login-fn="doLogin" heading="Login to DataExplorer" alert-text="alert" allow-remember="true"/>', controller:'LoginCtrl'})
             .when('/connect', {templateUrl:'tpls/db-connect.html', controller:'DataSourceCtrl'})
             .when('/dash/:db', {templateUrl:'tpls/db-dash.html', controller:'DBCtrl'})
@@ -24,6 +24,7 @@ angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'data-table'
             $http.post('/login', loginData).success(function(user){
                 $rootScope.user=user;
                 $location.path('/');
+                $scope.refreshDatasources();
             }).error(function(err){
                 $scope.alert=err;
             });
@@ -37,21 +38,25 @@ angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'data-table'
                 return res.data;
             });
         }
-
+        $scope.refreshDatasources = function(){
+            console.debug('refreshing datasources...');
+            $rootScope.datasources = DataSource.query();
+        };
+        console.debug('main ctrl', $scope.datasources);
         isLoggedIn().then(function(user){
             $rootScope.user = user;
-            $scope.datasources = DataSource.query();
-            $scope.$digest();
+            $scope.refreshDatasources();
         },function(e){
             $location.path('/login');
         });
+
         $scope.dsChanged = function(ds){
             console.debug('changed datasource', ds);
             $location.path('/dash/'  + ds);
         };
         $rootScope.$on(CONSTS.EVENTS.DS_ADDED, function(evt,args){
             console.debug('ds updated...reloading');
-            $scope.datasources = DataSource.query();
+            $scope.refreshDatasources();
             $scope.datasource = args.id;
             $scope.dsChanged(args.id);
         });
