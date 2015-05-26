@@ -35,16 +35,17 @@
         <!-- Collect the nav links, forms, and other content for toggling -->
         <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
           <ul class="nav navbar-nav">
-            <!-- <li><p class="navbar-text">Databases</p></li> -->
+            <li><a href="#/">Home</a></li>
           </ul>
           <form class="navbar-form navbar-left">
             <div class="form-group">
+              <label for="" class="nav-text">Database:</label>
               <select class="form-control" id="datasources" ng-model="datasource" ng-change="dsChanged(datasource)"
                       ng-options="ds.id as ds.name for ds in datasources" placeholder="Select/Add Database">
                 <option value="" disabled>Select Database</option>
               </select>
             </div>
-            <button type="button" class="btn btn-default" ng-click="addDataSource()">Add</button>
+            <a type="button" class="btn btn-default" href="#/connect"><span class="glyphicon glyphicon-plus"></span></a>
           </form>
           <ul class="nav navbar-nav navbar-right">
             <li><p class="navbar-text">{{user.nick}}</p></li>

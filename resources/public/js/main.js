@@ -18,6 +18,25 @@ angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'data-table'
     .factory('DataSource', function($resource){
         return $resource('/data-source/:id');
     })
+    .directive('tableList', function(){
+        return {
+            scope:{
+                heading:'@',
+                size:'@',
+                doShowData:'&',
+                doShowInfo:'&',
+                resource:'='
+            },
+            controller:function($scope){
+                $scope.refresh = function(){
+                    console.debug('refreshing data');
+                    $scope.data = $scope.resource.query();
+                };
+                $scope.refresh();
+            },
+            templateUrl:'tpls/table-list.html'
+        };
+    })
     .controller('LoginCtrl', function($scope, $http, $rootScope, $location){
         $scope.doLogin = function(loginData){
             console.debug('logging with ', loginData);
@@ -78,12 +97,11 @@ angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'data-table'
     })
     .controller('DBCtrl', function($scope, $resource, $log, $http, $routeParams){
         $scope.selected = null;
-        $scope.sql = {};
+        $scope.sql = {};        
         var ctx = '/ds/'+ $routeParams.db;
-        var Tables = $resource(ctx+'/tables/:name', {name:'@selected'}, {content:{method:'GET', isArray:true}});
-        $scope.tables = Tables.query();
-        $scope.tableSelected = function(){
-            $log.debug('table', $scope.selected, 'has been selected');
+        $scope.tables = $resource(ctx+'/tables/:name', {name:'@selected'}, {content:{method:'GET', isArray:true}});
+        $scope.showData = function(selections){
+            $log.debug('showing data from ', selections);
             $scope.data = Tables.get({name:$scope.selected});
         };
         $scope.execute = function(){
