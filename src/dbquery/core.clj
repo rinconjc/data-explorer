@@ -55,17 +55,16 @@
                      {:body user}
                      {:status 401 :body "user not logged in"}))
 
-  (POST "/data-source" [] (fn [req]
-                            (let [ds-data (:body req)
-                                  ds-res (mk-ds ds-data)
-                                  user-id (get-in req [:session :user :id])]
-                              (if-let [ds (:datasource ds-res)]
-                                (try-let [id (k/insert data_source (k/values (assoc ds-data :app_user_id user-id)))]
-                                         {:body (first (vals id))}
-                                         #({:status 500 :body (.getMessage %)}))
-                                {:status 400 :body (:error ds-res)}
-                                )
-                              ))
+  (POST "/data-source" req (let [ds-data (:body req)
+                                 ds-res (mk-ds ds-data)
+                                 user-id (get-in req [:session :user :id])]
+                             (if-let [ds (:datasource ds-res)]
+                               (try-let [id (k/insert data_source (k/values (assoc ds-data :app_user_id user-id)))]
+                                        {:body {:id (first (vals id))}}
+                                        #({:status 500 :body (.getMessage %)}))
+                               {:status 400 :body (:error ds-res)}
+                               )
+                             )
         )
 
   (GET "/data-source" req (let [user-id (get-in req [:session :user :id])]

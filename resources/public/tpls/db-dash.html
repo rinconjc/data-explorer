@@ -1,12 +1,9 @@
 
 <div class="row">
-  <div class="col-md-3">
-    <h4>Tables</h4>
-    <select class="form-control" ng-options="table for table in tables" multiple ng-model="selected" ng-change="tableSelected()" size="20" >
-      
-    </select>
+  <div class="col-md-2">
+    <table-list size="30" resource="tables" doShowData="doShowData" />
   </div>
-  <div class="col-md-9">
+  <div class="col-md-10">
     <tabset>
       <tab heading="SQL">
         <div class="btn-group" role="group" aria-label="...">
@@ -21,7 +18,7 @@
         <ng-table ng-show="resultData" class="table-bordered" columns="resultData.columns" data="resultData.rows"/>
       </tab>
       <tab heading="Table Preview" ng-if="selected">
-        <div class="table-responsive">          
+        <div class="table-responsive">
           <ng-table class="table-bordered" columns="data.columns" data="data.rows"/>
         </div>
       </tab>
