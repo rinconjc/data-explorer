@@ -39,9 +39,9 @@
           </ul>
           <form class="navbar-form navbar-left">
             <div class="form-group">
-              <label for="" class="nav-text">Database:</label>
-              <select class="form-control" id="datasources" ng-model="datasource" ng-change="dsChanged(datasource)"
-                      ng-options="ds.id as ds.name for ds in datasources" placeholder="Select/Add Database">
+              <label for="" class="nav-text">Database:{{curds}}</label>
+              <select class="form-control" id="datasources" ng-model="curds" ng-change="dsChanged()"
+                      ng-options="ds.id as ds.name for ds in datasources track by ds.id" placeholder="Select/Add Database">
                 <option value="" disabled>Select Database</option>
               </select>
             </div>
