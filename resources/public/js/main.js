@@ -23,8 +23,8 @@ angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'data-table'
             scope:{
                 heading:'@',
                 size:'@',
-                doShowData:'&',
-                doShowInfo:'&',
+                showDataClick:'=',
+                tableInfoClick:'=',
                 resource:'='
             },
             controller:function($scope){
@@ -33,6 +33,11 @@ angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'data-table'
                     $scope.data = $scope.resource.query();
                 };
                 $scope.refresh();
+                $scope._showData=function(selected){
+                    console.debug('showing data...', selected, $scope.doShowData);
+                    $scope.actionHandler('SHOW_DATA', selected);
+                };
+                $scope._tableInfo=function()
             },
             templateUrl:'tpls/table-list.html'
         };
@@ -100,8 +105,8 @@ angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'data-table'
         $scope.sql = {};        
         var ctx = '/ds/'+ $routeParams.db;
         $scope.tables = $resource(ctx+'/tables/:name', {name:'@selected'}, {content:{method:'GET', isArray:true}});
-        $scope.showData = function(selections){
-            $log.debug('showing data from ', selections);
+        $scope.handleTablesAction = function(action, selections){
+            $log.debug('action ', action, selections);
             $scope.data = Tables.get({name:$scope.selected});
         };
         $scope.execute = function(){
