@@ -70,18 +70,20 @@ angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'data-table'
         },function(e){
             $location.path('/login');
         });
+        $scope.main={};
         $scope.dsChanged = function(){
-            $location.path('/dash/'  + $scope.curds);
+            console.debug('ds changed:', $scope.main.curds, ds1, "equal?", ds1===$scope.main.curds);
+            $location.path('/dash/'  + $scope.main.curds);
         };
         $rootScope.$on(CONSTS.EVENTS.DS_ADDED, function(evt,args){
             console.debug('ds updated...reloading');
             $scope.refreshDatasources();
-            $scope.datasource = args.id;
-            $scope.dsChanged(args.id);
+            $scope.main.curds = args.id;
+            $scope.dsChanged();
         });
         $scope.$on(CONSTS.EVENTS.DS_CHANGED, function(evt,args){
             console.debug('ds changed...', args);
-            $scope.curds = 4;//args;
+            $scope.main.curds=args;
         });
         $scope.$watch('curds', function(newVal,oldVal){
             console.debug('watch:', oldVal, newVal);            
@@ -107,7 +109,7 @@ angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'data-table'
         $scope.sql = {};
         $scope.tableTabs={};
         var ctx = '/ds/'+ $routeParams.db;
-        $scope.$emit(CONSTS.EVENTS.DS_CHANGED, $routeParams.db);
+        $scope.$emit(CONSTS.EVENTS.DS_CHANGED, parseInt($routeParams.db));
         
         $scope.tables = $resource(ctx+'/tables/:name', {name:'@selected'}, {content:{method:'GET', isArray:true}});
         $scope.$on('EVT.TABLES.DATA', function(evt, args){
