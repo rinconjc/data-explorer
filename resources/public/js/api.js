@@ -66,6 +66,15 @@ angular.module('dbquery.api',['ngResource'])
             },
             saveUser:function(user){
                 return toPromise(user.id?usrResource.update(user):usrResource.save(user));
+            },
+            getUsers:function(){
+                return usrResource.query();
+            },
+            shareDataSources:function(dsIds, userIds){
+                return toPromise($http.post('/share/datasource', {datasources:dsIds, users:userIds}));
+            },
+            shareQueries:function(qryIds, userIds){
+                
             }
 
         };
