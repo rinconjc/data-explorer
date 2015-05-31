@@ -2,11 +2,11 @@
   (:require [clojure.test :refer :all]
             [dbquery.databases :refer :all]))
 
-(defn dummy-ds [] (mk-ds {:dbms "H2" :url "mem:test;DB_CLOSE_DELAY=-1" :user_name "sa" :password "sa"}))
+(defn dummy-ds [] (safe-mk-ds {:dbms "H2" :url "mem:test;DB_CLOSE_DELAY=-1" :user_name "sa" :password "sa"}))
 
 (deftest test-database
   (testing "make datasource"
-    (is (some? (:datasource (mk-ds {:dbms "H2" :url "mem:" :user_name "sa" :password "sa"})))))
+    (is (some? (:datasource (safe-mk-ds {:dbms "H2" :url "mem:" :user_name "sa" :password "sa"})))))
 
   (testing "get tables"
     (is (some? (pr-str (tables (dummy-ds))))))

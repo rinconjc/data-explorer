@@ -17,7 +17,8 @@
                  [com.h2database/h2 "1.4.187"]
                  [org.clojure/java.jdbc "0.3.6"]
                  [crypto-password "0.1.3"]
-                 [org.clojure/core.cache "0.6.4"]]
+                 [org.clojure/core.cache "0.6.4"]
+                 [liberator "0.13"]]
   :resource-paths ["lib/*" "resources"]
   :main ^:skip-aot dbquery.core
   :target-path "target/%s"
