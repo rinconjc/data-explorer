@@ -12,7 +12,8 @@
             [clojure.java.io :as io]
             [korma.core :as k]
             [dbquery.model :refer :all]
-            [clojure.core.cache :as cache]))
+            [clojure.core.cache :as cache]
+            [liberator.core :refer [defresource resource]]))
 ;;; sync db
 (sync-db 3 "dev")
 
@@ -28,7 +29,7 @@
 (defn get-ds [ds-id]
   (with-cache ds-cache ds-id #(-> (k/select data_source (k/where {:id %}))
                                   first
-                                  mk-ds))
+                                  safe-mk-ds))
   )
 
 ;; ds checker middleware
@@ -55,22 +56,30 @@
                      {:body user}
                      {:status 401 :body "user not logged in"}))
 
-  (POST "/data-source" req (let [ds-data (:body req)
-                                 ds-res (mk-ds ds-data)
-                                 user-id (get-in req [:session :user :id])]
-                             (if-let [ds (:datasource ds-res)]
-                               (try-let [id (k/insert data_source (k/values (assoc ds-data :app_user_id user-id)))]
-                                        {:body {:id (first (vals id))}}
-                                        #({:status 500 :body (.getMessage %)}))
-                               {:status 400 :body (:error ds-res)}
-                               )
-                             )
-        )
+  (ANY "/data-sources" [] (resource :allowed-methods [:get :post]
+                                    :allowed? #(if-let [user-id (get-in % [:request :session :user :id])]
+                                                 {:user-id user-id})
+                                    :post! #(let [ds-data (get-in %1 [:body :request])
+                                                  _ (mk-ds ds-data)
+                                                  user-id (:user-id %1)
+                                                  id (k/insert data_source (k/values (assoc ds-data :app_user_id user-id)))]
+                                              {::id (first (vals id))})
+                                    :post-redirect? #({:location (format "/data-sources/%s" (::id %))})
+                                    :handle-ok #(let [user-id (get-in % [:request :session :user :id])]
+                                                  (user-data-sources user-id))
+                                    :handle-exception #(.getMessage (:exception %))))
 
-  (GET "/data-source" req (let [user-id (get-in req [:session :user :id])]
-                            (try-let [r (user-data-sources user-id)]
-                                     {:body r}
-                                     #({:status 500 :body (.getMessage %)}))))
+  (ANY "/data-sources/:id" [id] (resource
+                                 :allowed-methods [:get :put :delete]
+                                 :exists? (if-let [ds (first (k/select data_source (k/where {:id id})))]
+                                            {:the-ds ds})
+                                 :allowed? #(let [user-id (get-in %1 [:request :session :user :id])]
+                                              (= user-id (get-in %1 [:the-ds  :app_user_id])))
+                                 :handle-ok #(:the-ds %)
+                                 :delete! (k/delete data_source (k/where {:id id}))
+                                 :put! #(k/update data_source (k/set-fields (get-in % [:request :body])) (k/where {:id id}))
+                                 ))
+
   (context "/ds/:ds-id" [ds-id]
            (POST "/execute" req (let [raw-sql (get-in req [:body :raw-sql])
                                       ds (get-ds ds-id)]

@@ -1,8 +1,10 @@
 (ns dbquery.databases
   (:require [clojure.tools.logging :as log]
-            [clojure.java.jdbc :refer :all])
+            [clojure.java.jdbc :refer :all]
+            [clojure.string :as s])
   (:import [org.h2.jdbcx JdbcDataSource]
-           [oracle.jdbc.pool OracleDataSource])
+           [oracle.jdbc.pool OracleDataSource]
+           [java.sql ResultSet])
   )
 
 
@@ -38,10 +40,13 @@
   )
 
 (defn ^:private read-rs
-  ([rs limit]
+  ([rs & {:keys [offset limit columns] :or {offset 0 limit 100}}]
    (let [rs-meta (.getMetaData rs)
          col-size (inc (.getColumnCount rs-meta))
-         cols (doall (map #(.getColumnName rs-meta %) (range 1 col-size)))]
+         cols (if (columns) columns (doall (map #(.getColumnName rs-meta %) (range 1 col-size))))]
+     (if (and (> offset 0) (= ResultSet/TYPE_SCROLL_INSENSITIVE (.getType rs)))
+       (.absolute rs offset)
+       )
      (loop [rows [] count 0]
        (if (and (.next rs) (< count limit))
          (let [row (doall (map #(.getObject rs %) (range 1 col-size)))]
@@ -66,23 +71,25 @@
 
 (defn mk-ds [{:keys [dbms url user_name password]}]
   "Creates a datasource"
-  (if-let [ds (case dbms
-                "H2" (doto (JdbcDataSource.)
-                       (.setUrl (str "jdbc:h2:" url))
-                       (.setUser user_name)
-                       (.setPassword password))
-                "ORACLE" (doto (OracleDataSource.)
-                           (.setURL (str "jdbc:oracle:thin:@" url))
-                           (.setUser user_name)
-                           (.setPassword password)))]
-    (try
-      (def con (.getConnection ds))
-      {:datasource ds}
-      (catch Exception e
-        (log/error e "failed connecting to db")
-        {:error (.getMessage e)}
-        )
-      (finally (if con (.close con)))))
+  (let [ds (case dbms
+             "H2" (doto (JdbcDataSource.)
+                    (.setUrl (str "jdbc:h2:" url))
+                    (.setUser user_name)
+                    (.setPassword password))
+             "ORACLE" (doto (OracleDataSource.)
+                        (.setURL (str "jdbc:oracle:thin:@" url))
+                        (.setUser user_name)
+                        (.setPassword password)))]
+    (with-open [con (.getConnection ds)]
+      ds)
+    )
+  )
+
+(defn safe-mk-ds [ds-info]
+  "Creates a datasource"
+  (with-recovery {:datasource (mk-ds ds-info)}
+    #({:error (.getMessage %)})
+    )
   )
 
 (defn table-data
@@ -115,7 +122,18 @@
     )
   )
 
+(defn table-cols [ds name]
+  (with-db-metadata [meta ds]
+    (with-open [rs (.getColumns meta nil nil name "%")]
+      (read-rs rs ["COLUMN_NAME" "DATA_TYPE" "TYPE_NAME" "COLUMN_SIZE" "DECIMAL_DIGITS" "NULLABLE" "ORDINAL_POSITION"] 200))) )
 
-;; (try-let [r (map #(/ 4 %) [2 3 1 4 5 0])]
-;;          (println "all good " r)
-;;          #(str "failed with " %))
+(defn exec-query [ds {:keys [tables fields predicates offset limit]}]
+  (with-open [con (.getConnection (:datasource ds))]
+    (let [stmt (if (> offset 0)
+                 (.createStatement con ResultSet/TYPE_SCROLL_INSENSITIVE ResultSet/CONCUR_READ_ONLY)
+                 (.createStatement con))
+          where (if (empty? predicates) "" (str "where " (s/join " AND " predicates)))
+          sql (str "select " (s/join "," fields) "from " (s/join "," tables) where)
+          rs (.executeQuery stmt sql)]
+      (read-rs rs limit)
+      )))

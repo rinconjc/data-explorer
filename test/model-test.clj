@@ -16,7 +16,7 @@
     (def saved (first (k/select data_source (k/where {:id id}))))
     (println saved)
     (is (some? saved))
-    (is (some? (mk-ds saved)))
+    (is (some? (safe-mk-ds saved)))
     )  
   )
 
