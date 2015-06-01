@@ -59,7 +59,7 @@
     {:columns columns :rows (rs-rows rs columns offset limit)}
     (let [rs-meta (.getMetaData rs)
           col-size (inc (.getColumnCount rs-meta))
-          cols (if (columns) columns (doall (map #(.getColumnName rs-meta %) (range 1 col-size))))]
+          cols (doall (map #(.getColumnName rs-meta %) (range 1 col-size)))]
       {:columns cols :rows (rs-rows rs cols offset limit)}
       )
     )
@@ -118,18 +118,23 @@
     )
   )
 
-(defn table-cols [ds name]
+(defn table-meta [ds name]
   (with-db-metadata [meta ds]
-    (with-open [rs (.getColumns meta nil nil name "%")]
-      (read-rs rs :columns ["COLUMN_NAME" "DATA_TYPE" "TYPE_NAME" "COLUMN_SIZE" "DECIMAL_DIGITS" "NULLABLE" "ORDINAL_POSITION"] :limit 200))) )
+    (let [cols  (with-open [rs (.getColumns meta nil nil name "%")]
+                  (read-rs rs :columns ["COLUMN_NAME" "DATA_TYPE" "TYPE_NAME" "COLUMN_SIZE" "DECIMAL_DIGITS" "NULLABLE" "ORDINAL_POSITION"] :limit 200))
+          pks (with-open [rs (.getPrimaryKeys meta nil nil name)]
+                (read-rs rs :columns ["COLUMN_NAME" "KEY_SEQ" "PK_NAME"]))
+          fks (with-open [rs (.getImportedKeys meta nil nil name)]
+                (read-rs rs :columns ["PKTABLE_NAME" "PKCOLUMN_NAME" "FKCOLUMN_NAME" "KEY_SEQ" "FKTABLE_NAME"]))]
+      {:columns cols :primary-keys pks :foreign-keys fks})))
 
-(defn exec-query [ds {:keys [tables fields predicates offset limit]}]
+(defn exec-query [ds &{:keys [tables fields predicates offset limit] :or {offset 0 limit 100}}]
   (with-open [con (.getConnection (:datasource ds))]
     (let [stmt (if (> offset 0)
                  (.createStatement con ResultSet/TYPE_SCROLL_INSENSITIVE ResultSet/CONCUR_READ_ONLY)
                  (.createStatement con))
-          where (if (empty? predicates) "" (str "where " (s/join " AND " predicates)))
-          sql (str "select " (s/join "," fields) "from " (s/join "," tables) where)
+          where (if (empty? predicates) "" (str " where " (s/join " AND " predicates)))
+          sql (str "select " (s/join "," fields) " from " (s/join "," tables) where)
           rs (.executeQuery stmt sql)]
       (read-rs rs :limit limit :offset offset)
       )))

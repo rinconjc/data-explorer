@@ -21,6 +21,31 @@ angular.module('dbquery.api',['ngResource'])
             return q.promise;
         }
 
+        function futureValue(r, isArray){
+            var value =isArray?[]:{},
+                d=$q.defer();
+            value.$isready=false;
+            value.$promise = d.promise;
+            r.success(function(res){
+                if(isArray){
+                    angular.forEach(res, function(item){
+                        value.push(item);
+                    });
+                } else{
+                    angular.forEach(res, function(item, key){
+                        value[key]=item;
+                    });
+                }
+                d.resolve(value);
+                value.$isready=true;
+            }).error(function(err){
+                value.$isready=true;
+                d.reject(err);
+            });
+
+            return value;
+        }
+
         function getDsResource(ds, res){
             return getResource(ds+res, '/ds/'+ds+'/'+ res +'/:id');
         }
@@ -48,17 +73,16 @@ angular.module('dbquery.api',['ngResource'])
                 return getDsResource(ds, 'views').query();
             },
             getTableData:function(ds, name, offset, maxrows){
-                return toPromise($http.get('/ds/' + ds +'/execQuery', {from:[name], select:['*'], offset:offset, limit:maxrows}));
+                return futureValue($http.post('/ds/' + ds +'/exec-query', {tables:[name], fields:['*'], offset:offset, limit:maxrows}), false);
             },
             getTableInfo:function(ds, table){
                 return getDsResource(ds, 'tables').get({id:table});
             },
             executeSql:function(ds,sql){
-                return toPromise()
-                var q = $q.defer($http.post('/ds/'+ds+'/execute', {"raw-sql":sql}));
+                return futureValue($http.post('/ds/'+ds+'/execute', {"raw-sql":sql}));
             },
-            executeQuery:function(from, select, where, offset, maxrows){
-                
+            executeQuery:function(tables, fields, conditions, offset, maxrows){
+                return futureValue($http.post('/ds/' + ds + '/exec-query', {tables:tables, fields:fields, predicates:conditions, offset:offset limit:maxrows}));
             },
             getQueries:function(ds){
                 return getDsResource(ds, 'queries').query();
