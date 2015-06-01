@@ -89,6 +89,9 @@
                                              {:body r})
                                            (fn [e] {:status 500 :body (.getMessage e)}))
                                   ))
+           (POST "/exec-query" req (let [ds (get-ds ds-id)
+                                         params (:body req)]
+                                     (apply (partial exec-query ds) params)))
 
            (GET "/tables" req (if-let [ds (get-ds ds-id)]
                                 (try-let [ts (tables ds)]
@@ -96,7 +99,7 @@
                                          (fn [e] {:status 500 :body (.getMessage e)}))
                                 {:status 500 :body "default data source not available"}))
 
-           (GET "/tables/:name" [name] (fn [req] {:body  (table-data (get-ds ds-id) name)})))
+           (GET "/tables/:name" [name] (fn [req] {:body  (table-meta (get-ds ds-id) name)})))
 
   )
 
