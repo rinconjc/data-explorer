@@ -17,6 +17,12 @@
     (println saved)
     (is (some? saved))
     (is (some? (safe-mk-ds saved)))
-    )  
+    )
+
+  (testing "queries"
+    (k/insert data_source (k/values {:name "ds" :dbms "H2" :url ":mem" :user_name "sa" :password "sa"}))
+    (k/insert data_source (k/values {:name "ds1" :dbms "H2" :url ":mem1" :user_name "sa" :password "sa"}))
+    (k/insert query (k/values {:name "q1" :description "test query" :sql "select sysdate from dual"}))
+    )
   )
 

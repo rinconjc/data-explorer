@@ -79,6 +79,15 @@
                                  :delete! (k/delete data_source (k/where {:id id}))
                                  :put! #(k/update data_source (k/set-fields (get-in % [:request :body])) (k/where {:id id}))
                                  ))
+  (ANY "/queries" [] (resource
+                      :allowed-methods [:get :post]
+                      :allowed? #(if-let [user-id (get-in % [:request :session :user :id])]
+                                   {:user-id user-id})
+                      :post! #(let [{{data :body} :request user-id :user-id} %                                    
+                                    id (k/insert query (k/values (assoc data :app_user_id user-id)))]
+                                {::id (first (vals id))})
+                      :post-redirect? #({:location (format "/queries/%s" (::id %))})
+                      :handle-ok (k/select query)))
 
   (context "/ds/:ds-id" [ds-id]
            (POST "/execute" req (let [raw-sql (get-in req [:body :raw-sql])

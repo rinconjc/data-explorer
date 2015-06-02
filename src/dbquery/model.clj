@@ -7,6 +7,7 @@
             [korma.core :refer :all]
             [dbquery.conf :refer :all]
             [crypto.password.bcrypt :as password]
+            [clojure.java.jdbc :as j]
             )
   )
 
@@ -42,7 +43,7 @@
   )
 
 (defentity query
-  (entity-fields :name :description :sql)
+  (entity-fields :id :name :description)
   (belongs-to app_user)
   (many-to-many data_source :data_source_query)
   )
@@ -59,6 +60,7 @@ WHERE APP_USER_ID = ? OR EXISTS(SELECT 1 FROM USER_DATA_SOURCE ud
 WHERE ud.DATA_SOURCE_ID=d.ID AND ud.APP_USER_ID=?)" [user-id user-id]] :results)  
   )
 
-(defn map-key [m key1 key2]
-  (assoc (dissoc m key1) key2 (m key1)))
+
+
+
 
