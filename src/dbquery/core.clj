@@ -88,9 +88,17 @@
                                 {::id (first (vals id))})
                       :post-redirect? #({:location (format "/queries/%s" (::id %))})
                       :handle-ok (k/select query)))
+  
+  (ANY "/queries/:id" [id] (resource
+                            :allowed-methods [:get :put :delete]
+                            :exists? (if-let [q (first (k/select query (k/fields [:sql]) (k/where {:id id})))]
+                                       {:the-query q})
+                            :handle-ok #(:the-query %)
+                            :put! (k/update query (k/set-fields (get-in % [:request :body]) (k/where {:id id})))
+                            :delete! (k/delete query (k/where {:id id}))))
 
   (context "/ds/:ds-id" [ds-id]
-           (POST "/execute" req (let [raw-sql (get-in req [:body :raw-sql])
+           (POST "/exec-sql" req (let [raw-sql (get-in req [:body :raw-sql])
                                       ds (get-ds ds-id)]
                                   (try-let [r (execute ds raw-sql)]
                                            (if (number? r)
@@ -98,9 +106,18 @@
                                              {:body r})
                                            (fn [e] {:status 500 :body (.getMessage e)}))
                                   ))
+           
            (POST "/exec-query" req (let [ds (get-ds ds-id)
                                          params (:body req)]
                                      (apply (partial exec-query ds) params)))
+           
+           (POST "/exec-query/:id" [id] (if-let [q (first (k/select query (k/fields [:sql]) (k/where {:id id})))]
+                                          (let [r (execute (get-ds ds-id) (:sql q))]
+                                            (if (number? r)
+                                              {:body {:rowsAffected r}}
+                                              {:body r})
+                                            )
+                                          {:status 404 :body "no such query exists!"}))
 
            (GET "/tables" req (if-let [ds (get-ds ds-id)]
                                 (try-let [ts (tables ds)]

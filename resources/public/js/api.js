@@ -1,5 +1,5 @@
 angular.module('dbquery.api',['ngResource'])
-    .factory('Api', function($resource, $http, $q){
+    .factory('DataService', function($resource, $http, $q){
         var resCache = {};
         function getResource(key, path){
             var r = resCache[key];
@@ -59,12 +59,12 @@ angular.module('dbquery.api',['ngResource'])
             },
             saveDatasource:function(ds){
                 if(ds.id)
-                    return toPromise(dsResource.update(ds));
+                    return dsResource.update({id:ds.id}, ds);
                 else
-                    return toPromise(dsResource.save(ds));
+                    return dsResource.save(ds);
             },
             deleteDatasource:function(dsId){
-                return toPromise(dsResource.delete({id:dsId}));
+                return dsResource.delete({id:dsId});
             },
             getTables:function(ds){
                 return getDsResource(ds, 'tables').query();
@@ -79,26 +79,29 @@ angular.module('dbquery.api',['ngResource'])
                 return getDsResource(ds, 'tables').get({id:table});
             },
             executeSql:function(ds,sql){
-                return futureValue($http.post('/ds/'+ds+'/execute', {"raw-sql":sql}));
+                return futureValue($http.post('/ds/'+ds+'/exec-sql', {"raw-sql":sql}));
             },
             executeQuery:function(tables, fields, conditions, offset, maxrows){
                 return futureValue($http.post('/ds/' + ds + '/exec-query', {tables:tables, fields:fields, predicates:conditions, offset:offset limit:maxrows}));
             },
             getQueries:function(ds){
-                return getDsResource(ds, 'queries').query();
+                return qryResource.query();
             },
             saveQuery:function(query){
                 if(query.id){
-                    return toPromise(qryResource.update(query));
+                    return qryResource.update({id:query.id},query);
                 } else {
-                    return toPromise(qryResource.save(query));
+                    return qryResource.save(query);
                 }
             },
             deleteQuery:function(qid){
-                return qryResource.delete(qid);
+                return qryResource.delete({id:qid});
+            },
+            execSavedQuery:function(ds, qid){
+                return futureValue($http.post('/ds/' + ds + '/exec-query/' + qid));
             },
             saveUser:function(user){
-                return toPromise(user.id?usrResource.update(user):usrResource.save(user));
+                return user.id?usrResource.update({id:user.id},user):usrResource.save(user);
             },
             getUsers:function(){
                 return usrResource.query();
@@ -112,6 +115,5 @@ angular.module('dbquery.api',['ngResource'])
             shareQueries:function(qryIds, userIds){
                 return toPromise($http.post('/share/query', {queries:qryIds, users:userIds}));
             }
-
         };
     });
