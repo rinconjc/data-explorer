@@ -1,6 +1,6 @@
+
 <div class="panel panel-default">
   <div class="panel-heading" style="padding:2px;">
-    {{heading || 'Tables'}}
     <div class="btn-group btn-group-sm" role="group" aria-label="...">
       <button type="button" class="btn btn-default" ng-click="refresh()"><span class="glyphicon glyphicon-refresh"></span></button>
       <button type="button" class="btn btn-default" ng-click="_btnClick('DATA', selected)"><span class="glyphicon glyphicon-list-alt"></span></button>
@@ -8,8 +8,18 @@
     </div>
   </div>
   <div class="panel-body" style="padding:0px;">
-    <select class="form-control" style="width:100%; height:100%" ng-options="table for table in data" multiple ng-model="selected"
-            size="30" >
-    </select>
+    <tabset class="small-tabs">
+      <tab>
+         <tab-heading>Tables</tab-heading>
+        <select class="form-control" style="width:100%; height:100%" ng-options="table for table in tables" multiple ng-model="selected"
+                size="30" >
+        </select>        
+      </tab>
+      <tab heading="Views">
+        <select class="form-control" style="width:100%; height:100%" ng-options="table for table in views" multiple ng-model="selected"
+                size="30" >
+        </select>        
+      </tab>
+    </tabset>
   </div>
 </div>

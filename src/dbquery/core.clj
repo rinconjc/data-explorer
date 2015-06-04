@@ -32,6 +32,8 @@
                                   safe-mk-ds))
   )
 
+(def common-opts {:available-media-types ["application/json"]})
+
 ;; ds checker middleware
 
 (defroutes static
@@ -56,7 +58,8 @@
                      {:body user}
                      {:status 401 :body "user not logged in"}))
 
-  (ANY "/data-sources" [] (resource :allowed-methods [:get :post]
+  (ANY "/data-sources" [] (resource common-opts
+                                    :allowed-methods [:get :post]
                                     :allowed? #(if-let [user-id (get-in % [:request :session :user :id])]
                                                  {:user-id user-id})
                                     :post! #(let [ds-data (get-in %1 [:body :request])
@@ -69,7 +72,7 @@
                                                   (user-data-sources user-id))
                                     :handle-exception #(.getMessage (:exception %))))
 
-  (ANY "/data-sources/:id" [id] (resource
+  (ANY "/data-sources/:id" [id] (resource common-opts
                                  :allowed-methods [:get :put :delete]
                                  :exists? (if-let [ds (first (k/select data_source (k/where {:id id})))]
                                             {:the-ds ds})
@@ -79,7 +82,7 @@
                                  :delete! (k/delete data_source (k/where {:id id}))
                                  :put! #(k/update data_source (k/set-fields (get-in % [:request :body])) (k/where {:id id}))
                                  ))
-  (ANY "/queries" [] (resource
+  (ANY "/queries" [] (resource common-opts
                       :allowed-methods [:get :post]
                       :allowed? #(if-let [user-id (get-in % [:request :session :user :id])]
                                    {:user-id user-id})
@@ -89,12 +92,12 @@
                       :post-redirect? #({:location (format "/queries/%s" (::id %))})
                       :handle-ok (k/select query)))
   
-  (ANY "/queries/:id" [id] (resource
+  (ANY "/queries/:id" [id] (resource common-opts
                             :allowed-methods [:get :put :delete]
                             :exists? (if-let [q (first (k/select query (k/fields [:sql]) (k/where {:id id})))]
                                        {:the-query q})
                             :handle-ok #(:the-query %)
-                            :put! (k/update query (k/set-fields (get-in % [:request :body]) (k/where {:id id})))
+                            :put! #(k/update query (k/set-fields (get-in % [:request :body])) (k/where {:id id}))
                             :delete! (k/delete query (k/where {:id id}))))
 
   (context "/ds/:ds-id" [ds-id]
