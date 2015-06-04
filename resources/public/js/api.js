@@ -82,7 +82,8 @@ angular.module('dbquery.api',['ngResource'])
                 return futureValue($http.post('/ds/'+ds+'/exec-sql', {"raw-sql":sql}));
             },
             executeQuery:function(tables, fields, conditions, offset, maxrows){
-                return futureValue($http.post('/ds/' + ds + '/exec-query', {tables:tables, fields:fields, predicates:conditions, offset:offset limit:maxrows}));
+                return futureValue($http.post('/ds/' + ds + '/exec-query', {tables:tables, fields:fields,
+                                                                            predicates:conditions, offset:offset, limit:maxrows}));
             },
             getQueries:function(ds){
                 return qryResource.query();
