@@ -83,15 +83,22 @@ angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'data-table'
             $scope.main.curds=args;
         });
         $scope.$watch('curds', function(newVal,oldVal){
-            console.debug('watch:', oldVal, newVal);            
+            console.debug('watch:', oldVal, newVal);
         });
+        $scope.deleteDs = function(id){
+            DataService.deleteDatasource(id).$promise.then(function(){
+                $scope.refreshDatasources();
+            }, function(err){
+                console.log('failed deleting...', err);
+            });
+        };
 
     })
-    .controller('DataSourceCtrl', function($scope, $http, $log, $location, DataSource, CONSTS){
+    .controller('DataSourceCtrl', function($scope, $http, $log, $location, DataService, CONSTS){
         $scope.dbcon = {};
         $scope.save = function(){
             $scope.waiting = true;
-            DataSource.save($scope.dbcon, function(res){
+            DataService.saveDatasource($scope.dbcon).then(function(res){
                 $log.debug('datasource created ', res);
                 $scope.$emit(CONSTS.EVENTS.DS_ADDED, $scope.dbcon);
             }, function(err){
@@ -107,16 +114,16 @@ angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'data-table'
         $scope.tableTabs={};
         $scope.dsId=$routeParams.db;
         $scope.$emit(CONSTS.EVENTS.DS_CHANGED, parseInt($routeParams.db));
-        
+
         $scope.$on('EVT.TABLES.DATA', function(evt, args){
             console.debug('tables data evt received..', args);
             angular.forEach(args, function(tbl){
                 if(!$scope.tableTabs[tbl]){
                     $scope.tableTabs[tbl]=$scope.tables.get({name:tbl});
                 }
-            });                        
+            });
         });
-        
+
         $scope.execute = function(){
             $scope.error = null;
             $http.post(ctx+'/execute', {"raw-sql":$scope.sql.text}).success(function(res){

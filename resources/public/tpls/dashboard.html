@@ -1,11 +1,17 @@
 <h1 class="page-header">Data Explorer</h1>
 
 <div class="panel panel-default">
-  <div class="panel-heading">Databases</div>
+  <div class="panel-heading">Databases    
+  </div>
   <div class="panel-body">
-    <p ng-if="!datasources.length">No databases defined... <a class="btn-link" href="#/connect">Add a new database</a></p>
-    <ul>
-      <li ng-repeat="ds in datasources"><a class="btn-link" href="#/dash/{{ds.id}}">{{ds.name}}</a></li>
+    <p ng-if="!datasources.length">No databases defined... <a class="btn-link" href="#/connect">Add a new database</a>
+      
+    </p>
+    <ul class="list-unstyled">
+      <li ng-repeat="ds in datasources">
+        <a class="btn-link" href="#/dash/{{ds.id}}">{{ds.name}}</a>        
+        <a class="btn-link btn" ng-click="deleteDs(ds.id)"> <span class="glyphicon glyphicon-trash"></span> </a><a class="btn-link btn" ng-click="shareDs(ds.id)"><span class="glyphicon glyphicon-share"></span> </a>
+      </li>
     </ul>
   </div>
 </div>
@@ -15,5 +21,3 @@
   <div class="panel-body">
   </div>
 </div>
-
-

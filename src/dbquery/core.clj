@@ -13,7 +13,9 @@
             [korma.core :as k]
             [dbquery.model :refer :all]
             [clojure.core.cache :as cache]
-            [liberator.core :refer [defresource resource]]))
+            [liberator.core :refer [defresource resource]]
+            [liberator.dev :refer [wrap-trace]]
+            [clojure.tools.logging :as log]))
 ;;; sync db
 (sync-db 3 "dev")
 
@@ -70,7 +72,10 @@
                                     :post-redirect? #({:location (format "/data-sources/%s" (::id %))})
                                     :handle-ok #(let [user-id (get-in % [:request :session :user :id])]
                                                   (user-data-sources user-id))
-                                    :handle-exception #(.getMessage (:exception %))))
+                                    :handle-exception #(
+                                                        (log/error %1 "fail!")
+                                                        (str "error:" (:exception %1))
+                                                        )))
 
   (ANY "/data-sources/:id" [id] (resource common-opts
                                  :allowed-methods [:get :put :delete]
@@ -138,6 +143,7 @@
   (-> app
       (wrap-json-response)
       (wrap-json-body {:keywords? true})
+      (wrap-trace :header :ui)
       (wrap-defaults (assoc site-defaults :security {:anti-forgery false}))))
 ;;
 
