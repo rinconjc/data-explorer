@@ -59,9 +59,9 @@ angular.module('dbquery.api',['ngResource'])
             },
             saveDatasource:function(ds){
                 if(ds.id)
-                    return dsResource.update({id:ds.id}, ds);
+                    return dsResource.update({id:ds.id}, ds).$promise;
                 else
-                    return dsResource.save(ds);
+                    return dsResource.save(ds).$promise;
             },
             deleteDatasource:function(dsId){
                 return dsResource.delete({id:dsId});
