@@ -1,4 +1,4 @@
-angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'data-table','common-widgets', 'dbquery.api'])
+angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'data-table','common-widgets', 'dbquery.api','db.dash'])
     .constant('CONSTS', {
         EVENTS:{
             DS_ADDED:'ds-added',
@@ -15,28 +15,6 @@ angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'data-table'
                 redirectTo:'/connect'
             })
         ;
-    })
-    .directive('tableList', function(DataService){
-        return {
-            scope:{
-                heading:'@',
-                rows:'@',
-                ds:'='
-            },
-            controller:function($scope){
-                $scope.refresh = function(){
-                    console.debug('refreshing data');
-                    $scope.tables = DataService.getTables($scope.ds);
-                    $scope.views = DataService.getViews($scope.ds);
-                };
-                $scope.refresh();
-                $scope._btnClick=function(btn, selected){
-                    console.debug('showing data...', selected, $scope.doShowData);
-                    $scope.$emit('EVT.TABLES.' + btn, selected);
-                };
-            },
-            templateUrl:'tpls/table-list.html'
-        };
     })
     .controller('LoginCtrl', function($scope, $http, $rootScope, $location){
         $scope.doLogin = function(loginData){
@@ -108,35 +86,4 @@ angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'data-table'
             });
         };
     })
-    .controller('DBCtrl', function($scope, $rootScope, $resource, $log, $http, $routeParams, CONSTS){
-        $scope.selected = null;
-        $scope.sql = {};
-        $scope.tableTabs={};
-        $scope.dsId=$routeParams.db;
-        $scope.$emit(CONSTS.EVENTS.DS_CHANGED, parseInt($routeParams.db));
-
-        $scope.$on('EVT.TABLES.DATA', function(evt, args){
-            console.debug('tables data evt received..', args);
-            angular.forEach(args, function(tbl){
-                if(!$scope.tableTabs[tbl]){
-                    $scope.tableTabs[tbl]=$scope.tables.get({name:tbl});
-                }
-            });
-        });
-
-        $scope.execute = function(){
-            $scope.error = null;
-            $http.post(ctx+'/execute', {"raw-sql":$scope.sql.text}).success(function(res){
-                if(typeof res.rowsAffected != 'undefined') {
-                    $scope.rowsAffected = 'Rows affected ' + res.rowsAffected;
-                    $scope.resultData = null;
-                } else {
-                    $scope.rowsAffected = null;
-                    $scope.resultData = res;
-                }
-            }).error(function(err){
-                $log.debug('failed executing query', err);
-                $scope.error = err;
-            });
-        };
-    });
+;
