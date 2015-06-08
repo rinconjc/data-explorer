@@ -20,7 +20,7 @@
 
 (defn sync-db [version env]
   (do
-    (log/info "starting db upgrade")
+    (log/info "starting db upgrade:" version env)
     (-> (DbUpgrader. (force ds) env)
         (.syncToVersion version true true))
     (log/info "db upgrade complete")
@@ -31,7 +31,7 @@
 (declare data_source app_user query query_params)
 
 (defentity data_source
-  (entity-fields :id :name :dbms :user_name :password :url)
+  (entity-fields :id :name :dbms :user_name :password :url :app_user_id)
   (belongs-to app_user)
   (many-to-many query :data_source_query)
   (many-to-many app_user :user_data_source)

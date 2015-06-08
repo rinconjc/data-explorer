@@ -1,7 +1,7 @@
 
 <div class="row">
   <div class="col-md-2">
-    <table-list rows="30" ds="dsId" />
+    <table-list rows="30" ds="dsId" info-clicked="showTableInfo" preview-clicked="showTablePreview"/>
   </div>
   <div class="col-md-10">
     <tabset>
@@ -25,10 +25,29 @@
         <p ng-show="error" class="text-left">{{error}}</p>
         <ng-table ng-show="resultData" class="table-bordered" columns="resultData.columns" data="resultData.rows"/>
       </tab>
-      <tab heading="{{table}}" ng-repeat="(table, data) in tableTabs">
+      <tab heading="{{table}}(Preview)" ng-repeat="(table, data) in previewTabs">
         <div class="table-responsive">
           <ng-table class="table-bordered" columns="data.columns" data="data.rows"/>
         </div>
+      </tab>
+      <tab heading="{{table}}(Info)" ng-repeat="(table, data) in infoTabs">
+        <tabset>
+          <tab heading="Columns">
+            <div class="table-responsive">
+              <ng-table class="table-bordered" columns="data.columns.columns" data="data.columns.rows"/>
+            </div>            
+          </tab>
+          <tab heading="Primary Key">
+            <div class="table-responsive">
+              <ng-table class="table-bordered" columns="data.primaryKes.columns" data="data.primaryKeys.rows"/>
+            </div>            
+          </tab>
+          <tab heading="Foreign Keys">
+            <div class="table-responsive">
+              <ng-table class="table-bordered" columns="data.foreignKeys.columns" data="data.foreignKeys.rows"/>
+            </div>            
+          </tab>
+        </tabset>
       </tab>
     </tabset>
     

@@ -75,7 +75,8 @@
              "ORACLE" (doto (OracleDataSource.)
                         (.setURL (str "jdbc:oracle:thin:@" url))
                         (.setUser user_name)
-                        (.setPassword password)))]
+                        (.setPassword password))
+             (throw (Exception. (format "DBMS %s not supported." dbms))))]
     (with-open [con (.getConnection ds)]
       ds)
     )
@@ -126,7 +127,7 @@
                 (read-rs rs :columns ["COLUMN_NAME" "KEY_SEQ" "PK_NAME"]))
           fks (with-open [rs (.getImportedKeys meta nil nil name)]
                 (read-rs rs :columns ["PKTABLE_NAME" "PKCOLUMN_NAME" "FKCOLUMN_NAME" "KEY_SEQ" "FKTABLE_NAME"]))]
-      {:columns cols :primary-keys pks :foreign-keys fks})))
+      {:columns cols :primaryKeys pks :foreignKeys fks})))
 
 (defn exec-query [ds &{:keys [tables fields predicates offset limit] :or {offset 0 limit 100}}]
   (with-open [con (.getConnection (:datasource ds))]
