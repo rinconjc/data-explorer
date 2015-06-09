@@ -40,6 +40,7 @@ angular.module('dbquery.api',['ngResource'])
                 value.$isready=true;
             }).error(function(err){
                 value.$isready=true;
+                value.$error = err;
                 d.reject(err);
             });
 

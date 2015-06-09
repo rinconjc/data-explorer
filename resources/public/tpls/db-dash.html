@@ -8,44 +8,53 @@
       <tab heading="SQL">
         <div class="panel panel-default">
           <div class="panel-heading" style="padding:2px;">
-            <div class="btn-group" role="group" aria-label="...">
-              <button type="button" class="btn btn-default" ng-click="execute()">Execute</button>
-              <button type="button" class="btn btn-default" ng-click="save()">Save</button>
-              <button type="button" class="btn btn-default" ng-click="clear()">Clear</button>
+            <div class="btn-toolbar" role="toolbar" aria-label="...">
+              <div class="btn-group" role="group" aria-label="...">
+                <button type="button" class="btn btn-default" ng-click="execute()">Execute <span class="glyphicon glyphicon-play"></span> </button>
+                <button type="button" class="btn btn-default" ng-click="save()">Save <span class="glyphicon glyphicon-save"></span></button>
+                <button type="button" class="btn btn-default" ng-click="clear()">Clear <span class="glyphicon glyphicon-erase"></span></button>
+              </div>
+              <div class="btn-group" role="group" aria-label="...">
+                <input type="text" class="form-control" placeholder="Search existing queries..." size="40" shortcuts="{'C+RET':execute, 'C+S':save, 'C+L':clear}">
+              </div>
             </div>
+            
           </div>
           <div class="panel-body" style="padding:0px;">
             <textarea class="form-control" rows="10" ng-model="sql.text"></textarea>
           </div>
           <div class="panel-footer">
-            <div ng-show="rowsAffected"  class="text-left">{{rowsAffected}}</div>
+            <div ng-show="result.rowsAffected"  class="text-left">{{result.rowsAffected}}</div>
           </div>
         </div>
-        <br/>
-        <p ng-show="error" class="text-left">{{error}}</p>
-        <ng-table ng-show="resultData" class="table-bordered" columns="resultData.columns" data="resultData.rows"/>
+        <alert ng-if="result.$error" type="danger">{{result.$error}}</alert>
+        <ng-table ng-show="result.data" class="table-bordered" columns="result.data.columns" data="result.data.rows"/>
       </tab>
-      <tab heading="{{table}}(Preview)" ng-repeat="(table, data) in previewTabs">
+      <tab ng-repeat="(table, data) in previewTabs">
+        <tab-heading>{{table}}(Preview) <a class="btn-link btn-sm" ng-click="removeTablePreview(table)"><span class="glyphicon glyphicon-remove"></span></a></tab-heading>
         <div class="table-responsive">
           <ng-table class="table-bordered" columns="data.columns" data="data.rows"/>
         </div>
       </tab>
-      <tab heading="{{table}}(Info)" ng-repeat="(table, data) in infoTabs">
+      <tab ng-repeat="(table, data) in infoTabs">
+        <tab-heading>
+          {{table}}(Info) <a class="btn-link btn-sm" ng-click="removeTableInfo(table)"><span class="glyphicon glyphicon-remove"></span></a>
+        </tab-heading>
         <tabset>
           <tab heading="Columns">
             <div class="table-responsive">
               <ng-table class="table-bordered" columns="data.columns.columns" data="data.columns.rows"/>
-            </div>            
+            </div>
           </tab>
           <tab heading="Primary Key">
             <div class="table-responsive">
               <ng-table class="table-bordered" columns="data.primaryKes.columns" data="data.primaryKeys.rows"/>
-            </div>            
+            </div>
           </tab>
           <tab heading="Foreign Keys">
             <div class="table-responsive">
               <ng-table class="table-bordered" columns="data.foreignKeys.columns" data="data.foreignKeys.rows"/>
-            </div>            
+            </div>
           </tab>
         </tabset>
       </tab>
