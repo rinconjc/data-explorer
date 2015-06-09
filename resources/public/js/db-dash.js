@@ -42,20 +42,13 @@ angular.module('db.dash',['dbquery.api'])
                 }
             });
         };
-
-        $scope.execute = function(){
-            $scope.error = null;
-            $http.post(ctx+'/execute', {"raw-sql":$scope.sql.text}).success(function(res){
-                if(typeof res.rowsAffected != 'undefined') {
-                    $scope.rowsAffected = 'Rows affected ' + res.rowsAffected;
-                    $scope.resultData = null;
-                } else {
-                    $scope.rowsAffected = null;
-                    $scope.resultData = res;
-                }
-            }).error(function(err){
-                $log.debug('failed executing query', err);
-                $scope.error = err;
-            });
+        $scope.removeTablePreview = function(name){
+            delete $scope.previewTabs[name];
         };
-    })
+        $scope.removeTableInfo = function(name){
+            delete $scope.infoTabs[name];
+        };
+        $scope.execute = function(){
+            $scope.result = DataService.executeSql($scope.dsId, $scope.sql.text);
+        };
+    });

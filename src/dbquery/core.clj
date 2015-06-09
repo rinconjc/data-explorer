@@ -53,6 +53,34 @@
         res (exec-query ds params)]
     {:body res})
   )
+
+(defn handle-login [req]
+  (let [{user-name :userName pass :password} (:body req)
+        session (:session req)]
+    (try-let [user (login user-name pass)]
+             (if (some? user)
+               {:body user :session (assoc session :user user)}
+               {:status 401 :body "invalid user or password"})
+             (fn [e] {:status 500 :body (.getMessage e)}))))
+
+(defn handle-exec-sql [req ds-id]
+  (let [raw-sql (get-in req [:body :raw-sql])
+        ds (get-ds ds-id)]
+    (try-let [r (execute ds raw-sql)]
+             (if (number? r)
+               {:body {:rowsAffected r}}
+               {:body {:data  r}})
+             (fn [e] {:status 500 :body (.getMessage e)}))
+    ))
+
+(defn handle-exec-query-by-id [id ds-id]
+  (if-let [q (first (k/select query (k/fields [:sql]) (k/where {:id id})))]
+    (let [r (execute (get-ds ds-id) (:sql q))]
+      (if (number? r)
+        {:body {:rowsAffected r}}
+        {:body r})
+      )
+    {:status 404 :body "no such query exists!"}))
 ;; resources
 
 (defresource data-sources-list common-opts
@@ -107,16 +135,8 @@
 (defroutes app
   (GET "/" [] (slurp (io/resource "public/index.html")))
 
-  (POST "/login" req (let [{user-name :userName pass :password} (:body req)
-                           session (:session req)]
-                       (try-let [user (login user-name pass)]
-                                (if (some? user)
-                                  {:body user :session (assoc session :user user)}
-                                  {:status 401 :body "invalid user or password"})
-                                (fn [e] {:status 500 :body (.getMessage e)}))))
-
+  (POST "/login" req (handle-login req))
   (GET "/logout" req (assoc (redirect "/") :session nil))
-
   (GET "/user" req (if-let [user (get-in req [:session :user])]
                      {:body user}
                      {:status 401 :body "user not logged in"}))
@@ -127,25 +147,9 @@
   (ANY "/queries/:id" [id] (queries-entry id))
 
   (context "/ds/:ds-id" [ds-id]
-           (POST "/exec-sql" req (let [raw-sql (get-in req [:body :raw-sql])
-                                       ds (get-ds ds-id)]
-                                   (try-let [r (execute ds raw-sql)]
-                                            (if (number? r)
-                                              {:body {:rowsAffected r}}
-                                              {:body r})
-                                            (fn [e] {:status 500 :body (.getMessage e)}))
-                                   ))
-
+           (POST "/exec-sql" req (handle-exec-sql req ds-id))
            (POST "/exec-query" req (handle-exec-query req ds-id))
-
-           (POST "/exec-query/:id" [id] (if-let [q (first (k/select query (k/fields [:sql]) (k/where {:id id})))]
-                                          (let [r (execute (get-ds ds-id) (:sql q))]
-                                            (if (number? r)
-                                              {:body {:rowsAffected r}}
-                                              {:body r})
-                                            )
-                                          {:status 404 :body "no such query exists!"}))
-
+           (POST "/exec-query/:id" [id] (handle-exec-query-by-id id))
            (GET "/tables" req (if-let [ds (get-ds ds-id)]
                                 (try-let [ts (tables ds)]
                                          {:body ts}
