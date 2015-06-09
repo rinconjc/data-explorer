@@ -3,7 +3,7 @@
 
 (def db-conf  (let [db-env (System/getProperty "app-env" "test")
                     db (case db-env
-                         "test" "mem:model;DB_CLOSE_DELAY=-1"
+                         "test" "mem:model"
                          (format "~/dbquery-%s-h2.db;AUTO_SERVER=TRUE" db-env))]
                 {:db db
                  :user "sa"

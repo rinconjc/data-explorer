@@ -85,7 +85,7 @@
 (defn safe-mk-ds [ds-info]
   "Creates a datasource"
   (with-recovery {:datasource (mk-ds ds-info)}
-    #({:error (.getMessage %)})
+    (fn [e] {:error (.getMessage e)})
     )
   )
 
@@ -129,7 +129,7 @@
                 (read-rs rs :columns ["PKTABLE_NAME" "PKCOLUMN_NAME" "FKCOLUMN_NAME" "KEY_SEQ" "FKTABLE_NAME"]))]
       {:columns cols :primaryKeys pks :foreignKeys fks})))
 
-(defn exec-query [ds &{:keys [tables fields predicates offset limit] :or {offset 0 limit 100}}]
+(defn exec-query [ds {:keys [tables fields predicates offset limit] :or {offset 0 limit 100}}]
   (with-open [con (.getConnection (:datasource ds))]
     (let [stmt (if (> offset 0)
                  (.createStatement con ResultSet/TYPE_SCROLL_INSENSITIVE ResultSet/CONCUR_READ_ONLY)

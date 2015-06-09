@@ -1,13 +1,8 @@
 (ns dbquery.databases-test
   (:require [clojure.test :refer :all]
-            [dbquery.databases :refer :all]))
+            [dbquery.databases :refer :all]
+            [dbquery.dbfixture :refer :all]))
 
-(defn dummy-ds [] (safe-mk-ds {:dbms "H2" :url  "mem:test;DB_CLOSE_DELAY=0" :user_name  "sa" :password "sa"}))
-(defn fixture [f]
- (def con (.getConnection (:datasource (dummy-ds))))
-  (f)
-  (.close con)
-  )
 (use-fixtures :each fixture)
 
 (deftest test-database
@@ -26,9 +21,9 @@
     )
   (testing "exec-query"
     (def ds (dummy-ds))
-    (apply (partial execute ds) "create table test(id int, desc varchar(40), created date, primary key(id))"
-           (for [i (range 50)] (format "insert into test values (%1$d, 'desc of %1$d', sysdate)" i)))
-    (def data (exec-query ds :tables ["test"] :fields ["id" "desc" "created"] :offset 2))
+    (apply (partial execute ds) "create table test1(id int, desc varchar(40), created date, primary key(id))"
+           (for [i (range 50)] (format "insert into test1 values (%1$d, 'desc of %1$d', sysdate)" i)))
+    (def data (exec-query ds {:tables ["test1"] :fields ["id" "desc" "created"] :offset 2}))
     (is (some? (:columns data)))
     (is (= 48 (count (:rows data))))
     )
@@ -37,7 +32,7 @@
     (def ds (dummy-ds))
     (execute ds "create table tablea(id int, desc varchar(40), primary key(id))"
              "create table tableb(id int, aid int, desc varchar(20), primary key (id), foreign key(aid) references tablea(id) )")
-    (let [{cols :columns pks :primary-keys fks :foreign-keys} (table-meta ds "TABLEB")]
+    (let [{cols :columns pks :primaryKeys fks :foreignKeys} (table-meta ds "TABLEB")]
       (println "cols: " (pr-str cols))
       (println "pks: " (pr-str pks))
       (println "fks: " (pr-str fks))

@@ -18,13 +18,15 @@
                  (.setUser (db-conf :user))
                  (.setPassword (db-conf :password)))))
 
-(defn sync-db [version env]
-  (do
-    (log/info "starting db upgrade:" version env)
-    (-> (DbUpgrader. (force ds) env)
-        (.syncToVersion version true true))
-    (log/info "db upgrade complete")
-    ))
+(defn sync-db
+  ([version env]
+   (do
+     (log/info "starting db upgrade:" version env)
+     (-> (DbUpgrader. (force ds) env)
+         (.syncToVersion version true true))
+     (log/info "db upgrade complete")
+     ))
+  ([env] (sync-db 3 env)))
 
 (defdb appdb (h2 db-conf))
 
@@ -57,10 +59,5 @@
 (defn user-data-sources [user-id]
   (exec-raw ["SELECT d.id, d.name FROM DATA_SOURCE d
 WHERE APP_USER_ID = ? OR EXISTS(SELECT 1 FROM USER_DATA_SOURCE ud
-WHERE ud.DATA_SOURCE_ID=d.ID AND ud.APP_USER_ID=?)" [user-id user-id]] :results)  
+WHERE ud.DATA_SOURCE_ID=d.ID AND ud.APP_USER_ID=?)" [user-id user-id]] :results)
   )
-
-
-
-
-

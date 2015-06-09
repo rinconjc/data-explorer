@@ -22,5 +22,7 @@
   :resource-paths ["lib/*" "resources"]
   :main ^:skip-aot dbquery.core
   :target-path "target/%s"
-  :profiles {:uberjar {:aot :all}}
+  :profiles {:uberjar {:aot :all}
+             :dev {
+                   :dependencies [[org.clojure/tools.namespace "0.2.3"]]}}
   )
