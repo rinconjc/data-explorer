@@ -46,6 +46,59 @@
       )))
 ;; ds checker middleware
 
+;; handlers
+(defn handle-exec-query [req ds-id]
+  (let [ds (get-ds ds-id)
+        params (:body req)
+        res (exec-query ds params)]
+    {:body res})
+  )
+;; resources
+
+(defresource data-sources-list common-opts
+  :allowed-methods [:get :post]
+  :allowed? #(if-let [user-id (get-in % [:request :session :user :id])]
+               {:user-id user-id})
+  :post! #(let [ds-data (get-in %1 [:request :body])
+                _ (mk-ds ds-data)
+                user-id (:user-id %1)
+                id (k/insert data_source (k/values (assoc ds-data :app_user_id user-id)))]
+            {::id (first (vals id))})
+  :post-redirect? (fn [ctx] {:location (format "/data-sources/%s" (::id ctx))})
+  :handle-ok #(user-data-sources (:user-id %))
+  )
+
+(defresource data-sources-entry [id] common-opts
+  :allowed-methods [:get :put :delete]
+  :exists? (if-let [ds (first (k/select data_source (k/where {:id id})))]
+             {:the-ds ds})
+  ;; :allowed? #(let [ds (first (k/select data_source (k/where {:id id})))
+  ;;                  user-id (get-in %1 [:request :session :user :id])]
+  ;;              (if (= user-id (:app_user_id ds))
+  ;;                {:the-ds ds}))
+  :handle-ok #(:the-ds %)
+  :delete! (fn [_] (k/delete data_source (k/where {:id id})))
+  :put! #(k/update data_source (k/set-fields (get-in % [:request :body])) (k/where {:id id}))
+  )
+
+(defresource queries-list common-opts
+  :allowed-methods [:get :post]
+  :allowed? #(if-let [user-id (get-in % [:request :session :user :id])]
+               {:user-id user-id})
+  :post! #(let [{{data :body} :request user-id :user-id} %
+                id (k/insert query (k/values (assoc data :app_user_id user-id)))]
+            {::id (first (vals id))})
+  :post-redirect? #({:location (format "/queries/%s" (::id %))})
+  :handle-ok (k/select query))
+
+(defresource queries-entry [id] common-opts
+  :allowed-methods [:get :put :delete]
+  :exists? (if-let [q (first (k/select query (k/fields [:sql]) (k/where {:id id})))]
+             {:the-query q})
+  :handle-ok #(:the-query %)
+  :put! #(k/update query (k/set-fields (get-in % [:request :body])) (k/where {:id id}))
+  :delete! (fn [_] (k/delete query (k/where {:id id}))))
+
 (defroutes static
   (route/resources "/")
   (GET "/ping" [] (fn [req] (format "replied at %s" (Date.))))
@@ -68,48 +121,10 @@
                      {:body user}
                      {:status 401 :body "user not logged in"}))
 
-  (ANY "/data-sources" [] (resource common-opts
-                                    :allowed-methods [:get :post]
-                                    :allowed? #(if-let [user-id (get-in % [:request :session :user :id])]
-                                                 {:user-id user-id})
-                                    :post! #(let [ds-data (get-in %1 [:request :body])
-                                                  _ (mk-ds ds-data)
-                                                  user-id (:user-id %1)
-                                                  id (k/insert data_source (k/values (assoc ds-data :app_user_id user-id)))]
-                                              {::id (first (vals id))})
-                                    :post-redirect? (fn [ctx] {:location (format "/data-sources/%s" (::id ctx))})
-                                    :handle-ok #(user-data-sources (:user-id %))
-                                    ))
-
-  (ANY "/data-sources/:id" [id] (resource common-opts
-                                          :allowed-methods [:get :put :delete]
-                                          :exists? (if-let [ds (first (k/select data_source (k/where {:id id})))]
-                                                     {:the-ds ds})
-                                          ;; :allowed? #(let [ds (first (k/select data_source (k/where {:id id})))
-                                          ;;                  user-id (get-in %1 [:request :session :user :id])]
-                                          ;;              (if (= user-id (:app_user_id ds))
-                                          ;;                {:the-ds ds}))
-                                          :handle-ok #(:the-ds %)
-                                          :delete! (fn [_] (k/delete data_source (k/where {:id id})))
-                                          :put! #(k/update data_source (k/set-fields (get-in % [:request :body])) (k/where {:id id}))
-                                          ))
-  (ANY "/queries" [] (resource common-opts
-                               :allowed-methods [:get :post]
-                               :allowed? #(if-let [user-id (get-in % [:request :session :user :id])]
-                                            {:user-id user-id})
-                               :post! #(let [{{data :body} :request user-id :user-id} %
-                                             id (k/insert query (k/values (assoc data :app_user_id user-id)))]
-                                         {::id (first (vals id))})
-                               :post-redirect? #({:location (format "/queries/%s" (::id %))})
-                               :handle-ok (k/select query)))
-
-  (ANY "/queries/:id" [id] (resource common-opts
-                                     :allowed-methods [:get :put :delete]
-                                     :exists? (if-let [q (first (k/select query (k/fields [:sql]) (k/where {:id id})))]
-                                                {:the-query q})
-                                     :handle-ok #(:the-query %)
-                                     :put! #(k/update query (k/set-fields (get-in % [:request :body])) (k/where {:id id}))
-                                     :delete! (fn [_] (k/delete query (k/where {:id id})))))
+  (ANY "/data-sources" [] data-sources-list)
+  (ANY "/data-sources/:id" [id] (data-sources-entry id))
+  (ANY "/queries" [] queries-list)
+  (ANY "/queries/:id" [id] (queries-entry id))
 
   (context "/ds/:ds-id" [ds-id]
            (POST "/exec-sql" req (let [raw-sql (get-in req [:body :raw-sql])
@@ -121,9 +136,7 @@
                                             (fn [e] {:status 500 :body (.getMessage e)}))
                                    ))
 
-           (POST "/exec-query" req (let [ds (get-ds ds-id)
-                                         params (:body req)]
-                                     (apply (partial exec-query ds) params)))
+           (POST "/exec-query" req (handle-exec-query req ds-id))
 
            (POST "/exec-query/:id" [id] (if-let [q (first (k/select query (k/fields [:sql]) (k/where {:id id})))]
                                           (let [r (execute (get-ds ds-id) (:sql q))]
