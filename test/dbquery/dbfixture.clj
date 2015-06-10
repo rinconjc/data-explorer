@@ -11,16 +11,15 @@
   )
 
 (defn model-fixture [f]
-  (def con (.getConnection (force ds)))
-  (def dsinfo {:dbms "H2" :url "mem:ds1" :user_name "sa" :password "sa"})
-  (def ds1 (mk-ds dsinfo))
-  (def con2 (.getConnection ds1))
-  (execute {:datasource ds1} "create table tablea(id int, name varchar(20))")
-  (sync-db "dev")
-  (println "creating test datasource:")
-  (if (nil? (first (k/select data_source (k/where {:id 1}))))
-    (k/insert data_source (k/values (merge {:name "test" :id 1} dsinfo))))
-  (f)
-  (.close con)
-  (.close con2)
+  (with-open [con (.getConnection (force ds))]
+    (def dsinfo {:dbms "H2" :url "mem:ds-1" :user_name "sa" :password "sa"})
+    (def ds1 (mk-ds dsinfo))
+    (with-open [con2 (.getConnection ds1)]
+      (execute {:datasource ds1} "create table tablea(id int, name varchar(20))")
+      (sync-db "dev")
+      (println "creating test datasource:")
+      (if (nil? (first (k/select data_source (k/where {:id 1}))))
+        (k/insert data_source (k/values (merge {:name "test" :id 1} dsinfo))))
+      (f))
+    )
   )

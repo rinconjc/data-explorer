@@ -9,6 +9,7 @@ user_name varchar(60),
 password varchar(20),
 url varchar(250) not null,
 app_user_id int,
+schema varchar(50),
 primary key (id),
 foreign key (app_user_id) references app_user (id));
 

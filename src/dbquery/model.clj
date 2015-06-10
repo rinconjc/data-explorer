@@ -26,14 +26,14 @@
          (.syncToVersion version true true))
      (log/info "db upgrade complete")
      ))
-  ([env] (sync-db 3 env)))
+  ([env] (sync-db 4 env)))
 
 (defdb appdb (h2 db-conf))
 
 (declare data_source app_user query query_params)
 
 (defentity data_source
-  (entity-fields :id :name :dbms :user_name :password :url :app_user_id)
+  (entity-fields :id :name :dbms :user_name :password :url :app_user_id :schema)
   (belongs-to app_user)
   (many-to-many query :data_source_query)
   (many-to-many app_user :user_data_source)

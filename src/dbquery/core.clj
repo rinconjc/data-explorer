@@ -16,8 +16,6 @@
             [liberator.core :refer [defresource resource]]
             [liberator.dev :refer [wrap-trace]]
             [clojure.tools.logging :as log]))
-;;; sync db
-(sync-db 3 "dev")
 
 (def ds-cache (atom (cache/lru-cache-factory {})))
 
@@ -81,6 +79,13 @@
         {:body r})
       )
     {:status 404 :body "no such query exists!"}))
+
+(defn handle-list-tables [ds-id]
+  (if-let [ds (get-ds ds-id)]
+    (try-let [ts (tables ds)]
+             {:body ts}
+             (fn [e] {:status 500 :body (.getMessage e)}))
+    {:status 500 :body "default data source not available"}))
 ;; resources
 
 (defresource data-sources-list common-opts
@@ -150,14 +155,8 @@
            (POST "/exec-sql" req (handle-exec-sql req ds-id))
            (POST "/exec-query" req (handle-exec-query req ds-id))
            (POST "/exec-query/:id" [id] (handle-exec-query-by-id id))
-           (GET "/tables" req (if-let [ds (get-ds ds-id)]
-                                (try-let [ts (tables ds)]
-                                         {:body ts}
-                                         (fn [e] {:status 500 :body (.getMessage e)}))
-                                {:status 500 :body "default data source not available"}))
-
+           (GET "/tables" req (handle-list-tables ds-id))
            (GET "/tables/:name" [name] (fn [req] {:body  (table-meta (get-ds ds-id) name)})))
-
   )
 
 
@@ -174,5 +173,5 @@
 (defn in-dev? [] true)
 
 (defn -main []
-  (sync-db 3 "dev")
+  (sync-db "dev")
   (run-server (reload/wrap-reload #'all-routes) {:port 3000}))
