@@ -1,4 +1,4 @@
-angular.module('db.dash',['dbquery.api'])
+angular.module('db.dash',['dbquery.api', 'ui.codemirror'])
     .directive('tableList', function(DataService){
         return {
             scope:{
