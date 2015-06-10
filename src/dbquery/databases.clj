@@ -4,8 +4,12 @@
             [clojure.string :as s])
   (:import [org.h2.jdbcx JdbcDataSource]
            [oracle.jdbc.pool OracleDataSource]
-           [java.sql ResultSet])
+           [java.sql ResultSet Types])
   )
+
+(def result-extractors
+  {Types/BIT (fn [rs i] (.getBoolean rs i))}
+  {Types/TIMESTAMP (fn [rs i] (.getTimestamp rs i))})
 
 
 (defmacro try-let [binding then elsefn]
@@ -84,7 +88,7 @@
 
 (defn safe-mk-ds [ds-info]
   "Creates a datasource"
-  (with-recovery {:datasource (mk-ds ds-info)}
+  (with-recovery {:datasource (mk-ds ds-info) :schema (:schema ds-info)}
     (fn [e] {:error (.getMessage e)})
     )
   )
@@ -97,12 +101,14 @@
    )
   ([ds table] (table-data ds table 100)))
 
-(defn tables [ds]
-  (with-db-metadata [meta ds]
-    (with-open [rs (.getTables meta nil nil "%" (into-array ["TABLE" "VIEW"]))]
-      (-> (read-rs rs :columns ["TABLE_NAME"])
-          (:rows)
-          flatten))))
+(defn tables
+  ([ds] (tables ds (:schema ds)))
+  ([ds schema]
+   (with-db-metadata [meta ds]
+     (with-open [rs (.getTables meta nil schema "%" (into-array ["TABLE" "VIEW"]))]
+       (-> (read-rs rs :columns ["TABLE_NAME"] :limit 1000)
+           (:rows)
+           flatten)))))
 
 (defn execute [ds raw-sql & more-sql]
   (with-open [con (.getConnection (:datasource ds))]
