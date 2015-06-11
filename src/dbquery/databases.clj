@@ -53,7 +53,7 @@
     )
   (loop [rows [] count 0]
     (if (and (.next rs) (< count limit))
-      (let [row (doall (map #(apply (second %1) rs (first %1)) cols))]
+      (let [row (doall (map #(apply (second %1) [rs (first %1)]) cols))]
         (recur (conj rows row) (inc count))
         )
       rows
@@ -67,7 +67,7 @@
     {:columns columns :rows (rs-rows rs (map (fn [c] [c (col-reader nil)]) columns) offset limit)}
     (let [rs-meta (.getMetaData rs)
           col-size (inc (.getColumnCount rs-meta))
-          cols (doall (map (fn [i] [(.getColumnName rs-meta i) (col-reader (.getColumnType i))]) (range 1 col-size)))]
+          cols (doall (map (fn [i] [(.getColumnName rs-meta i) (col-reader (.getColumnType rs-meta i))]) (range 1 col-size)))]
       {:columns (map first cols) :rows (rs-rows rs cols offset limit)}
       )
     )

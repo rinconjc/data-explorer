@@ -1,4 +1,4 @@
-angular.module('db.dash',['dbquery.api', 'ui.codemirror'])
+angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap'])
     .directive('tableList', function(DataService){
         return {
             scope:{
@@ -19,8 +19,8 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror'])
             templateUrl:'tpls/table-list.html'
         };
     })
-    .controller('DBCtrl', function($scope, $rootScope, $log, $routeParams, CONSTS, DataService){
-        $scope.sql = {};
+    .controller('DBCtrl', function($scope, $rootScope, $log, $routeParams, CONSTS, DataService, $modal){
+        $scope.query = {};
         $scope.previewTabs={};
         $scope.infoTabs={};
         $scope.model = {selection:[]};
@@ -49,6 +49,35 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror'])
             delete $scope.infoTabs[name];
         };
         $scope.execute = function(){
-            $scope.result = DataService.executeSql($scope.dsId, $scope.sql.text);
+            $scope.result = DataService.executeSql($scope.dsId, $scope.query.sql);
+        };
+        $scope.saveSql = function(){
+            if($scope.query.id){
+                DataService.saveQuery($scope.query);
+            } else{
+                $modal.open({
+                    templateUrl:'tpls/query-form.html',
+                    resolve:{
+                        query:function(){return $scope.query}
+                    },
+                    controller:function($scope, $modalInstance, query){
+                        $scope.query = query;
+                        $scope.save = function(){
+                            DataService.saveQuery($scope.query).$promise.then(function(saved){
+                                $modalInstance.close(saved);
+                            }, function(err){
+                                $scope.errors = err;
+                            });
+                        };
+                        $scope.cancel = function(){
+                            $modalInstance.dismiss('cancel');
+                        }
+                    }
+                }).result.then(function(saved){
+                    console.debug('saved!', saved);
+                    $scope.query = saved;
+                });
+            }
+
         };
     });
