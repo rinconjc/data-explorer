@@ -1,3 +1,6 @@
 .small-tabs ul li a {
     padding:4px !important;
 }
+.CodeMirror {
+    height:200px !important;    
+}
