@@ -7,10 +7,14 @@
            [java.sql ResultSet Types])
   )
 
-(def result-extractors
-  {Types/BIT (fn [rs i] (.getBoolean rs i))}
-  {Types/TIMESTAMP (fn [rs i] (.getTimestamp rs i))})
+(def ^:private result-extractors
+  {
+   Types/BIT (fn [rs i] (.getBoolean rs i))
+   Types/TIMESTAMP (fn [rs i] (.getTimestamp rs i))})
 
+(defn- col-reader [sql-type]
+  (get result-extractors sql-type (fn [rs i] (.getObject rs i)))
+  )
 
 (defmacro try-let [binding then elsefn]
   `(try
@@ -49,7 +53,7 @@
     )
   (loop [rows [] count 0]
     (if (and (.next rs) (< count limit))
-      (let [row (doall (map #(.getObject rs %) cols))]
+      (let [row (doall (map #(apply (second %1) rs (first %1)) cols))]
         (recur (conj rows row) (inc count))
         )
       rows
@@ -60,11 +64,11 @@
 (defn ^:private read-rs
   [rs & {:keys [offset limit columns] :or {offset 0 limit 100}}]
   (if (some? columns)
-    {:columns columns :rows (rs-rows rs columns offset limit)}
+    {:columns columns :rows (rs-rows rs (map (fn [c] [c (col-reader nil)]) columns) offset limit)}
     (let [rs-meta (.getMetaData rs)
           col-size (inc (.getColumnCount rs-meta))
-          cols (doall (map #(.getColumnName rs-meta %) (range 1 col-size)))]
-      {:columns cols :rows (rs-rows rs cols offset limit)}
+          cols (doall (map (fn [i] [(.getColumnName rs-meta i) (col-reader (.getColumnType i))]) (range 1 col-size)))]
+      {:columns (map first cols) :rows (rs-rows rs cols offset limit)}
       )
     )
   )
