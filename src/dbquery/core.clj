@@ -121,7 +121,7 @@
   :post! #(let [{{data :body} :request user-id :user-id} %
                 id (k/insert query (k/values (assoc data :app_user_id user-id)))]
             {::id (first (vals id))})
-  :post-redirect? #({:location (format "/queries/%s" (::id %))})
+  :post-redirect? (fn [ctx] {:location (format "/queries/%s" (::id ctx))})
   :handle-ok (k/select query))
 
 (defresource queries-entry [id] common-opts

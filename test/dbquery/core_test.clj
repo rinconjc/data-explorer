@@ -16,5 +16,9 @@
     (is (nil? (:status res)))
     (is (some? (:body res)))
     )
+  )
 
+(deftest test-resources
+  (testing "query-list"
+    (def res (queries-list {})))
   )
