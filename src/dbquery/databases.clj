@@ -73,6 +73,8 @@
     )
   )
 
+(defn mk-result-reader [rs])
+
 (defn mk-ds [{:keys [dbms url user_name password]}]
   "Creates a datasource"
   (let [ds (case dbms

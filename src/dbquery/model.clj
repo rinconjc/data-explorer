@@ -61,3 +61,10 @@
 WHERE APP_USER_ID = ? OR EXISTS(SELECT 1 FROM USER_DATA_SOURCE ud
 WHERE ud.DATA_SOURCE_ID=d.ID AND ud.APP_USER_ID=?)" [user-id user-id]] :results)
   )
+
+(defn get-query [id]
+  (if-let [data  (first (exec-raw ["SELECT * FROM QUERY WHERE id=?"] [id] :results))]
+    ;;read the clob
+    
+    )
+  )
