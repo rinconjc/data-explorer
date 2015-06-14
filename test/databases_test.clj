@@ -1,7 +1,8 @@
 (ns dbquery.databases-test
   (:require [clojure.test :refer :all]
             [dbquery.databases :refer :all]
-            [dbquery.dbfixture :refer :all]))
+            [dbquery.dbfixture :refer :all]
+            [dbquery.databases :refer :all]))
 
 (use-fixtures :each fixture)
 
@@ -10,7 +11,13 @@
     (is (some? (:datasource (safe-mk-ds {:dbms "H2" :url "mem:test;DB_CLOSE_DELAY=0"
                                          :user_name "sa" :password "sa"})))))
   (testing "get tables"
-    (is (= 0 (count (tables (dummy-ds))))))
+    (let [ds (dummy-ds)]
+      (execute ds "create table tablex(id int, name varchar(10))")
+      (def result (tables ds))
+      (println "tables:" result)
+      (is (= 1 (count result)))
+      )
+    )
 
   (testing "query tables"
     (def ds (dummy-ds))
@@ -42,4 +49,16 @@
     )
 
   (testing "exec raw sql - query"
-    (is (vector? (:rows (execute (dummy-ds) "SELECT 1 FROM DUAL"))))))
+    (is (vector? (:rows (execute (dummy-ds) "SELECT 1 FROM DUAL")))))
+
+  (testing "accessing clob data"
+    (let [ds (dummy-ds)
+          text "a very large chunk of text...blah blah"
+          _ (execute ds "create table texttable(id int, data text)"
+                     (format "insert into texttable values(1, '%s')" text))
+          data (with-open [con (.getConnection (:datasource ds))]
+                 (-> con .createStatement (.executeQuery "select * from texttable") read-as-map))]
+      (println "data:" data)
+      (is (= text (:DATA (first data)))))
+    )
+  )

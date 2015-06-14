@@ -75,7 +75,7 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap'])
                     }
                 }).result.then(function(saved){
                     console.debug('saved!', saved);
-                    $scope.query = saved;
+                    $scope.query.id = saved.id;
                 });
             }
 

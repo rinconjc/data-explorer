@@ -9,6 +9,7 @@
             [ring.middleware.reload :as reload]
             [org.httpkit.server :refer [run-server]]
             [dbquery.databases :refer :all]
+            [dbquery.utils :refer :all]
             [clojure.java.io :as io]
             [korma.core :as k]
             [dbquery.model :refer :all]
@@ -126,7 +127,7 @@
 
 (defresource queries-entry [id] common-opts
   :allowed-methods [:get :put :delete]
-  :exists? (if-let [q (first (k/select query (k/fields [:sql]) (k/where {:id id})))]
+  :exists? (if-let [q (get-query id)]
              {:the-query q})
   :handle-ok #(:the-query %)
   :put! #(k/update query (k/set-fields (get-in % [:request :body])) (k/where {:id id}))
