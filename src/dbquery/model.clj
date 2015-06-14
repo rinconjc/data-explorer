@@ -8,6 +8,7 @@
             [dbquery.conf :refer :all]
             [crypto.password.bcrypt :as password]
             [clojure.java.jdbc :as j]
+            [dbquery.databases :as db]
             )
   )
 
@@ -63,8 +64,12 @@ WHERE ud.DATA_SOURCE_ID=d.ID AND ud.APP_USER_ID=?)" [user-id user-id]] :results)
   )
 
 (defn get-query [id]
-  (if-let [data  (first (exec-raw ["SELECT * FROM QUERY WHERE id=?"] [id] :results))]
-    ;;read the clob
-    
+  (with-open [con (.getConnection (force ds))]
+    (let [ps (.prepareStatement con "SELECT * FROM QUERY WHERE ID=?")]
+      (.setLong ps 1 (Long/parseLong id))
+      (-> ps
+          .executeQuery
+          db/read-as-map
+          first))
     )
   )

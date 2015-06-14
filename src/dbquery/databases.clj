@@ -1,7 +1,9 @@
 (ns dbquery.databases
   (:require [clojure.tools.logging :as log]
             [clojure.java.jdbc :refer :all]
-            [clojure.string :as s])
+            [clojure.string :as s]
+            [dbquery.utils :refer :all]
+            )
   (:import [org.h2.jdbcx JdbcDataSource]
            [oracle.jdbc.pool OracleDataSource]
            [java.sql ResultSet Types])
@@ -10,50 +12,20 @@
 (def ^:private result-extractors
   {
    Types/BIT (fn [rs i] (.getBoolean rs i))
-   Types/TIMESTAMP (fn [rs i] (.getTimestamp rs i))})
+   Types/TIMESTAMP (fn [rs i] (.getTimestamp rs i))
+   Types/CLOB (fn [rs i] (->(.getClob rs i) .getCharacterStream slurp))})
 
 (defn- col-reader [sql-type]
   (get result-extractors sql-type (fn [rs i] (.getObject rs i)))
   )
 
-(defmacro try-let [binding then elsefn]
-  `(try
-     (let [~(first binding)  ~(second binding)]
-       ~then
-       )
-     (catch Exception ex#
-       (~elsefn ex#)
-       )))
-
-
-(defmacro with-recovery
-  "tries to eval body, it recovers by evaluating the alternative"
-  [body f]
-  `(try
-     (let [r# ~body]
-       (if (seq? r#)
-         (doall r#)
-         r#))
-     (catch Exception e#
-       (log/error e# "recovering.")
-       (~f e#))))
-
-
-(defmacro wrap-error [& body]
-  `(try
-     {:result ~@body}
-     (catch Exception e#
-       (log/error e# "Failed executing operation with datasource")
-       {:error (.getMessage e#)}))
-  )
-
-(defn ^:private rs-rows [rs cols offset limit]
+(defn ^:private rs-rows [rs row-reader offset limit]
   (if (and (> offset 0) (= ResultSet/TYPE_SCROLL_INSENSITIVE (.getType rs)))
     (.absolute rs offset)
     )
   (loop [rows [] count 0]
     (if (and (.next rs) (< count limit))
-      (let [row (doall (map #(apply (second %1) [rs (first %1)]) cols))]
+      (let [row (doall (apply row-reader [rs]))]
         (recur (conj rows row) (inc count))
         )
       rows
@@ -63,17 +35,23 @@
 
 (defn ^:private read-rs
   [rs & {:keys [offset limit columns] :or {offset 0 limit 100}}]
-  (if (some? columns)
-    {:columns columns :rows (rs-rows rs (map (fn [c] [c (col-reader nil)]) columns) offset limit)}
-    (let [rs-meta (.getMetaData rs)
-          col-size (inc (.getColumnCount rs-meta))
-          cols (doall (map (fn [i] [(.getColumnName rs-meta i) (col-reader (.getColumnType rs-meta i))]) (range 1 col-size)))]
-      {:columns (map first cols) :rows (rs-rows rs cols offset limit)}
-      )
+  (let [rs-meta (.getMetaData rs)
+        col-count (inc (.getColumnCount rs-meta))
+        cols (for [i (range 1 col-count) :let [col-name (.getColumnName rs-meta i)] :when (or (nil? columns) (some #{col-name} columns))]
+               [i col-name (col-reader (.getColumnType rs-meta i))])
+        row-reader (fn [rs] (for [[i _ reader] cols] (apply reader [rs i])))
+        ]
+    {:columns (map second cols) :rows (rs-rows rs row-reader offset limit)}
     )
   )
 
-(defn mk-result-reader [rs])
+(defn read-as-map [rs & {:keys [offset limit] :or {offset 0 limit 100}}]
+  (let [meta (.getMetaData rs)
+        col-count (inc (.getColumnCount meta))
+        col-and-readers (doall (for [i (range 1 col-count)] [i (keyword (.getColumnName meta i)) (col-reader (.getColumnType meta i))]))
+        row-reader (fn [rs] (reduce (fn [row [i col reader]] (assoc row col (apply reader [rs i]))) {} col-and-readers))]
+    (rs-rows rs row-reader offset limit)    
+    ))
 
 (defn mk-ds [{:keys [dbms url user_name password]}]
   "Creates a datasource"
@@ -113,7 +91,7 @@
    (with-db-metadata [meta ds]
      (with-open [rs (.getTables meta nil schema "%" (into-array ["TABLE" "VIEW"]))]
        (-> (read-rs rs :columns ["TABLE_NAME"] :limit 1000)
-           (:rows)
+           :rows
            flatten)))))
 
 (defn execute [ds raw-sql & more-sql]
