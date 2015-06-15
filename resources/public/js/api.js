@@ -96,6 +96,9 @@ angular.module('dbquery.api',['ngResource'])
                     return qryResource.save(query);
                 }
             },
+            getQuery:function(id){
+                return qryResource.get({id:id});
+            },
             deleteQuery:function(qid){
                 return qryResource.delete({id:qid});
             },
