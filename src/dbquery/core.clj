@@ -171,8 +171,6 @@
       (wrap-defaults (assoc site-defaults :security {:anti-forgery false}))))
 ;;
 
-(defn in-dev? [] true)
-
 (defn -main []
   (sync-db "dev")
   (run-server (reload/wrap-reload #'all-routes) {:port 3000}))
