@@ -1,4 +1,4 @@
-angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap'])
+angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.hotkeys'])
     .directive('tableList', function(DataService){
         return {
             scope:{
@@ -26,6 +26,8 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap'])
         $scope.model = {selection:[]};
         $scope.dsId=$routeParams.db;
         $scope.$emit(CONSTS.EVENTS.DS_CHANGED, parseInt($routeParams.db));
+        $scope.queries = DataService.getQueries($scope.dsId);
+
         $scope.showTableInfo = function(selection){
             console.debug('showing table info for: ', selection);
             angular.forEach(selection, function(tbl){
@@ -75,9 +77,14 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap'])
                     }
                 }).result.then(function(saved){
                     console.debug('saved!', saved);
-                    $scope.query.id = saved.id;
+                    angular.merge(saved, $scope.query);
                 });
             }
-
         };
+        $scope.loadQuery = function(item, model, label){
+            $scope.query = DataService.getQuery(item.id);
+        };
+        $scope.clear = function(){
+            $scope.query = {};
+        }
     });
