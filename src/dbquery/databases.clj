@@ -37,7 +37,7 @@
   [rs & {:keys [offset limit columns] :or {offset 0 limit 100}}]
   (let [rs-meta (.getMetaData rs)
         col-count (inc (.getColumnCount rs-meta))
-        cols (for [i (range 1 col-count) :let [col-name (.getColumnName rs-meta i)] :when (or (nil? columns) (some #{col-name} columns))]
+        cols (for [i (range 1 col-count) :let [col-name (.getColumnLabel rs-meta i)] :when (or (nil? columns) (some #{col-name} columns))]
                [i col-name (col-reader (.getColumnType rs-meta i))])
         row-reader (fn [rs] (for [[i _ reader] cols] (apply reader [rs i])))
         ]
@@ -48,7 +48,7 @@
 (defn read-as-map [rs & {:keys [offset limit] :or {offset 0 limit 100}}]
   (let [meta (.getMetaData rs)
         col-count (inc (.getColumnCount meta))
-        col-and-readers (doall (for [i (range 1 col-count)] [i (keyword (s/lower-case (.getColumnName meta i))) (col-reader (.getColumnType meta i))]))
+        col-and-readers (doall (for [i (range 1 col-count)] [i (keyword (s/lower-case (.getColumnLabel meta i))) (col-reader (.getColumnType meta i))]))
         row-reader (fn [rs] (reduce (fn [row [i col reader]] (assoc row col (apply reader [rs i]))) {} col-and-readers))]
     (rs-rows rs row-reader offset limit)    
     ))
