@@ -17,12 +17,14 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                 $scope.refresh();
                 hotkeys.bindTo($scope)
                     .add({combo:'/', callback:function(evt){$scope.model.searchActive=true; focus('tableSearchActivated'); evt.preventDefault();}})
-                    .add({combo:'esc',allowIn:['INPUT','SELECT'] ,callback:function(){$scope.model.searchActive=false; $scope.model.filterValue=''}});
+                    .add({combo:'esc',allowIn:['INPUT','SELECT'] ,callback:function(){$scope.model.searchActive=false; $scope.model.filterValue=''}})
+                    .add({combo:'ctrl+i',allowIn:['SELECT'], callback:function(evt){evt.preventDefault(); $scope.infoClicked($scope.model.items);}})
+                    .add({combo:'ctrl+d',allowIn:['SELECT'], callback:function(evt){evt.preventDefault(); $scope.previewClicked($scope.model.items);}});
             },
             templateUrl:'tpls/table-list.html'
         };
     })
-    .controller('DBCtrl', function($scope, $rootScope, $log, $routeParams, CONSTS, DataService, $modal, hotkeys, focus){
+    .controller('DBCtrl', function($scope, $rootScope, $log, $routeParams, CONSTS, DataService, $modal, hotkeys, focus, $timeout){
         $scope.query = {};
         $scope.previewTabs={};
         $scope.infoTabs={};
@@ -30,12 +32,14 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
         $scope.dsId=$routeParams.db;
         $scope.$emit(CONSTS.EVENTS.DS_CHANGED, parseInt($routeParams.db));
         $scope.queries = DataService.getQueries($scope.dsId);
+        $scope.activeTab={'SQL':true};
 
         $scope.showTableInfo = function(selection){
             console.debug('showing table info for: ', selection);
             angular.forEach(selection, function(tbl){
                 if(!$scope.infoTabs[tbl]){
-                    $scope.infoTabs[tbl]=DataService.getTableInfo($scope.dsId, tbl)
+                    $scope.infoTabs[tbl]=DataService.getTableInfo($scope.dsId, tbl);
+                    $timeout(function(){$scope.activeTab['INFO-'+tbl]=true;});
                 }
             });
         };
@@ -44,6 +48,7 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
             angular.forEach(selection, function(tbl){
                 if(!$scope.previewTabs[tbl]){
                     $scope.previewTabs[tbl]=DataService.getTableData($scope.dsId, tbl, 0, 50);
+                    $timeout(function(){$scope.activeTab['DATA-'+tbl]=true;});
                 }
             });
         };

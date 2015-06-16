@@ -33,4 +33,27 @@ angular.module('common-widgets', [])
             }
         };
     })
+    .factory('utils', function(){
+        return {
+            createSwitcher:function(){
+                var Switch = function() {},
+                    active=null;                
+                return{
+                    addSwitch:function(name){
+                        Object.defineProperty(Switch.prototype, name, {
+                            get: function() {
+                                return name==active;
+                            },
+                            set: function(val) {
+                                if(val) active=name;
+                            }
+                        });
+                    },
+                    instance:function(){
+                        return new Switch();
+                    }
+                };
+            }
+        };
+    })
 ;
