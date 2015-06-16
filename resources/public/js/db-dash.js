@@ -1,5 +1,5 @@
 angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.hotkeys'])
-    .directive('tableList', function(DataService){
+    .directive('tableList', function(DataService, hotkeys, focus){
         return {
             scope:{
                 heading:'@',
@@ -9,17 +9,20 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                 previewClicked:'='
             },
             controller:function($scope){
-                $scope.selection={items:[]};
+                $scope.model={items:[]};
                 $scope.refresh = function(){
                     $scope.tables = DataService.getTables($scope.ds);
                     $scope.views = DataService.getViews($scope.ds);
                 };
                 $scope.refresh();
+                hotkeys.bindTo($scope)
+                    .add({combo:'/', callback:function(evt){$scope.model.searchActive=true; focus('tableSearchActivated'); evt.preventDefault();}})
+                    .add({combo:'esc',allowIn:['INPUT','SELECT'] ,callback:function(){$scope.model.searchActive=false; $scope.model.filterValue=''}});
             },
             templateUrl:'tpls/table-list.html'
         };
     })
-    .controller('DBCtrl', function($scope, $rootScope, $log, $routeParams, CONSTS, DataService, $modal){
+    .controller('DBCtrl', function($scope, $rootScope, $log, $routeParams, CONSTS, DataService, $modal, hotkeys, focus){
         $scope.query = {};
         $scope.previewTabs={};
         $scope.infoTabs={};
@@ -86,5 +89,10 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
         };
         $scope.clear = function(){
             $scope.query = {};
-        }
+        };
+        hotkeys.bindTo($scope)
+            .add({combo:'ctrl+e', callback:$scope.execute, allowIn: ['INPUT', 'SELECT', 'TEXTAREA']})
+            .add({combo:'ctrl+l', callback:function(){$scope.clear(); focus('enterSql');}, allowIn: ['INPUT', 'SELECT', 'TEXTAREA']})
+            .add({combo:'ctrl+f', callback:function(evt){evt.preventDefault(); focus('searchQuery');}})
+        ;
     });

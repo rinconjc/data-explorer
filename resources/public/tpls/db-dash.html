@@ -6,7 +6,7 @@
   <div class="col-md-10">
     <tabset>
       <tab heading="SQL" >
-        <div class="panel panel-default" shortcut="{'ctrl+return':execute, 'ctrl+S':save, 'ctrl+l':clear}">
+        <div class="panel panel-default" hotkey1="{'ctrl+e':execute, 'ctrl+l':clear}">
           <div class="panel-heading" style="padding:2px;">
             <div class="btn-toolbar" role="toolbar" aria-label="...">
               <div class="btn-group" role="group" aria-label="...">
@@ -15,15 +15,15 @@
                 <button type="button" class="btn btn-default" ng-click="clear()">Clear <span class="glyphicon glyphicon-erase"></span></button>
               </div>
               <div class="btn-group" role="group" aria-label="...">
-                <input type="text" class="form-control" placeholder="Search existing queries..." size="40"  typeahead="q.name for q in queries | filter:$viewValue" ng-model="query.name" typeahead-editable="false" typeahead-on-select="loadQuery($item, $model, $label)"/>
+                <input type="text" class="form-control" placeholder="Search existing queries..." size="40"  typeahead="q.name for q in queries | filter:$viewValue" ng-model="query.name" typeahead-editable="false" typeahead-on-select="loadQuery($item, $model, $label)" focus-on="searchQuery"/>
               </div>
             </div>
           </div>
           <div class="panel-body" style="padding:0px;">
-              <textarea ui-codemirror="{mode:sql,readOnly:false}"  class="form-control" ng-model="query.sql"></textarea>
+            <textarea ui-codemirror ui-codemirror-opts="{mode:'text/x-sql', readOnly:false, autofocus:true, indentWithTabs:true, smartIndent:true, matchBrackets:true, extraKeys:{'Ctrl+Space':'autocomplete'}, hintOptions:{tables:tablesInfo}}" ng-model="query.sql" focus-on="enterSql"></textarea>
           </div>
           <div class="panel-footer">
-            <div ng-show="result.rowsAffected"  class="text-left">{{result.rowsAffected}}</div>
+            <div ng-show="result.rowsAffected" class="text-left">{{result.rowsAffected}}</div>
           </div>
         </div>
         <alert ng-if="result.$error" type="danger">{{result.$error}}</alert>
