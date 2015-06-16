@@ -3,20 +3,21 @@
   <div class="panel-heading" style="padding:2px;">
     <div class="btn-group btn-group-sm" role="group" aria-label="...">
       <button type="button" class="btn btn-default" ng-click="refresh()"><span class="glyphicon glyphicon-refresh"></span></button>
-      <button type="button" class="btn btn-default" ng-click="previewClicked(selection.items)" title="Preview selected tables"><span class="glyphicon glyphicon-list-alt"></span></button>
-      <button type="button" class="btn btn-default" ng-click="infoClicked(selection.items)" title="Metadata of selected tables"><span class="glyphicon glyphicon-info-sign"></span></button>
+      <button type="button" class="btn btn-default" ng-click="previewClicked(model.items)" title="Preview selected tables"><span class="glyphicon glyphicon-list-alt"></span></button>
+      <button type="button" class="btn btn-default" ng-click="infoClicked(model.items)" title="Metadata of selected tables"><span class="glyphicon glyphicon-info-sign"></span></button>
     </div>
   </div>
   <div class="panel-body" style="padding:0px;">
     <tabset class="small-tabs">
       <tab>
         <tab-heading>Tables </tab-heading>
-        <select ng-model="selection.items" class="form-control" style="width:100%; height:80%" ng-options="table for table in tables" multiple
+        <input ng-show="model.searchActive" focus-on="tableSearchActivated" type="text" class="form-control" placeholder="Type table name..." size="30"  ng-model="model.filterValue"/>
+        <select ng-model="model.items" class="form-control" style="width:100%; height:80%" ng-options="table for table in tables | filter:model.filterValue" multiple
                 size="25" >
         </select>
       </tab>
       <tab heading="Views">
-        <select class="form-control" style="width:100%; height:80%" ng-options="table for table in views" multiple ng-model="selection1"
+        <select class="form-control" style="width:100%; height:80%" ng-options="table for table in views" multiple ng-model="model1"
                 size="25" >
         </select>
       </tab>
