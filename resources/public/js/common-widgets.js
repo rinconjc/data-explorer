@@ -33,13 +33,14 @@ angular.module('common-widgets', [])
             }
         };
     })
-    .factory('utils', function(){
+    .factory('switcher', function(){
         return {
             createSwitcher:function(){
                 var Switch = function() {},
-                    active=null;                
-                return{
-                    addSwitch:function(name){
+                    active=null,
+                    _instance=null;
+                return {
+                    add:function(name){
                         Object.defineProperty(Switch.prototype, name, {
                             get: function() {
                                 return name==active;
@@ -48,9 +49,16 @@ angular.module('common-widgets', [])
                                 if(val) active=name;
                             }
                         });
+                        return this;
                     },
-                    instance:function(){
-                        return new Switch();
+                    remove:function(name){
+                        delete getInstance()[name];
+                    },
+                    getInstance:function(){
+                        if(_instance==null){
+                            _instance = new Switch();
+                        }
+                        return _instance;
                     }
                 };
             }

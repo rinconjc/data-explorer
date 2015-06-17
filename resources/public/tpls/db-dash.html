@@ -5,7 +5,7 @@
   </div>
   <div class="col-md-10">
     <tabset>
-      <tab heading="SQL" >
+      <tab heading="SQL" active="tabSwitch['SQL']" >
         <div class="panel panel-default" hotkey1="{'ctrl+e':execute, 'ctrl+l':clear}">
           <div class="panel-heading" style="padding:2px;">
             <div class="btn-toolbar" role="toolbar" aria-label="...">
@@ -29,13 +29,13 @@
         <alert ng-if="result.$error" type="danger">{{result.$error}}</alert>
         <ng-table ng-show="result.data" class="table-bordered" columns="result.data.columns" data="result.data.rows"/>
       </tab>
-      <tab ng-repeat="(table, data) in previewTabs" active="activeTab['INFO-'+table]">
+      <tab ng-repeat="(table, data) in previewTabs" active="tabSwitch[table]">
         <tab-heading>{{table}}(Preview) <a class="btn-link btn-sm" ng-click="removeTablePreview(table)"><span class="glyphicon glyphicon-remove"></span></a></tab-heading>
         <div class="table-responsive">
           <ng-table class="table-bordered" columns="data.columns" data="data.rows"/>
         </div>
       </tab>
-      <tab ng-repeat="(table, data) in infoTabs" active="activeTab['DATA-'+table]">
+      <tab ng-repeat="(table, data) in infoTabs" active="tabSwitch['INFO-'+table]">
         <tab-heading>
           {{table}}(Info) <a class="btn-link btn-sm" ng-click="removeTableInfo(table)"><span class="glyphicon glyphicon-remove"></span></a>
         </tab-heading>
