@@ -1,4 +1,4 @@
-angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.hotkeys'])
+angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.hotkeys','common-widgets'])
     .directive('tableList', function(DataService, hotkeys, focus){
         return {
             scope:{
@@ -16,7 +16,7 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                 };
                 $scope.refresh();
                 hotkeys.bindTo($scope)
-                    .add({combo:'/', callback:function(evt){$scope.model.searchActive=true; focus('tableSearchActivated'); evt.preventDefault();}})
+                    .add({combo:'/', allowIn:['SELECT'] , callback:function(evt){$scope.model.searchActive=true; focus('tableSearchActivated'); evt.preventDefault();}})
                     .add({combo:'esc',allowIn:['INPUT','SELECT'] ,callback:function(){$scope.model.searchActive=false; $scope.model.filterValue=''}})
                     .add({combo:'ctrl+i',allowIn:['SELECT'], callback:function(evt){evt.preventDefault(); $scope.infoClicked($scope.model.items);}})
                     .add({combo:'ctrl+d',allowIn:['SELECT'], callback:function(evt){evt.preventDefault(); $scope.previewClicked($scope.model.items);}});
@@ -24,7 +24,7 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
             templateUrl:'tpls/table-list.html'
         };
     })
-    .controller('DBCtrl', function($scope, $rootScope, $log, $routeParams, CONSTS, DataService, $modal, hotkeys, focus, $timeout){
+    .controller('DBCtrl', function($scope, $rootScope, $log, $routeParams, CONSTS, DataService, $modal, hotkeys, focus, $timeout, switcher){
         $scope.query = {};
         $scope.previewTabs={};
         $scope.infoTabs={};
@@ -32,14 +32,18 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
         $scope.dsId=$routeParams.db;
         $scope.$emit(CONSTS.EVENTS.DS_CHANGED, parseInt($routeParams.db));
         $scope.queries = DataService.getQueries($scope.dsId);
-        $scope.activeTab={'SQL':true};
+        var tabSwitcher=switcher.createSwitcher();
+        tabSwitcher.add('SQL');        
+        $scope.tabSwitch = tabSwitcher.getInstance();
+        $scope.tabSwitch.SQL=true;
 
         $scope.showTableInfo = function(selection){
             console.debug('showing table info for: ', selection);
             angular.forEach(selection, function(tbl){
                 if(!$scope.infoTabs[tbl]){
                     $scope.infoTabs[tbl]=DataService.getTableInfo($scope.dsId, tbl);
-                    $timeout(function(){$scope.activeTab['INFO-'+tbl]=true;});
+                    tabSwitcher.add('INFO-'+tbl);
+                    $scope.tabSwitch['INFO-'+tbl]=true;
                 }
             });
         };
@@ -48,7 +52,8 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
             angular.forEach(selection, function(tbl){
                 if(!$scope.previewTabs[tbl]){
                     $scope.previewTabs[tbl]=DataService.getTableData($scope.dsId, tbl, 0, 50);
-                    $timeout(function(){$scope.activeTab['DATA-'+tbl]=true;});
+                    tabSwitcher.add(tbl);
+                    $scope.tabSwitch[tbl]=true;
                 }
             });
         };
