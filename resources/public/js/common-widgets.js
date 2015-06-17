@@ -64,4 +64,9 @@ angular.module('common-widgets', [])
             }
         };
     })
+    .factory('wrap', function(){
+        return function(f){
+            
+        }
+    })
 ;
