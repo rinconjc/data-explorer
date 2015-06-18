@@ -1,5 +1,11 @@
 angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.hotkeys','common-widgets'])
-    .directive('tableList', function(DataService, hotkeys, focus){
+    .constant('preventDefault', function(f){
+        return function(evt){
+            evt.preventDefault();
+            return f(evt);
+        };
+    })
+    .directive('tableList', function(DataService, hotkeys, focus, preventDefault){
         return {
             scope:{
                 heading:'@',
@@ -14,12 +20,20 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                     $scope.tables = DataService.getTables($scope.ds);
                     $scope.views = DataService.getViews($scope.ds);
                 };
+                $scope.enableSearch = function(){
+                    $scope.model.searchActive=true;
+                };
                 $scope.refresh();
                 hotkeys.bindTo($scope)
-                    .add({combo:'/', allowIn:['SELECT'] , callback:function(evt){$scope.model.searchActive=true; focus('tableSearchActivated'); evt.preventDefault();}})
-                    .add({combo:'esc',allowIn:['INPUT','SELECT'] ,callback:function(){$scope.model.searchActive=false; $scope.model.filterValue=''}})
-                    .add({combo:'ctrl+i',allowIn:['SELECT'], callback:function(evt){evt.preventDefault(); $scope.infoClicked($scope.model.items);}})
-                    .add({combo:'ctrl+d',allowIn:['SELECT'], callback:function(evt){evt.preventDefault(); $scope.previewClicked($scope.model.items);}});
+                    .add({combo:'/', allowIn:['SELECT'] ,
+                          callback:preventDefault($scope.enableSearch)})
+                    .add({combo:'esc',allowIn:['INPUT','SELECT'],
+                          callback:function(){$scope.model.searchActive=false; $scope.model.filterValue='';}})
+                    .add({combo:'ctrl+i',allowIn:['SELECT'],
+                          callback:preventDefault(function(){$scope.infoClicked($scope.model.items);})})
+                    .add({combo:'ctrl+d',allowIn:['SELECT'],
+                          callback:preventDefault(function(){$scope.previewClicked($scope.model.items);})})
+                ;
             },
             templateUrl:'tpls/table-list.html'
         };
