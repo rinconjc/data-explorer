@@ -33,9 +33,9 @@ angular.module('common-widgets', [])
             }
         };
     })
-    .factory('switcher', function(){
+    .factory('Switcher', function(){
         return {
-            createSwitcher:function(){
+            create:function(){
                 var Switch = function() {},
                     active=null,
                     _instance=null;
@@ -63,10 +63,5 @@ angular.module('common-widgets', [])
                 };
             }
         };
-    })
-    .factory('wrap', function(){
-        return function(f){
-            
-        }
     })
 ;
