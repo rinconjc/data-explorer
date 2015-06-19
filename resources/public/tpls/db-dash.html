@@ -27,7 +27,9 @@
           </div>
         </div>
         <alert ng-if="result.$error" type="danger">{{result.$error}}</alert>
-        <ng-table ng-show="result.data" class="table-bordered" columns="result.data.columns" data="result.data.rows"/>
+        <div class="table-responsive">
+          <ng-table ng-show="result.data" class="table-bordered" columns="result.data.columns" data="result.data.rows"/>
+        </div>
       </tab>
       <tab ng-repeat="(table, data) in previewTabs" active="tabSwitch[table]">
         <tab-heading>{{table}}(Preview) <a class="btn-link btn-sm" ng-click="removeTablePreview(table)"><span class="glyphicon glyphicon-remove"></span></a></tab-heading>

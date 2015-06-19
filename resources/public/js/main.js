@@ -9,10 +9,10 @@ angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'data-table'
         $routeProvider
             .when('/', {templateUrl:'tpls/dashboard.html'})
             .when('/login', {template:'<login-form login-fn="doLogin" heading="Login to DataExplorer" alert-text="alert" allow-remember="true"/>', controller:'LoginCtrl'})
-            .when('/connect', {templateUrl:'tpls/db-connect.html', controller:'DataSourceCtrl'})
+            .when('/data-source/:id?', {templateUrl:'tpls/db-connect.html', controller:'DataSourceCtrl'})
             .when('/dash/:db', {templateUrl:'tpls/db-dash.html', controller:'DBCtrl'})
             .otherwise({
-                redirectTo:'/connect'
+                redirectTo:'/data-source'
             })
         ;
     })
@@ -70,15 +70,18 @@ angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'data-table'
                 console.log('failed deleting...', err);
             });
         };
-
+        $scope.edit = function(id){
+            $location.path('/data-source/' + id);                                    
+        };
     })
-    .controller('DataSourceCtrl', function($scope, $http, $log, $location, DataService, CONSTS){
-        $scope.dbcon = {};
+    .controller('DataSourceCtrl', function($scope, $http, $log, $location, $routeParams, DataService, CONSTS){
+        var id = $routeParams.id;
+        $scope.dbcon = id?DataService.getDataSource(id):{};
         $scope.save = function(){
             $scope.waiting = true;
             DataService.saveDatasource($scope.dbcon).then(function(res){
                 $log.debug('datasource created ', res);
-                $scope.$emit(CONSTS.EVENTS.DS_ADDED, $scope.dbcon);
+                $scope.$emit(CONSTS.EVENTS.DS_ADDED, res);
             }, function(err){
                 $log.error('failed creating datasource', err);
                 $scope.message = err.data;

@@ -22,6 +22,7 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                 };
                 $scope.enableSearch = function(){
                     $scope.model.searchActive=true;
+                    focus('tableSearchActivated');
                 };
                 $scope.refresh();
                 hotkeys.bindTo($scope)
