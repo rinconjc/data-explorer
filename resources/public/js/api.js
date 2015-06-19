@@ -67,6 +67,9 @@ angular.module('dbquery.api',['ngResource'])
             deleteDatasource:function(dsId){
                 return dsResource.delete({id:dsId});
             },
+            getDataSource:function(id){
+                return dsResource.get({id:id});                
+            },
             getTables:function(ds){
                 return getDsResource(ds, 'tables').query();
             },
