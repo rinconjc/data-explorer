@@ -6,7 +6,7 @@
   <div class="col-md-10">
     <tabset>
       <tab heading="SQL" active="tabSwitch['SQL']" >
-        <div class="panel panel-default" hotkey1="{'ctrl+e':execute, 'ctrl+l':clear}">
+        <div class="panel panel-default">
           <div class="panel-heading" style="padding:2px;">
             <div class="btn-toolbar" role="toolbar" aria-label="...">
               <div class="btn-group" role="group" aria-label="...">
@@ -16,6 +16,14 @@
               </div>
               <div class="btn-group" role="group" aria-label="...">
                 <input type="text" class="form-control" placeholder="Search existing queries..." size="40"  typeahead="q.name for q in queries | filter:$viewValue" ng-model="query.name" typeahead-editable="false" typeahead-on-select="loadQuery($item, $model, $label)" focus-on="searchQuery"/>
+              </div>
+              <div class="btn-group" role="group" aria-label="...">
+                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  Copy To <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu">
+                  <li ng-repeat="ds in datasources"><a ng-click="">{{ds.name}}</a></li>
+                </ul>
               </div>
             </div>
           </div>
@@ -33,6 +41,7 @@
       </tab>
       <tab ng-repeat="(table, data) in previewTabs" active="tabSwitch[table]">
         <tab-heading>{{table}}(Preview) <a class="btn-link btn-sm" ng-click="removeTablePreview(table)"><span class="glyphicon glyphicon-remove"></span></a></tab-heading>
+        <spinner hide-when="data.$resolved" />
         <div class="table-responsive">
           <ng-table class="table-bordered" columns="data.columns" data="data.rows"/>
         </div>
@@ -41,7 +50,8 @@
         <tab-heading>
           {{table}}(Info) <a class="btn-link btn-sm" ng-click="removeTableInfo(table)"><span class="glyphicon glyphicon-remove"></span></a>
         </tab-heading>
-        <tabset>
+        <spinner hide-when="data.$resolved" />
+        <tabset ng-show="data.$resolved">
           <tab heading="Columns">
             <div class="table-responsive">
               <ng-table class="table-bordered" columns="data.columns.columns" data="data.columns.rows"/>
