@@ -37,9 +37,9 @@ angular.module('dbquery.api',['ngResource'])
                     });
                 }
                 d.resolve(value);
-                value.$isready=true;
+                value.$resolved=true;
             }).error(function(err){
-                value.$isready=true;
+                value.$resolved=true;
                 value.$error = err;
                 d.reject(err);
             });

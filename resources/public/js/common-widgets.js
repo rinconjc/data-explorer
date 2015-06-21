@@ -14,6 +14,14 @@ angular.module('common-widgets', [])
             });
         };
     })
+    .directive('spinner', function(){
+        return {
+            scope:{
+                hideWhen:'='                
+            },
+            template:'<div class="text-center" style="padding-top:40px;" ng-hide="hideWhen"><h2><span class="glyphicon glyphicon-refresh spinning"></span></h2></div>'            
+        }
+    })
     .directive('loginForm', function($log){
         return {
             scope:{

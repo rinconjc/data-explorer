@@ -1,8 +1,9 @@
 angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.hotkeys','common-widgets'])
     .constant('preventDefault', function(f){
+        var rest = Array.prototype.slice.call(arguments).slice(1);
         return function(evt){
             evt.preventDefault();
-            return f(evt);
+            return f.apply(arguments.caller, rest);
         };
     })
     .directive('tableList', function(DataService, hotkeys, focus, preventDefault){
@@ -20,16 +21,19 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                     $scope.tables = DataService.getTables($scope.ds);
                     $scope.views = DataService.getViews($scope.ds);
                 };
-                $scope.enableSearch = function(){
-                    $scope.model.searchActive=true;
-                    focus('tableSearchActivated');
+                $scope.switchSearch = function(onOff){
+                    $scope.model.searchActive=onOff;
+                    if(onOff)
+                        focus('tableSearchActivated');
+                    else
+                        $scope.model.filterValue='';
                 };
                 $scope.refresh();
                 hotkeys.bindTo($scope)
                     .add({combo:'/', allowIn:['SELECT'] ,
-                          callback:preventDefault($scope.enableSearch)})
+                          callback:preventDefault($scope.switchSearch, true)})
                     .add({combo:'esc',allowIn:['INPUT','SELECT'],
-                          callback:function(){$scope.model.searchActive=false; $scope.model.filterValue='';}})
+                          callback:preventDefault($scope.switchSearch, false)})
                     .add({combo:'ctrl+i',allowIn:['SELECT'],
                           callback:preventDefault(function(){$scope.infoClicked($scope.model.items);})})
                     .add({combo:'ctrl+d',allowIn:['SELECT'],
@@ -39,7 +43,7 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
             templateUrl:'tpls/table-list.html'
         };
     })
-    .controller('DBCtrl', function($scope, $rootScope, $log, $routeParams, CONSTS, DataService, $modal, hotkeys, focus, $timeout){
+    .controller('DBCtrl', function($scope, $rootScope, $log, $routeParams, CONSTS, DataService, $modal, hotkeys, focus, preventDefault){
         $scope.query = {};
         $scope.previewTabs={};
         $scope.infoTabs={};
@@ -111,8 +115,8 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
             $scope.query = {};
         };
         hotkeys.bindTo($scope)
-            .add({combo:'ctrl+e', callback:$scope.execute, allowIn: ['INPUT', 'SELECT', 'TEXTAREA']})
-            .add({combo:'ctrl+l', callback:function(){$scope.clear(); focus('enterSql');}, allowIn: ['INPUT', 'SELECT', 'TEXTAREA']})
-            .add({combo:'ctrl+f', callback:function(evt){evt.preventDefault(); focus('searchQuery');}})
+            .add({combo:'ctrl+e', callback:preventDefault($scope.execute), allowIn: ['INPUT', 'SELECT', 'TEXTAREA']})
+            .add({combo:'ctrl+l', callback:preventDefault(function(){$scope.clear(); focus('enterSql');}), allowIn: ['INPUT', 'SELECT', 'TEXTAREA']})
+            .add({combo:'ctrl+f', callback:preventDefault(focus, 'searchQuery')})
         ;
     });

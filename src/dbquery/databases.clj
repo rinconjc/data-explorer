@@ -37,11 +37,11 @@
   [rs & {:keys [offset limit columns] :or {offset 0 limit 100}}]
   (let [rs-meta (.getMetaData rs)
         col-count (inc (.getColumnCount rs-meta))
-        cols (for [i (range 1 col-count) :let [col-name (.getColumnLabel rs-meta i)] :when (or (nil? columns) (some #{col-name} columns))]
-               [i col-name (col-reader (.getColumnType rs-meta i))])
+        cols (doall (for [i (range 1 col-count) :let [col-name (.getColumnLabel rs-meta i)] :when (or (nil? columns) (some #{col-name} columns))]
+                [i col-name (col-reader (.getColumnType rs-meta i))]))
         row-reader (fn [rs] (for [[i _ reader] cols] (apply reader [rs i])))
         ]
-    {:columns (map second cols) :rows (rs-rows rs row-reader offset limit)}
+    {:columns (map second cols) :rows (doall (rs-rows rs row-reader offset limit))}
     )
   )
 
@@ -50,7 +50,7 @@
         col-count (inc (.getColumnCount meta))
         col-and-readers (doall (for [i (range 1 col-count)] [i (keyword (s/lower-case (.getColumnLabel meta i))) (col-reader (.getColumnType meta i))]))
         row-reader (fn [rs] (reduce (fn [row [i col reader]] (assoc row col (apply reader [rs i]))) {} col-and-readers))]
-    (rs-rows rs row-reader offset limit)    
+    (rs-rows rs row-reader offset limit)
     ))
 
 (defn mk-ds [{:keys [dbms url user_name password]}]
