@@ -33,3 +33,10 @@
     from { -webkit-transform: rotate(0deg);}
     to { -webkit-transform: rotate(360deg);}
 }
+
+.summary td{
+    max-width:200px;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+    overflow:hidden;
+}
