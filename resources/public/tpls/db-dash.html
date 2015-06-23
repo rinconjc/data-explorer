@@ -37,14 +37,14 @@
         <spinner hide-when="result.$resolved || !result" />
         <alert ng-if="result.$error" type="danger">{{result.$error}}</alert>
         <div class="table-responsive">
-          <ng-table ng-show="result.data" class="table-bordered" columns="result.data.columns" data="result.data.rows"/>
+          <ng-table ng-show="result.data" class="table-bordered summary" columns="result.data.columns" data="result.data.rows"/>
         </div>
       </tab>
       <tab ng-repeat="(table, data) in previewTabs" active="tabSwitch[table]">
         <tab-heading>{{table}}(Preview) <a class="btn-link btn-sm" ng-click="removeTablePreview(table)"><span class="glyphicon glyphicon-remove"></span></a></tab-heading>
         <spinner hide-when="data.$resolved" />
         <div class="table-responsive">
-          <ng-table class="table-bordered" columns="data.columns" data="data.rows"/>
+          <ng-table class="table-bordered summary" columns="data.columns" data="data.rows"/>
         </div>
       </tab>
       <tab ng-repeat="(table, data) in infoTabs" active="tabSwitch['INFO-'+table]">
