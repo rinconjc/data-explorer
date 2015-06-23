@@ -34,6 +34,7 @@
             <div ng-show="result.rowsAffected" class="text-left">{{result.rowsAffected}}</div>
           </div>
         </div>
+        <spinner hide-when="result.$resolved || !result" />
         <alert ng-if="result.$error" type="danger">{{result.$error}}</alert>
         <div class="table-responsive">
           <ng-table ng-show="result.data" class="table-bordered" columns="result.data.columns" data="result.data.rows"/>
