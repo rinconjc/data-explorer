@@ -66,7 +66,7 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
             console.debug('showing table preview for :', selection);
             angular.forEach(selection, function(tbl){
                 if(!$scope.previewTabs[tbl]){
-                    $scope.previewTabs[tbl]=DataService.getTableData($scope.dsId, tbl, 0, 50);
+                    $scope.previewTabs[tbl]=DataService.getTableData($scope.dsId, tbl, 0, 20);
                     $scope.tabSwitch[tbl]=true;
                 }
             });
