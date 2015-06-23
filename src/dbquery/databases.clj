@@ -34,7 +34,7 @@
   )
 
 (defn ^:private read-rs
-  [rs & {:keys [offset limit columns] :or {offset 0 limit 100}}]
+  [rs & {:keys [offset limit columns] :or {offset 0 limit 20}}]
   (let [rs-meta (.getMetaData rs)
         col-count (inc (.getColumnCount rs-meta))
         cols (doall (for [i (range 1 col-count) :let [col-name (.getColumnLabel rs-meta i)] :when (or (nil? columns) (some #{col-name} columns))]
@@ -119,7 +119,7 @@
                 (read-rs rs :columns ["PKTABLE_NAME" "PKCOLUMN_NAME" "FKCOLUMN_NAME" "KEY_SEQ" "FKTABLE_NAME"]))]
       {:columns cols :primaryKeys pks :foreignKeys fks})))
 
-(defn exec-query [ds {:keys [tables fields predicates offset limit] :or {offset 0 limit 100}}]
+(defn exec-query [ds {:keys [tables fields predicates offset limit] :or {offset 0 limit 20}}]
   (with-open [con (.getConnection (:datasource ds))]
     (let [stmt (if (> offset 0)
                  (.createStatement con ResultSet/TYPE_SCROLL_INSENSITIVE ResultSet/CONCUR_READ_ONLY)
