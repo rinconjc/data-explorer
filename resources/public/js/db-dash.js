@@ -117,6 +117,6 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
         hotkeys.bindTo($scope)
             .add({combo:'ctrl+e', callback:preventDefault($scope.execute), allowIn: ['INPUT', 'SELECT', 'TEXTAREA']})
             .add({combo:'ctrl+l', callback:preventDefault(function(){$scope.clear(); focus('enterSql');}), allowIn: ['INPUT', 'SELECT', 'TEXTAREA']})
-            .add({combo:'ctrl+f', callback:preventDefault(focus, 'searchQuery')})
+            .add({combo:'alt+f', callback:preventDefault(focus, 'searchQuery')})
         ;
     });
