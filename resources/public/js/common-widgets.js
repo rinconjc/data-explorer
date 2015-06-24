@@ -17,10 +17,47 @@ angular.module('common-widgets', [])
     .directive('spinner', function(){
         return {
             scope:{
-                hideWhen:'='                
+                hideWhen:'='
             },
-            template:'<div class="text-center" style="padding-top:40px;" ng-hide="hideWhen"><h2><span class="glyphicon glyphicon-refresh spinning"></span></h2></div>'            
-        }
+            template:'<div class="text-center" style="padding-top:40px;" ng-hide="hideWhen"><h2><span class="glyphicon glyphicon-refresh spinning"></span></h2></div>'
+        };
+    })
+    .directive('sortButton', function(){
+        return {
+            scope:{
+                field:'@',
+                sortFn:'='
+            },
+            template:'<button ng-click="sort()" class="btn btn-xs btn-link"><span class="glyphicon" ng-class="sortClass"></span></button>',
+            controller:function($scope){
+                var nextSort={'':'+','+':'-','-':''};
+                var sortClass={'':'glyphicon-sort', '+':'glyphicon-triangle-bottom','-':'glyphicon-triangle-top'};
+                $scope.sortState='';
+                $scope.sortClass=sortClass[$scope.sortState];
+                $scope.sort = function(){
+                    $scope.sortState = nextSort[$scope.sortState];
+                    $scope.sortFn($scope.field, $scope.sortState);
+                    $scope.sortClass=sortClass[$scope.sortState];
+                };
+            }
+        };
+    })
+    .directive('ngTable',function(){
+        return {
+            scope:{
+                columns:'=',
+                data:'=',
+                class:'@'
+            },
+            replace:true,
+            transclude:true,
+            template:'<table class="table {{class}}" data-len="{{columns.length}}"><thead><tr><th ng-repeat="col in columns">{{col}} <sort-button field="{{col}}" sort-fn="sorter"/></th></tr></thead><tbody><tr ng-repeat="row in data"><td ng-repeat="item in row track by $index" title="{{item}}">{{item}}</td></tr></tbody></table>',
+            controller:function($scope){
+                $scope.sorter = function(col, ascDesc){
+                    console.debug('sorting by', col, ascDesc);
+                };
+            }
+        };
     })
     .directive('loginForm', function($log){
         return {
