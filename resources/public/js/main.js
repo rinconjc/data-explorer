@@ -1,4 +1,4 @@
-angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'common-widgets', 'dbquery.api','db.dash'])
+angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'common-widgets', 'dbquery.api','db.dash', 'query.builder'])
     .constant('CONSTS', {
         EVENTS:{
             DS_ADDED:'ds-added',
@@ -11,6 +11,7 @@ angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'common-widg
             .when('/login', {template:'<login-form login-fn="doLogin" heading="Login to DataExplorer" alert-text="alert" allow-remember="true"/>', controller:'LoginCtrl'})
             .when('/data-source/:id?', {templateUrl:'tpls/db-connect.html', controller:'DataSourceCtrl'})
             .when('/dash/:db', {templateUrl:'tpls/db-dash.html', controller:'DBCtrl'})
+            .when('/build-query', {templateUrl:'tpls/query-builder.html', controller:'QueryBuilderCtrl'})
             .otherwise({
                 redirectTo:'/data-source'
             })
