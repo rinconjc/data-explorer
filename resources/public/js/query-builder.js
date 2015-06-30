@@ -1,6 +1,7 @@
 angular.module('query.builder',[])
-    .controller('QueryBuilderCtrl', function($scope){
-        
+    .directive('queryBuilder', function(){
+        return {
+            templateUrl:'tpls/query-builder.html'
+        };
     })
 ;
-
