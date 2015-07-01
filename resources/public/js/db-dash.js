@@ -119,7 +119,6 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                             angular.extend(saved, $scope.query);
                         });
                     }
-<<<<<<< HEAD
                 };
                 $scope.loadQuery = function(item, model, label){
                     $scope.query = DataService.getQuery(item.id);
