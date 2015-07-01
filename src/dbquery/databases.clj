@@ -112,7 +112,7 @@
 (defn table-meta [ds name]
   (with-db-metadata [meta ds]
     (let [cols  (with-open [rs (.getColumns meta nil nil name "%")]
-                  (read-rs rs :columns ["COLUMN_NAME" "DATA_TYPE" "TYPE_NAME" "COLUMN_SIZE" "DECIMAL_DIGITS" "NULLABLE" "ORDINAL_POSITION"] :limit 200))
+                  (read-rs rs :columns ["COLUMN_NAME" "DATA_TYPE" "TYPE_NAME" "COLUMN_SIZE" "DECIMAL_DIGITS" "NULLABLE"] :limit 200))
           pks (with-open [rs (.getPrimaryKeys meta nil nil name)]
                 (read-rs rs :columns ["COLUMN_NAME" "KEY_SEQ" "PK_NAME"]))
           fks (with-open [rs (.getImportedKeys meta nil nil name)]
