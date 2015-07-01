@@ -116,7 +116,7 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                             }
                         }).result.then(function(saved){
                             console.debug('saved!', saved);
-                            angular.merge(saved, $scope.query);
+                            angular.extend(saved, $scope.query);
                         });
                     }
 <<<<<<< HEAD
@@ -136,12 +136,6 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                     .add({combo:'ctrl+l', callback:preventDefault(function(){$scope.clear(); focus('enterSql');}), allowIn: ['INPUT', 'SELECT', 'TEXTAREA']})
                     .add({combo:'alt+f', callback:preventDefault(focus, 'searchQuery')})
                 ;
-=======
-                }).result.then(function(saved){
-                    console.debug('saved!', saved);
-                    angular.extend(saved, $scope.query);
-                });
->>>>>>> 046b399f43a893eb8b857d25b8663b778c945f02
             }
         };
     })
