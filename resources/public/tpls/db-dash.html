@@ -1,10 +1,10 @@
 
 <div class="row">
   <div class="col-md-2">
-    <table-list rows="30" ds="dsId" info-clicked="showTableInfo" preview-clicked="showTablePreview"/>
+    <table-list rows="30" ds="ds.id" info-clicked="showTableInfo" preview-clicked="showTablePreview"/>
   </div>
   <div class="col-md-10">
-    <tabset>
+    <tabset class="small-tabs">
       <tab heading="SQL" active="tabSwitch['SQL']" >
         <div class="panel panel-default">
           <div class="panel-heading" style="padding:2px;">
@@ -28,7 +28,7 @@
             </div>
           </div>
           <div class="panel-body" style="padding:0px;">
-            <textarea ui-codemirror ui-codemirror-opts="{mode:'text/x-sql', readOnly:false, autofocus:true, indentWithTabs:true, smartIndent:true, matchBrackets:true, extraKeys:{'Ctrl+Space':'autocomplete'}, hintOptions:{tables:tablesInfo}}" ng-model="query.sql" focus-on="enterSql"></textarea>
+            <textarea ui-codemirror ui-codemirror-opts="{mode:'text/x-sql', readOnly:false, autofocus:true, indentWithTabs:true, smartIndent:true, matchBrackets:true, extraKeys:{'Ctrl+Space':'autocomplete'}, hintOptions:{tables:tablesInfo}, onLoad:editorLoaded}" ng-model="query.sql" focus-on="enterSql"></textarea>
           </div>
           <div class="panel-footer">
             <div ng-show="result.rowsAffected" class="text-left">{{result.rowsAffected}}</div>

@@ -37,17 +37,21 @@
         <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
           <ul class="nav navbar-nav">
             <li><a href="#/">Home</a></li>
+            <li ng-repeat="m in menuBar">
+              <a ng-if="m.action" href="" ng-click="m.action()">{{m.label}}</a>
+              <a ng-if="m.href" href="{{m.href}}">{{m.label}}</a>              
+            </li>
           </ul>
-          <form class="navbar-form navbar-left">
-            <div class="form-group">
-              <label for="datasources" class="nav-text">Database:</label>
-              <select class="form-control" id="datasources" ng-model="main.curds" ng-change="dsChanged()"
-                      ng-options="ds.id as ds.name for ds in datasources" placeholder="Select/Add Database">
-                <option value="" disabled>Select Database</option>
-              </select>
-            </div>
-            <a type="button" class="btn btn-default" href="#/connect"><span class="glyphicon glyphicon-plus"></span></a>
-          </form>
+          <!-- <form class="navbar-form navbar-left"> -->
+          <!--   <div class="form-group"> -->
+          <!--     <label for="datasources" class="nav-text">Database:</label> -->
+          <!--     <select class="form-control" id="datasources" ng-model="main.curds" ng-change="dsChanged()" -->
+          <!--             ng-options="ds.id as ds.name for ds in datasources" placeholder="Select/Add Database"> -->
+          <!--       <option value="" disabled>Select Database</option> -->
+          <!--     </select> -->
+          <!--   </div> -->
+          <!--   <a type="button" class="btn btn-default" href="#/connect"><span class="glyphicon glyphicon-plus"></span></a> -->
+          <!-- </form> -->
           <ul class="nav navbar-nav">
             <li class="dropdown">
               <a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Data<span class="caret"></span></a>

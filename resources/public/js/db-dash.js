@@ -43,80 +43,99 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
             templateUrl:'tpls/table-list.html'
         };
     })
-    .controller('DBCtrl', function($scope, $rootScope, $log, $routeParams, CONSTS, DataService, $modal, hotkeys, focus, preventDefault){
-        $scope.query = {};
-        $scope.previewTabs={};
-        $scope.infoTabs={};
-        $scope.model = {selection:[]};
-        $scope.dsId=$routeParams.db;
-        $scope.$emit(CONSTS.EVENTS.DS_CHANGED, parseInt($routeParams.db));
-        $scope.queries = DataService.getQueries($scope.dsId);
-        $scope.tabSwitch={SQL:true};
+    .directive('dbConsole', function(){
+        return {
+            scope:{
+                ds:'='
+            },
+            templateUrl:'tpls/db-dash.html',
+            controller: function($scope, CONSTS, DataService, $modal, hotkeys, focus, preventDefault){
+                var dsId = $scope.ds.id; //$routeParams.db;
+                $scope.dsId=dsId;
+                $scope.query = {};
+                $scope.previewTabs={};
+                $scope.infoTabs={};
+                $scope.model = {selection:[]};
+                $scope.$emit(CONSTS.EVENTS.DS_CHANGED, dsId);
+                $scope.queries = DataService.getQueries(dsId);
+                $scope.tabSwitch={SQL:true};
 
-        $scope.showTableInfo = function(selection){
-            console.debug('showing table info for: ', selection);
-            angular.forEach(selection, function(tbl){
-                if(!$scope.infoTabs[tbl]){
-                    $scope.infoTabs[tbl]=DataService.getTableInfo($scope.dsId, tbl);
-                    $scope.tabSwitch['INFO-'+tbl]=true;
-                }
-            });
-        };
-        $scope.showTablePreview =function(selection){
-            console.debug('showing table preview for :', selection);
-            angular.forEach(selection, function(tbl){
-                if(!$scope.previewTabs[tbl]){
-                    $scope.previewTabs[tbl]=DataService.getTableData($scope.dsId, tbl, 0, 20);
-                    $scope.tabSwitch[tbl]=true;
-                }
-            });
-        };
-        $scope.removeTablePreview = function(name){
-            delete $scope.previewTabs[name];
-        };
-        $scope.removeTableInfo = function(name){
-            delete $scope.infoTabs[name];
-        };
-        $scope.execute = function(){
-            $scope.result = DataService.executeSql($scope.dsId, $scope.query.sql);
-        };
-        $scope.saveSql = function(){
-            if($scope.query.id){
-                DataService.saveQuery($scope.query);
-            } else{
-                $modal.open({
-                    templateUrl:'tpls/query-form.html',
-                    resolve:{
-                        query:function(){return $scope.query}
-                    },
-                    controller:function($scope, $modalInstance, query){
-                        $scope.query = query;
-                        $scope.save = function(){
-                            DataService.saveQuery($scope.query).$promise.then(function(saved){
-                                $modalInstance.close(saved);
-                            }, function(err){
-                                $scope.errors = err;
-                            });
-                        };
-                        $scope.cancel = function(){
-                            $modalInstance.dismiss('cancel');
+                $scope.showTableInfo = function(selection){
+                    console.debug('showing table info for: ', selection);
+                    angular.forEach(selection, function(tbl){
+                        if(!$scope.infoTabs[tbl]){
+                            $scope.infoTabs[tbl]=DataService.getTableInfo(dsId, tbl);
+                            $scope.tabSwitch['INFO-'+tbl]=true;
                         }
+                    });
+                };
+                $scope.showTablePreview =function(selection){
+                    console.debug('showing table preview for :', selection);
+                    angular.forEach(selection, function(tbl){
+                        if(!$scope.previewTabs[tbl]){
+                            $scope.previewTabs[tbl]=DataService.getTableData(dsId, tbl, 0, 20);
+                            $scope.tabSwitch[tbl]=true;
+                        }
+                    });
+                };
+                $scope.removeTablePreview = function(name){
+                    delete $scope.previewTabs[name];
+                };
+                $scope.removeTableInfo = function(name){
+                    delete $scope.infoTabs[name];
+                };
+                $scope.execute = function(){
+                    var sql = $scope.editor.getSelection();
+                    if(sql){
+                        $scope.result = DataService.executeSql(dsId, sql);
+                    }else{
+                        $scope.result = DataService.executeSql(dsId, $scope.query.sql);
                     }
-                }).result.then(function(saved){
-                    console.debug('saved!', saved);
-                    angular.merge(saved, $scope.query);
-                });
+                };
+                $scope.saveSql = function(){
+                    if($scope.query.id){
+                        DataService.saveQuery($scope.query);
+                    } else{
+                        $modal.open({
+                            templateUrl:'tpls/query-form.html',
+                            resolve:{
+                                query:function(){return $scope.query}
+                            },
+                            controller:function($scope, $modalInstance, query){
+                                $scope.query = query;
+                                $scope.save = function(){
+                                    DataService.saveQuery($scope.query).$promise.then(function(saved){
+                                        $modalInstance.close(saved);
+                                    }, function(err){
+                                        $scope.errors = err;
+                                    });
+                                };
+                                $scope.cancel = function(){
+                                    $modalInstance.dismiss('cancel');
+                                }
+                            }
+                        }).result.then(function(saved){
+                            console.debug('saved!', saved);
+                            angular.merge(saved, $scope.query);
+                        });
+                    }
+                };
+                $scope.loadQuery = function(item, model, label){
+                    $scope.query = DataService.getQuery(item.id);
+                };
+                $scope.clear = function(){
+                    $scope.query = {};
+                };
+                $scope.editorLoaded = function(_editor){
+                    $scope.editor = _editor;
+                    _editor.focus();
+                };
+                hotkeys.bindTo($scope)
+                    .add({combo:'ctrl+e', callback:preventDefault($scope.execute), allowIn: ['INPUT', 'SELECT', 'TEXTAREA']})
+                    .add({combo:'ctrl+l', callback:preventDefault(function(){$scope.clear(); focus('enterSql');}), allowIn: ['INPUT', 'SELECT', 'TEXTAREA']})
+                    .add({combo:'alt+f', callback:preventDefault(focus, 'searchQuery')})
+                ;
             }
         };
-        $scope.loadQuery = function(item, model, label){
-            $scope.query = DataService.getQuery(item.id);
-        };
-        $scope.clear = function(){
-            $scope.query = {};
-        };
-        hotkeys.bindTo($scope)
-            .add({combo:'ctrl+e', callback:preventDefault($scope.execute), allowIn: ['INPUT', 'SELECT', 'TEXTAREA']})
-            .add({combo:'ctrl+l', callback:preventDefault(function(){$scope.clear(); focus('enterSql');}), allowIn: ['INPUT', 'SELECT', 'TEXTAREA']})
-            .add({combo:'alt+f', callback:preventDefault(focus, 'searchQuery')})
-        ;
-    });
+    })
+;
