@@ -104,7 +104,7 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                     }
                 }).result.then(function(saved){
                     console.debug('saved!', saved);
-                    angular.merge(saved, $scope.query);
+                    angular.extend(saved, $scope.query);
                 });
             }
         };
