@@ -51,7 +51,7 @@ angular.module('common-widgets', [])
             },
             replace:true,
             transclude:true,
-            template:'<table class="table {{class}}" data-len="{{columns.length}}"><thead><tr><th ng-repeat="col in columns">{{col}} <sort-button field="{{col}}" sort-fn="sorter"/></th></tr></thead><tbody><tr ng-repeat="row in data | orderBy:sortState"><td ng-repeat="item in row track by $index" title="{{item}}">{{item}}</td></tr></tbody></table>',
+            template:'<table class="table {{class}}" data-len="{{columns.length}}"><thead><tr><th ng-repeat="col in columns track by $index">{{col}} <sort-button field="{{col}}" sort-fn="sorter"/></th></tr></thead><tbody><tr ng-repeat="row in data | orderBy:sortState"><td ng-repeat="item in row track by $index" title="{{item}}">{{item}}</td></tr></tbody></table>',
             controller:function($scope){
                 $scope.sortState=[];
                 $scope.sorter = function(col, ascDesc){
