@@ -1,4 +1,4 @@
-angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.hotkeys','common-widgets'])
+angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.hotkeys','common-widgets', 'query.builder'])
     .constant('preventDefault', function(f){
         var rest = Array.prototype.slice.call(arguments).slice(1);
         return function(evt){

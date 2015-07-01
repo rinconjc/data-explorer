@@ -40,6 +40,14 @@
           <ng-table ng-show="result.data" class="table-bordered summary" columns="result.data.columns" data="result.data.rows"/>
         </div>
       </tab>
+
+      <tab active="tabSwitch['SQLB']">
+        <tab-heading>
+          Query Builder<a class="btn-link btn-sm" ng-click="showSqlbuilder=false"><span class="glyphicon glyphicon-remove"></span></a>
+        </tab-heading>
+        <query-builder />
+      </tab>
+      
       <tab ng-repeat="(table, data) in previewTabs" active="tabSwitch[table]">
         <tab-heading>{{table}}(Preview) <a class="btn-link btn-sm" ng-click="removeTablePreview(table)"><span class="glyphicon glyphicon-remove"></span></a></tab-heading>
         <spinner hide-when="data.$resolved" />
