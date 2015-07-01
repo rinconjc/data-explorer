@@ -1,0 +1,10 @@
+<tabset class="small-tabs">
+  <tab ng-repeat="db in activeDbs">
+    <tab-heading>
+      {{db.name}} <a class="btn-link btn-sm" ng-click="closeDb($index)"><span class="glyphicon glyphicon-remove"></span></a>
+    </tab-heading>
+    <div style="padding-top:4px;">      
+      <db-console ds="db" />
+    </div>
+  </tab>
+</tabset>
