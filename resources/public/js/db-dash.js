@@ -46,7 +46,7 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
     .directive('dbConsole', function(){
         return {
             scope:{
-                ds:'='
+                ds:'='                
             },
             templateUrl:'tpls/db-dash.html',
             controller: function($scope, CONSTS, DataService, $modal, hotkeys, focus, preventDefault){
@@ -60,6 +60,12 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                 $scope.queries = DataService.getQueries(dsId);
                 $scope.tabSwitch={SQL:true};
 
+                $scope.editorLoaded = function(_editor){
+                    console.debug('editor loaded...', _editor);
+                    $scope.editor = _editor;
+                    _editor.focus();
+                };
+                
                 $scope.showTableInfo = function(selection){
                     console.debug('showing table info for: ', selection);
                     angular.forEach(selection, function(tbl){
@@ -125,10 +131,6 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                 };
                 $scope.clear = function(){
                     $scope.query = {};
-                };
-                $scope.editorLoaded = function(_editor){
-                    $scope.editor = _editor;
-                    _editor.focus();
                 };
                 hotkeys.bindTo($scope)
                     .add({combo:'ctrl+e', callback:preventDefault($scope.execute), allowIn: ['INPUT', 'SELECT', 'TEXTAREA']})
