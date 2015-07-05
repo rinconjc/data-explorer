@@ -1,3 +1,5 @@
+.nav, .pagination, .carousel, .panel-title a { cursor: pointer; }
+
 .small-tabs ul li a {
     padding:4px !important;
 }
@@ -8,6 +10,9 @@
 /* .navbar .navbar-brand{ padding: 0px 12px;font-size: 16px;line-height: 28px; } */
 /* .navbar .navbar-nav > li > a {  padding-top: 0px; padding-bottom: 0px; line-height: 28px; } */
 
-.navbar { min-height:40px; height: 40px; }
+.navbar { min-height:40px; height: 40px; margin-bottom:11px;}
 .navbar .navbar-brand{ padding: 0px 12px;font-size: 16px;line-height: 40px; }
 .navbar .navbar-nav > li > a {  padding-top: 0px; padding-bottom: 0px; line-height: 40px; }
+.navbar .navbar-text {margin-top: 0px; margin-bottom: 0px; line-height: 40px; }
+
+.tab-content {margin-top:5px;}

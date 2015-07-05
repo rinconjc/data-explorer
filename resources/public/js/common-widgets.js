@@ -123,4 +123,22 @@ angular.module('common-widgets', [])
             }
         };
     })
+    .directive('closeButton', function(){
+        return {
+            restrict:'E',
+            scope:{
+                close:'&'
+            },
+            replace:true,
+            template:'<button type="button" style="padding-left:10px;" class="close" ng-click="_close($event)"><span aria-hidden="true">×</span><span class="sr-only">Close</span></button>',
+            controller:function($scope){
+                console.debug('close button:', arguments);
+                $scope._close = function(evt){
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                    $scope.close();
+                }
+            }
+        };
+    })
 ;

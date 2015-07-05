@@ -1,4 +1,4 @@
-angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'common-widgets', 'dbquery.api','db.dash', 'query.builder'])
+angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'common-widgets', 'dbquery.api','db.dash', 'query.builder','cfp.hotkeys'])
     .constant('CONSTS', {
         EVENTS:{
             DS_ADDED:'ds-added',
@@ -11,7 +11,7 @@ angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'common-widg
             .when('/', {templateUrl:'tpls/dashboard.html'})
             .when('/login', {template:'<login-form login-fn="doLogin" heading="Login to DataExplorer" alert-text="alert" allow-remember="true"/>', controller:'LoginCtrl'})
             .when('/data-source/:id?', {templateUrl:'tpls/db-connect.html', controller:'DataSourceCtrl'})
-            //.when('/dash/:db', {templateUrl:'tpls/db-dash.html', controller:'DBCtrl'})
+        //.when('/dash/:db', {templateUrl:'tpls/db-dash.html', controller:'DBCtrl'})
             .when('/build-query', {templateUrl:'tpls/query-builder.html', controller:'QueryBuilderCtrl'})
             .when('/db-tabs', {templateUrl:'tpls/db-tabs.html', controller:'DbTabsCtrl'})
             .otherwise({
@@ -31,7 +31,7 @@ angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'common-widg
             });
         };
     })
-    .controller('MainCtrl', function($scope, $rootScope, $location, $http, $q, DataService, CONSTS, $routeParams, $modal, $timeout){
+    .controller('MainCtrl', function($scope, $rootScope, $location, $http, $q, DataService, CONSTS, $routeParams, $modal, $timeout, hotkeys){
         function isLoggedIn(){
             if($rootScope.user)
                 return $q.when($rootScope.user);
@@ -40,10 +40,14 @@ angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'common-widg
             });
         }
         function openDb(){
+            if($location.path()!='/db-tabs'){
+                $location.path('/db-tabs');
+            }
             $modal.open({
                 templateUrl:'tpls/select-db.html',
+                size:'sm',
                 resolve:{
-                    title:function(){return 'Select Data Source';},
+                    title:function(){return 'Open Database';},
                     items:function(){return $rootScope.datasources;}
                 },
                 controller:function($scope, $modalInstance, title, items){
@@ -58,14 +62,14 @@ angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'common-widg
                 }
             }).result.then(function(db){
                 console.debug('db selected:', db,'location:', $location.path());
-                if($location.path()!='/db-tabs'){
-                    $location.path('/db-tabs');
-                }
                 $timeout(function(){
                     $scope.$emit(CONSTS.EVENTS.OPEN_DB, db);
                 })
             });
         }
+
+        hotkeys.bindTo($scope).add({combo:'alt+o', callback:openDb});
+
         $scope.menuBar = [{label:'Open DB', action:openDb}, {label:'Add Connection', href:'#/data-source'}];
         $scope.refreshDatasources = function(){
             console.debug('refreshing datasources...');
@@ -121,10 +125,22 @@ angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'common-widg
         };
     })
     .controller('DbTabsCtrl', function($scope, CONSTS, $rootScope){
-        $scope.activeDbs=[];
+        $scope.activeState={};
+        $scope.openDbs=[];
         $rootScope.$on(CONSTS.EVENTS.OPEN_DB, function(evt, db){
-            console.debug('opendb', db);
-            $scope.activeDbs.push(db);
+            if($scope.openDbs.indexOf(db)<0){
+                console.debug('opendb', db);
+                $scope.openDbs.push(db);
+            }
         });
+        $scope.tabSelected = function(db, isActive){
+            console.debug('db:', db.id, 'tabselected:', isActive);
+            $scope.activeState[db.id]=isActive;
+        };
+        $scope.closeTab = function(index){
+            console.debug('closing:', index);
+            $scope.openDbs.splice(index,1);
+            console.debug('open:', $scope.openDbs);
+        };
     })
 ;

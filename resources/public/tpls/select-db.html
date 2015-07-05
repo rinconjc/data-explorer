@@ -1,13 +1,15 @@
 <div class="modal-header">
-  <h3 class="modal-title">{{title}}</h3>
+  <h4 class="modal-title">{{title}}</h4>
 </div>
-<div class="modal-body">
-  <div class="row">
-    <div class="col-md-8 col-md-offset-2">
-      <select class="form-control" ng-options="item as item.name for item in items" ng-model="selected" >
-        <option value="" disabled>Select Database</option>
-      </select>
-    </div>
+<div class="modal-body row">
+  <div class="col-sm-12">
+    <form ng-submit="ok(selected)">
+      <div class="form-group">
+        <select class="form-control" ng-options="item as item.name for item in items" ng-model="selected" >
+          <option value="" disabled>Select Database</option>
+        </select>
+      </div>
+    </form>
   </div>
 </div>
 <div class="modal-footer">
