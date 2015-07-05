@@ -43,13 +43,13 @@
 
       <tab active="tabSwitch['SQLB']">
         <tab-heading>
-          Query Builder<a class="btn-link btn-sm" ng-click="showSqlbuilder=false"><span class="glyphicon glyphicon-remove"></span></a>
+          Query Builder <close-button close="showSqlbuilder=false" /> 
         </tab-heading>
-        <query-builder />
+        <query-builder ds-id="ds.id" />
       </tab>
       
       <tab ng-repeat="(table, data) in previewTabs" active="tabSwitch[table]">
-        <tab-heading>{{table}}(Preview) <a class="btn-link btn-sm" ng-click="removeTablePreview(table)"><span class="glyphicon glyphicon-remove"></span></a></tab-heading>
+        <tab-heading>{{table}}(Preview) <close-button close="removeTablePreview(table)" /></tab-heading>
         <spinner hide-when="data.$resolved" />
         <div class="table-responsive">
           <ng-table class="table-bordered summary" columns="data.columns" data="data.rows"/>
@@ -57,7 +57,7 @@
       </tab>
       <tab ng-repeat="(table, data) in infoTabs" active="tabSwitch['INFO-'+table]">
         <tab-heading>
-          {{table}}(Info) <a class="btn-link btn-sm" ng-click="removeTableInfo(table)"><span class="glyphicon glyphicon-remove"></span></a>
+          {{table}}(Info) <close-button close="removeTableInfo(table)" /> 
         </tab-heading>
         <spinner hide-when="data.$resolved" />
         <tabset ng-show="data.$resolved">
