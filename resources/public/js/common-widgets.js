@@ -42,7 +42,7 @@ angular.module('common-widgets', [])
             }
         };
     })
-    .directive('ngTable',function(){
+    .directive('ngTable',function($filter){
         return {
             scope:{
                 columns:'=',
@@ -51,14 +51,16 @@ angular.module('common-widgets', [])
             },
             replace:true,
             transclude:true,
-            template:'<table class="table {{class}}" data-len="{{columns.length}}"><thead><tr><th ng-repeat="col in columns track by $index">{{col}} <sort-button field="{{col}}" sort-fn="sorter"/></th></tr></thead><tbody><tr ng-repeat="row in data | orderBy:sortState"><td ng-repeat="item in row track by $index" title="{{item}}">{{item}}</td></tr></tbody></table>',
+            template:'<table class="table {{class}}" data-len="{{columns.length}}"><thead><tr><th ng-repeat="col in columns track by $index">{{col}} <sort-button field="{{$index}}" sort-fn="sorter"/></th></tr></thead><tbody><tr ng-repeat="row in data"><td ng-repeat="item in row track by $index" title="{{item}}">{{item}}</td></tr></tbody></table>',
             controller:function($scope){
-                $scope.sortState=[];
+                $scope.sortState=null;
                 $scope.sorter = function(col, ascDesc){
-                    console.debug('sorting by', col, ascDesc);
-                    if(ascDesc=='+'){
+                    if(!$scope.sortState){
+                        $scope.sortState=[];
+                    }
+                    if(ascDesc === '+'){
                         $scope.sortState.push(col);
-                    } else if(ascDesc=='-'){
+                    } else if(ascDesc === '-'){
                         var i=$scope.sortState.indexOf(col);
                         if(i>=0){
                             $scope.sortState[i] = '-'+col;
@@ -69,6 +71,7 @@ angular.module('common-widgets', [])
                             $scope.sortState.splice(i,1);
                     }
                     console.debug('sort state:', $scope.sortState);
+                    $scope.data = $filter('orderBy')($scope.data, $scope.sortState);
                 };
             }
         };
