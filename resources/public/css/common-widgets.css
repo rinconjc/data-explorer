@@ -44,3 +44,17 @@
 .summary th{
     white-space:nowrap;    
 }
+
+.tags .label .close {
+    float:none;
+    vertical-align:middle;
+    padding:0px;
+}
+.tags {
+    display:inline-block;
+    padding:5px 0px;
+}
+.tags .label {
+    margin-right:3px;
+    font-size:13px;
+}

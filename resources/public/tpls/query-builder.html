@@ -3,14 +3,14 @@
       <label for="name" class="col-sm-1 control-label">From:</label>
       <div class="col-sm-4">
         <input class="form-control" type="text" placeholder="table(s) to query from..." size="40"  typeahead="t for t in tables | filter:$viewValue" ng-model="model.table" typeahead-editable="false" typeahead-on-select="addTable($item, $model, $label)" focus-on="selectTables" />
-        <div>
+        <div class="tags">
           <span class="label label-primary" ng-repeat="t in fromTables">{{t}} <close-button close="delTable($index)" /> </span>
         </div>
       </div>
     </div>
     <div class="form-group">
       <label for="columns" class="col-sm-1 control-label">Select:</label>
-      <div class="col-sm-5">
+      <div class="col-sm-4">
         <select class="form-control" ng-options="col.name for col in availableColumns" multiple></select>
       </div>
     </div>
