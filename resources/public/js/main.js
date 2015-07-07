@@ -131,12 +131,9 @@ angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'common-widg
             if($scope.openDbs.indexOf(db)<0){
                 console.debug('opendb', db);
                 $scope.openDbs.push(db);
+                $scope.activeState[db.id]=true;
             }
         });
-        $scope.tabSelected = function(db, isActive){
-            console.debug('db:', db.id, 'tabselected:', isActive);
-            $scope.activeState[db.id]=isActive;
-        };
         $scope.closeTab = function(index){
             console.debug('closing:', index);
             $scope.openDbs.splice(index,1);

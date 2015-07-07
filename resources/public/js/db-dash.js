@@ -13,7 +13,8 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                 rows:'@',
                 ds:'=',
                 infoClicked:'=',
-                previewClicked:'='
+                previewClicked:'=',
+                active:'='
             },
             controller:function($scope){
                 $scope.model={items:[]};
@@ -29,16 +30,19 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                         $scope.model.filterValue='';
                 };
                 $scope.refresh();
-                hotkeys.bindTo($scope)
-                    .add({combo:'/', allowIn:['SELECT'] ,
-                          callback:preventDefault($scope.switchSearch, true)})
-                    .add({combo:'esc',allowIn:['INPUT','SELECT'],
-                          callback:preventDefault($scope.switchSearch, false)})
-                    .add({combo:'ctrl+i',allowIn:['SELECT'],
-                          callback:preventDefault(function(){$scope.infoClicked($scope.model.items);})})
-                    .add({combo:'ctrl+d',allowIn:['SELECT'],
-                          callback:preventDefault(function(){$scope.previewClicked($scope.model.items);})})
-                ;
+                $scope.$watch('active', function(newVal, oldVal){
+                    if(!newVal) return;
+                    hotkeys.bindTo($scope)
+                        .add({combo:'/', allowIn:['SELECT'] ,
+                              callback:preventDefault($scope.switchSearch, true)})
+                        .add({combo:'esc',allowIn:['INPUT','SELECT'],
+                              callback:preventDefault($scope.switchSearch, false)})
+                        .add({combo:'ctrl+i',allowIn:['SELECT'],
+                              callback:preventDefault(function(){$scope.infoClicked($scope.model.items);})})
+                        .add({combo:'ctrl+d',allowIn:['SELECT'],
+                              callback:preventDefault(function(){$scope.previewClicked($scope.model.items);})})
+                    ;                    
+                });
             },
             templateUrl:'tpls/table-list.html'
         };
@@ -55,8 +59,6 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                 $scope.dsId=dsId;
                 $scope.previewTabs={};
                 $scope.infoTabs={};
-                $scope.$emit(CONSTS.EVENTS.DS_CHANGED, dsId);
-                $scope.queries = DataService.getQueries(dsId);
                 $scope.tabSwitch={SQL:true};
 
                 $scope.showTableInfo = function(selection){
@@ -89,20 +91,21 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                         angular.forEach(next, $scope.previewTabs[tbl].data.push);
                     });
                 };
+            }
         };
     })
-    .directive('sqlPanel', function(DataService, $modal, hotkeys, focus, preventDefault){
+    .directive('sqlPanel', function(DataService, $modal){
         return {
             scope:{
                 dsId:'=',
                 active:'='
             },
             templateUrl:'tpls/sql-panel.html',
-            controller:function($scope){
+            controller:function($scope, hotkeys, focus, preventDefault){
                 var dsId = $scope.dsId;
                 $scope.query = {};
                 $scope.model = {selection:[]};
-                
+                $scope.queries = DataService.getQueries(dsId);
                 $scope.execute = function(){
                     var sql = $scope.editor.getSelection();
                     if(sql){
@@ -111,7 +114,7 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                         $scope.result = DataService.executeSql(dsId, $scope.query.sql);
                     }
                 };
-                
+
                 $scope.$watch('active', function(newVal, oldVal){
                     console.debug('console active state changed:', newVal,oldVal);
                     if(newVal){
@@ -162,8 +165,8 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                 $scope.clear = function(){
                     $scope.query = {};
                 };
-                
-            }            
+
+            }
         };
     })
 ;
