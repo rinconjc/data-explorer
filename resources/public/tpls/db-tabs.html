@@ -1,5 +1,5 @@
 <tabset class="small-tabs">
-  <tab ng-repeat="db in openDbs" select="tabSelected(db, true)" deselect="tabSelected(db, false)" active="activeState[db.id]">
+  <tab ng-repeat="db in openDbs" active="activeState[db.id]">
     <tab-heading>
       {{db.name}} <close-button close="closeTab($index)" />
     </tab-heading>
