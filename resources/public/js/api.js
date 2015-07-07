@@ -26,6 +26,13 @@ angular.module('dbquery.api',['ngResource'])
                 d=$q.defer();
             value.$isready=false;
             value.$promise = d.promise;
+            if(isArray){
+                value.$append = function(otherFuture){
+                    otherFuture.then(function(){
+                        angular.forEach(otherFuture, value.push);
+                    });
+                }
+            }
             r.success(function(res){
                 if(isArray){
                     angular.forEach(res, function(item){
@@ -68,7 +75,7 @@ angular.module('dbquery.api',['ngResource'])
                 return dsResource.delete({id:dsId});
             },
             getDataSource:function(id){
-                return dsResource.get({id:id});                
+                return dsResource.get({id:id});
             },
             getTables:function(ds){
                 return getDsResource(ds, 'tables').query();
