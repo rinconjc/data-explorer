@@ -47,11 +47,12 @@ angular.module('common-widgets', [])
             scope:{
                 columns:'=',
                 data:'=',
-                class:'@'
+                class:'@',
+                showMoreFn:'&'
             },
             replace:true,
             transclude:true,
-            template:'<table class="table {{class}}" data-len="{{columns.length}}"><thead><tr><th ng-repeat="col in columns track by $index">{{col}} <sort-button field="{{$index}}" sort-fn="sorter"/></th></tr></thead><tbody><tr ng-repeat="row in data"><td ng-repeat="item in row track by $index" title="{{item}}">{{item}}</td></tr></tbody></table>',
+            template:'<div class="panel panel-default"><table class="table {{class}}" data-len="{{columns.length}}"><thead><tr><th ng-repeat="col in columns track by $index">{{col}} <sort-button field="{{$index}}" sort-fn="sorter"/></th></tr></thead><tbody><tr ng-repeat="row in data"><td ng-repeat="item in row track by $index" title="{{item}}">{{item}}</td></tr></tbody></table><div ng-show="showMoreFn" class="panel-footer"><a ng-click="showMoreFn()" class="btn btn-lnk">More <span class="glyphicon glyphicon-menu-down"></span></a></div></div>',
             controller:function($scope){
                 $scope.sortState=null;
                 $scope.sorter = function(col, ascDesc){

@@ -53,30 +53,11 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
             controller: function($scope, CONSTS, DataService, $modal, hotkeys, focus, preventDefault){
                 var dsId = $scope.ds.id; //$routeParams.db;
                 $scope.dsId=dsId;
-                $scope.query = {};
                 $scope.previewTabs={};
                 $scope.infoTabs={};
-                $scope.model = {selection:[]};
                 $scope.$emit(CONSTS.EVENTS.DS_CHANGED, dsId);
                 $scope.queries = DataService.getQueries(dsId);
                 $scope.tabSwitch={SQL:true};
-
-                $scope.$watch('active', function(newVal, oldVal){
-                    console.debug('console active state changed:', newVal,oldVal);
-                    if(newVal){
-                        hotkeys.bindTo($scope)
-                            .add({combo:'ctrl+e', callback:preventDefault($scope.execute), allowIn: ['INPUT', 'SELECT', 'TEXTAREA']})
-                            .add({combo:'ctrl+l', callback:preventDefault(function(){$scope.clear(); focus('enterSql');}), allowIn: ['INPUT', 'SELECT', 'TEXTAREA']})
-                            .add({combo:'alt+f', callback:preventDefault(focus, 'searchQuery')})
-                        ;
-                    }
-                });
-
-                $scope.editorLoaded = function(_editor){
-                    console.debug('editor loaded...', _editor);
-                    $scope.editor = _editor;
-                    _editor.focus();
-                };
 
                 $scope.showTableInfo = function(selection){
                     console.debug('showing table info for: ', selection);
@@ -102,6 +83,26 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                 $scope.removeTableInfo = function(name){
                     delete $scope.infoTabs[name];
                 };
+                $scope.fetchNext = function(tbl){
+                    var next = DataService.getTableData(dsId, tbl, $scope.previewTabs[tbl].length, 20);
+                    next.$promise.then(function(){
+                        angular.forEach(next, $scope.previewTabs[tbl].data.push);
+                    });
+                };
+        };
+    })
+    .directive('sqlPanel', function(DataService, $modal, hotkeys, focus, preventDefault){
+        return {
+            scope:{
+                dsId:'=',
+                active:'='
+            },
+            templateUrl:'tpls/sql-panel.html',
+            controller:function($scope){
+                var dsId = $scope.dsId;
+                $scope.query = {};
+                $scope.model = {selection:[]};
+                
                 $scope.execute = function(){
                     var sql = $scope.editor.getSelection();
                     if(sql){
@@ -109,6 +110,23 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                     }else{
                         $scope.result = DataService.executeSql(dsId, $scope.query.sql);
                     }
+                };
+                
+                $scope.$watch('active', function(newVal, oldVal){
+                    console.debug('console active state changed:', newVal,oldVal);
+                    if(newVal){
+                        hotkeys.bindTo($scope)
+                            .add({combo:'ctrl+e', callback:preventDefault($scope.execute), allowIn: ['INPUT', 'SELECT', 'TEXTAREA']})
+                            .add({combo:'ctrl+l', callback:preventDefault(function(){$scope.clear(); focus('enterSql');}), allowIn: ['INPUT', 'SELECT', 'TEXTAREA']})
+                            .add({combo:'alt+f', callback:preventDefault(focus, 'searchQuery')})
+                        ;
+                    }
+                });
+
+                $scope.editorLoaded = function(_editor){
+                    console.debug('editor loaded...', _editor);
+                    $scope.editor = _editor;
+                    _editor.focus();
                 };
                 $scope.saveSql = function(){
                     if($scope.query.id){
@@ -144,7 +162,8 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                 $scope.clear = function(){
                     $scope.query = {};
                 };
-            }
+                
+            }            
         };
     })
 ;
