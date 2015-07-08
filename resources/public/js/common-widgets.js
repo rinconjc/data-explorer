@@ -48,11 +48,12 @@ angular.module('common-widgets', [])
                 columns:'=',
                 data:'=',
                 class:'@',
-                showMoreFn:'&'
+                showMoreFn:'&',
+                hasMore:'&'
             },
             replace:true,
             transclude:true,
-            template:'<div class="panel panel-default"><table class="table {{class}}" data-len="{{columns.length}}"><thead><tr><th ng-repeat="col in columns track by $index">{{col}} <sort-button field="{{$index}}" sort-fn="sorter"/></th></tr></thead><tbody><tr ng-repeat="row in data"><td ng-repeat="item in row track by $index" title="{{item}}">{{item}}</td></tr></tbody></table><div ng-show="showMoreFn" class="panel-footer"><a ng-click="showMoreFn()" class="btn btn-lnk">More <span class="glyphicon glyphicon-menu-down"></span></a></div></div>',
+            template:'<table class="table {{class}}" data-len="{{columns.length}}"><thead><tr><th ng-repeat="col in columns track by $index">{{col}} <sort-button field="{{$index}}" sort-fn="sorter"/></th></tr></thead><tbody><tr ng-repeat="row in data"><td ng-repeat="item in row track by $index" title="{{item}}">{{item}}</td></tr></tbody><tfoot ng-show="hasMore"><tr><td colspan="{{columns.length}}"><a ng-click="showMoreFn()" class="btn btn-lnk">More <span class="glyphicon glyphicon-menu-down"></span></a></td></tr></tfoot></table>',
             controller:function($scope){
                 $scope.sortState=null;
                 $scope.sorter = function(col, ascDesc){
@@ -136,7 +137,6 @@ angular.module('common-widgets', [])
             replace:true,
             template:'<button type="button" style="padding-left:10px;" class="close" ng-click="_close($event)"><span aria-hidden="true">×</span><span class="sr-only">Close</span></button>',
             controller:function($scope){
-                console.debug('close button:', arguments);
                 $scope._close = function(evt){
                     evt.preventDefault();
                     evt.stopPropagation();
