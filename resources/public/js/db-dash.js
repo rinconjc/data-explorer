@@ -62,7 +62,6 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                 $scope.tabSwitch={SQL:true};
 
                 $scope.showTableInfo = function(selection){
-                    console.debug('showing table info for: ', selection);
                     angular.forEach(selection, function(tbl){
                         if(!$scope.infoTabs[tbl]){
                             $scope.infoTabs[tbl]=DataService.getTableInfo(dsId, tbl);
@@ -71,7 +70,6 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                     });
                 };
                 $scope.showTablePreview =function(selection){
-                    console.debug('showing table preview for :', selection);
                     angular.forEach(selection, function(tbl){
                         if(!$scope.previewTabs[tbl]){
                             $scope.previewTabs[tbl]=DataService.getTableData(dsId, tbl, 0, 20);
@@ -86,9 +84,12 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                     delete $scope.infoTabs[name];
                 };
                 $scope.fetchNext = function(tbl){
-                    var next = DataService.getTableData(dsId, tbl, $scope.previewTabs[tbl].length, 20);
+                    var rows = $scope.previewTabs[tbl].rows;
+                    var next = DataService.getTableData(dsId, tbl, rows.length, 20);
                     next.$promise.then(function(){
-                        angular.forEach(next, $scope.previewTabs[tbl].data.push);
+                        angular.forEach(next.rows, function(row){
+                            rows.push(row);
+                        });
                     });
                 };
             }
@@ -151,7 +152,7 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                                 };
                                 $scope.cancel = function(){
                                     $modalInstance.dismiss('cancel');
-                                }
+                                };
                             }
                         }).result.then(function(saved){
                             console.debug('saved!', saved);

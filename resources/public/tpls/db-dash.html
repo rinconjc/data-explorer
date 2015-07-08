@@ -20,7 +20,8 @@
         <tab-heading>{{table}}(Preview) <close-button close="removeTablePreview(table)" /></tab-heading>
         <spinner hide-when="data.$resolved" />
         <div class="table-responsive">
-          <ng-table class="table-bordered summary" columns="data.columns" data="data.rows" show-more-fn="fetchNext(table)"/>
+          <ng-table class="table-bordered summary" columns="data.columns" data="data.rows"
+                    show-more-fn="fetchNext(table)" has-more="true"/>
         </div>
       </tab>
       <tab ng-repeat="(table, data) in infoTabs" active="tabSwitch['INFO-'+table]">
