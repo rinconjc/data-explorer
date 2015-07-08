@@ -89,6 +89,7 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                         angular.forEach(next, $scope.previewTabs[tbl].data.push);
                     });
                 };
+            }
         };
     })
     .directive('sqlPanel', function(DataService, $modal, hotkeys, focus, preventDefault){
@@ -102,7 +103,7 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                 var dsId = $scope.dsId;
                 $scope.query = {};
                 $scope.model = {selection:[]};
-                
+
                 $scope.execute = function(){
                     var sql = $scope.editor.getSelection();
                     if(sql){
@@ -111,7 +112,7 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                         $scope.result = DataService.executeSql(dsId, $scope.query.sql);
                     }
                 };
-                
+
                 $scope.$watch('active', function(newVal, oldVal){
                     console.debug('console active state changed:', newVal,oldVal);
                     if(newVal){
@@ -162,8 +163,7 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                 $scope.clear = function(){
                     $scope.query = {};
                 };
-                
-            }            
+            }
         };
     })
 ;
