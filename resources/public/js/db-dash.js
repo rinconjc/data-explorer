@@ -165,7 +165,6 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                 $scope.clear = function(){
                     $scope.query = {};
                 };
-
             }
         };
     })
