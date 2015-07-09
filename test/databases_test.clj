@@ -21,9 +21,9 @@
 
   (testing "query tables"
     (def ds (dummy-ds))
-    (execute ds "create table TEST (id int)"
-             "insert into test values(1)"
-             "insert into test values(2)")
+    (execute ds ["create table TEST (id int)"
+                 "insert into test values(1)"
+                 "insert into test values(2)"])
     (is (= 2 (count (:rows (table-data ds "test")))))
     )
   (testing "exec-query"
@@ -37,8 +37,8 @@
 
   (testing "table-meta"
     (def ds (dummy-ds))
-    (execute ds "create table tablea(id int, desc varchar(40), primary key(id))"
-             "create table tableb(id int, aid int, desc varchar(20), primary key (id), foreign key(aid) references tablea(id) )")
+    (execute ds ["create table tablea(id int, desc varchar(40), primary key(id))"
+                 "create table tableb(id int, aid int, desc varchar(20), primary key (id), foreign key(aid) references tablea(id) )"])
     (let [{cols :columns pks :primaryKeys fks :foreignKeys} (table-meta ds "TABLEB")]
       (println "cols: " (pr-str cols))
       (println "pks: " (pr-str pks))
@@ -54,8 +54,8 @@
   (testing "accessing clob data"
     (let [ds (dummy-ds)
           text "a very large chunk of text...blah blah"
-          _ (execute ds "create table texttable(id int, data text)"
-                     (format "insert into texttable values(1, '%s')" text))
+          _ (execute ds ["create table texttable(id int, data text)"
+                         (format "insert into texttable values(1, '%s')" text)])
           data (with-open [con (.getConnection (:datasource ds))]
                  (-> con .createStatement (.executeQuery "select * from texttable") read-as-map))]
       (println "data:" data)

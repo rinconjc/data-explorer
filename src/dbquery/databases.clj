@@ -38,7 +38,7 @@
   (let [rs-meta (.getMetaData rs)
         col-count (inc (.getColumnCount rs-meta))
         cols (doall (for [i (range 1 col-count) :let [col-name (.getColumnLabel rs-meta i)] :when (or (nil? columns) (some #{col-name} columns))]
-                [i col-name (col-reader (.getColumnType rs-meta i))]))
+                      [i col-name (col-reader (.getColumnType rs-meta i))]))
         row-reader (fn [rs] (for [[i _ reader] cols] (apply reader [rs i])))
         ]
     {:columns (map second cols) :rows (doall (rs-rows rs row-reader offset limit))}
@@ -94,18 +94,20 @@
            :rows
            flatten)))))
 
-(defn execute [ds raw-sql & more-sql]
+(defn execute [ds sql & opts]
   (with-open [con (.getConnection (:datasource ds))]
-    (loop [sql raw-sql sqls more-sql]
-      (let [stmt (.createStatement con)
-            has-rs (.execute stmt sql)]
-        (if (empty? sqls)
-          (if has-rs
-            (read-rs (.getResultSet stmt))
-            (.getUpdateCount stmt)
-            )
-          (recur (first sqls) (rest sqls)))
-        ))
+    (let [sqlv (if (vector? sql) sql [sql])]
+      (loop [sql (first sqlv)
+             sqls (rest sqlv)]
+        (let [stmt (.createStatement con ResultSet/TYPE_SCROLL_INSENSITIVE ResultSet/CONCUR_READ_ONLY)
+              has-rs (.execute stmt sql)]
+          (if (empty? sqls)
+            (if has-rs
+              (read-rs (.getResultSet stmt) opts)
+              (.getUpdateCount stmt)
+              )
+            (recur (first sqls) (rest sqls)))
+          )))
     )
   )
 
