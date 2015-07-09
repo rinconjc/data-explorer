@@ -41,7 +41,7 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                               callback:preventDefault(function(){$scope.infoClicked($scope.model.items);})})
                         .add({combo:'ctrl+d',allowIn:['SELECT'],
                               callback:preventDefault(function(){$scope.previewClicked($scope.model.items);})})
-                    ;                    
+                    ;
                 });
             },
             templateUrl:'tpls/table-list.html'
@@ -107,13 +107,29 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                 $scope.query = {};
                 $scope.model = {selection:[]};
                 $scope.queries = DataService.getQueries(dsId);
+                $scope.results = [];
                 $scope.execute = function(){
-                    var sql = $scope.editor.getSelection();
-                    if(sql){
-                        $scope.result = DataService.executeSql(dsId, sql);
-                    }else{
-                        $scope.result = DataService.executeSql(dsId, $scope.query.sql);
-                    }
+                    var sql = $scope.editor.getSelection() || $scope.query.sql;
+                    var resp = DataService.executeSql(dsId, sql);
+                    $scope.result=resp;
+                    resp.$promise.then(function(){
+                        if(resp.data){
+                            $scope.results.push({sql:sql, data:resp.data});
+                        }
+                    });
+                };
+                $scope.closeResult = function(index){
+                    $scope.results.splice(index,1);
+                };
+
+                $scope.fetchNext = function(i){
+                    var rows = $scope.results[i].data.rows;
+                    var next = DataService.executeSql(dsId, $scope.results[i].sql, rows.length, 20);
+                    next.$promise.then(function(){
+                        angular.forEach(next.data.rows, function(row){
+                            rows.push(row);
+                        });
+                    });
                 };
 
                 $scope.$watch('active', function(newVal, oldVal){
