@@ -34,15 +34,16 @@
   )
 
 (defn ^:private read-rs
-  [rs & {:keys [offset limit columns] :or {offset 0 limit 20}}]
-  (let [rs-meta (.getMetaData rs)
-        col-count (inc (.getColumnCount rs-meta))
-        cols (doall (for [i (range 1 col-count) :let [col-name (.getColumnLabel rs-meta i)] :when (or (nil? columns) (some #{col-name} columns))]
-                      [i col-name (col-reader (.getColumnType rs-meta i))]))
-        row-reader (fn [rs] (for [[i _ reader] cols] (apply reader [rs i])))
-        ]
-    {:columns (map second cols) :rows (doall (rs-rows rs row-reader offset limit))}
-    )
+  ([rs {:keys [offset limit columns] :or {offset 0 limit 20}}]
+   (let [rs-meta (.getMetaData rs)
+         col-count (inc (.getColumnCount rs-meta))
+         cols (doall (for [i (range 1 col-count) :let [col-name (.getColumnLabel rs-meta i)] :when (or (nil? columns) (some #{col-name} columns))]
+                       [i col-name (col-reader (.getColumnType rs-meta i))]))
+         row-reader (fn [rs] (for [[i _ reader] cols] (apply reader [rs i])))
+         ]
+     {:columns (map second cols) :rows (doall (rs-rows rs row-reader offset limit))}
+     ))
+  ([rs] (read-rs rs {}))
   )
 
 (defn read-as-map [rs & {:keys [offset limit] :or {offset 0 limit 100}}]
@@ -81,7 +82,7 @@
   ([ds table limit]
    (db-query-with-resultset ds
                             [(str "SELECT * FROM " table)]
-                            #(read-rs % :limit limit))
+                            #(read-rs % {:limit limit}))
    )
   ([ds table] (table-data ds table 100)))
 
@@ -90,35 +91,37 @@
   ([ds schema]
    (with-db-metadata [meta ds]
      (with-open [rs (.getTables meta nil schema "%" (into-array ["TABLE" "VIEW"]))]
-       (-> (read-rs rs :columns ["TABLE_NAME"] :limit 1000)
+       (-> (read-rs rs {:columns ["TABLE_NAME"] :limit 1000})
            :rows
            flatten)))))
 
-(defn execute [ds sql & opts]
-  (with-open [con (.getConnection (:datasource ds))]
-    (let [sqlv (if (vector? sql) sql [sql])]
-      (loop [sql (first sqlv)
-             sqls (rest sqlv)]
-        (let [stmt (.createStatement con ResultSet/TYPE_SCROLL_INSENSITIVE ResultSet/CONCUR_READ_ONLY)
-              has-rs (.execute stmt sql)]
-          (if (empty? sqls)
-            (if has-rs
-              (read-rs (.getResultSet stmt) opts)
-              (.getUpdateCount stmt)
-              )
-            (recur (first sqls) (rest sqls)))
-          )))
-    )
+(defn execute
+  ([ds sql opts]
+   (with-open [con (.getConnection (:datasource ds))]
+     (let [sqlv (if (vector? sql) sql [sql])]
+       (loop [sql (first sqlv)
+              sqls (rest sqlv)]
+         (let [stmt (.createStatement con ResultSet/TYPE_SCROLL_INSENSITIVE ResultSet/CONCUR_READ_ONLY)
+               has-rs (.execute stmt sql)]
+           (if (empty? sqls)
+             (if has-rs
+               (read-rs (.getResultSet stmt) opts)
+               (.getUpdateCount stmt)
+               )
+             (recur (first sqls) (rest sqls)))
+           )))
+     ))
+  ([ds sql] (execute ds sql {}))
   )
 
 (defn table-meta [ds name]
   (with-db-metadata [meta ds]
     (let [cols  (with-open [rs (.getColumns meta nil nil name "%")]
-                  (read-rs rs :columns ["COLUMN_NAME" "DATA_TYPE" "TYPE_NAME" "COLUMN_SIZE" "DECIMAL_DIGITS" "NULLABLE"] :limit 200))
+                  (read-rs rs {:columns ["COLUMN_NAME" "DATA_TYPE" "TYPE_NAME" "COLUMN_SIZE" "DECIMAL_DIGITS" "NULLABLE"] :limit 200}))
           pks (with-open [rs (.getPrimaryKeys meta nil nil name)]
-                (read-rs rs :columns ["COLUMN_NAME" "KEY_SEQ" "PK_NAME"]))
+                (read-rs rs {:columns ["COLUMN_NAME" "KEY_SEQ" "PK_NAME"]}))
           fks (with-open [rs (.getImportedKeys meta nil nil name)]
-                (read-rs rs :columns ["PKTABLE_NAME" "PKCOLUMN_NAME" "FKCOLUMN_NAME" "KEY_SEQ" "FKTABLE_NAME"]))]
+                (read-rs rs {:columns ["PKTABLE_NAME" "PKCOLUMN_NAME" "FKCOLUMN_NAME" "KEY_SEQ" "FKTABLE_NAME"]}))]
       {:columns cols :primaryKeys pks :foreignKeys fks})))
 
 (defn exec-query [ds {:keys [tables fields predicates offset limit] :or {offset 0 limit 20}}]
@@ -129,5 +132,5 @@
           where (if (empty? predicates) "" (str " where " (s/join " AND " predicates)))
           sql (str "select " (s/join "," fields) " from " (s/join "," tables) where)
           rs (.executeQuery stmt sql)]
-      (read-rs rs :limit limit :offset offset)
+      (read-rs rs {:limit limit :offset offset})
       )))

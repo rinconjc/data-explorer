@@ -70,11 +70,12 @@
 (defn handle-exec-sql [req ds-id]
   (let [raw-sql (get-in req [:body :raw-sql])
         ds (get-ds ds-id)]
-    (try-let [r (execute ds raw-sql)]
+    (let [opts (into {} (for [[k v] (:params req) :when (#{:offset :limit} k)] [k (Integer. v)]))
+          r (execute ds raw-sql opts)]
              (if (number? r)
                {:body {:rowsAffected r}}
                {:body {:data  r}})
-             (fn [e] {:status 500 :body (.getMessage e)}))
+             )
     ))
 
 (defn handle-exec-query-by-id [id ds-id]
