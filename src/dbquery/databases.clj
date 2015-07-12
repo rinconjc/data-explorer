@@ -117,11 +117,11 @@
 (defn table-meta [ds name]
   (with-db-metadata [meta ds]
     (let [cols  (with-open [rs (.getColumns meta nil nil name "%")]
-                  (read-rs rs {:columns ["COLUMN_NAME" "DATA_TYPE" "TYPE_NAME" "COLUMN_SIZE" "DECIMAL_DIGITS" "NULLABLE"] :limit 200}))
+                  (read-as-map rs))
           pks (with-open [rs (.getPrimaryKeys meta nil nil name)]
-                (read-rs rs {:columns ["COLUMN_NAME" "KEY_SEQ" "PK_NAME"]}))
+                (read-as-map rs))
           fks (with-open [rs (.getImportedKeys meta nil nil name)]
-                (read-rs rs {:columns ["PKTABLE_NAME" "PKCOLUMN_NAME" "FKCOLUMN_NAME" "KEY_SEQ" "FKTABLE_NAME"]}))]
+                (read-as-map rs))]
       {:columns cols :primaryKeys pks :foreignKeys fks})))
 
 (defn exec-query [ds {:keys [tables fields predicates offset limit] :or {offset 0 limit 20}}]

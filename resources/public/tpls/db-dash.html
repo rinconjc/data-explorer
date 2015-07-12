@@ -32,17 +32,17 @@
         <tabset ng-show="data.$resolved">
           <tab heading="Columns">
             <div class="table-responsive">
-              <ng-table class="table-bordered" columns="data.columns.columns" data="data.columns.rows"/>
+              <ng-table class="table-bordered" keys="column_name,data_type,type_name,column_size,decimal_digits,nullable" data="data.columns"/>
             </div>
           </tab>
           <tab heading="Primary Key">
             <div class="table-responsive">
-              <ng-table class="table-bordered" columns="data.primaryKes.columns" data="data.primaryKeys.rows"/>
+              <ng-table class="table-bordered" keys="column_name,key_seq,pk_name" data="data.primaryKeys"/>
             </div>
           </tab>
           <tab heading="Foreign Keys">
             <div class="table-responsive">
-              <ng-table class="table-bordered" columns="data.foreignKeys.columns" data="data.foreignKeys.rows"/>
+              <ng-table class="table-bordered" keys="pktable_name,pkcolumn_name,fkcolumn_name,key_seq,fktable_name" data="data.foreignKeys" />
             </div>
           </tab>
         </tabset>

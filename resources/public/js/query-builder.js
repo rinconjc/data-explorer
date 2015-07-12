@@ -14,10 +14,15 @@ angular.module('query.builder',[])
                     $scope.fromTables.push(item);
                     $scope.model.table = '';
                     var tableMeta = DataService.getTableInfo($scope.dsId, item);
-                    $scope.availableColumns
+                    tableMeta.$promise.then(function(){
+                        angular.forEach(tableMeta.columns, function(r){
+                            $scope.availableColumns.push(r.column_name);
+                        });
+                        console.debug('cols:', $scope.availableColumns);
+                    });
                 };
                 $scope.delTable = function(index){
-                    $scope.fromTables.splice(i,1);
+                    $scope.fromTables.splice(index,1);
                 };
             }
         };
