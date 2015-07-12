@@ -42,10 +42,21 @@ angular.module('common-widgets', [])
             }
         };
     })
+    .filter('toArray', function(){
+        return function(input, keys){
+            if(angular.isArray(input)) return input;
+            var array = [];
+            angular.forEach(keys, function(k){
+                array.push(input[k]);
+            });
+            return array;
+        };
+    })
     .directive('ngTable',function($filter){
         return {
             scope:{
-                columns:'=',
+                columns:'=?',
+                keys:'@',
                 data:'=',
                 class:'@',
                 showMoreFn:'&',
@@ -53,22 +64,28 @@ angular.module('common-widgets', [])
             },
             replace:true,
             transclude:true,
-            template:'<table class="table {{class}}" data-len="{{columns.length}}"><thead><tr><th ng-repeat="col in columns track by $index">{{col}} <sort-button field="{{$index}}" sort-fn="sorter"/></th></tr></thead><tbody><tr ng-repeat="row in data"><td ng-repeat="item in row track by $index" title="{{item}}">{{item}}</td></tr></tbody><tfoot ng-show="hasMore"><tr><td colspan="{{columns.length}}"><a ng-click="showMoreFn()" class="btn btn-lnk">More <span class="glyphicon glyphicon-menu-down"></span></a></td></tr></tfoot></table>',
+            template:'<table class="table {{class}}" data-len="{{columns.length}}"><thead><tr><th ng-repeat="col in columns track by $index">{{col}} <sort-button field="{{$index}}" sort-fn="sorter"/></th></tr></thead><tbody><tr ng-repeat="row in data"><td ng-repeat="item in row | toArray:columns track by $index" title="{{item}}">{{item}}</td></tr></tbody><tfoot ng-if="hasMore()"><tr><td colspan="{{columns.length}}"><a ng-click="showMoreFn()" class="btn btn-lnk">More <span class="glyphicon glyphicon-menu-down"></span></a></td></tr></tfoot></table>',
             controller:function($scope){
                 $scope.sortState=null;
+                if($scope.keys){
+                    $scope.columns = $scope.keys.split(',');
+                }
                 $scope.sorter = function(col, ascDesc){
                     if(!$scope.sortState){
                         $scope.sortState=[];
                     }
+
+                    var field = $scope.keys?$scope.columns[col]:col;
+                    
                     if(ascDesc === '+'){
-                        $scope.sortState.push(col);
+                        $scope.sortState.push(field);
                     } else if(ascDesc === '-'){
-                        var i=$scope.sortState.indexOf(col);
+                        var i=$scope.sortState.indexOf(field);
                         if(i>=0){
-                            $scope.sortState[i] = '-'+col;
+                            $scope.sortState[i] = '-'+field;
                         }
                     } else{
-                        var i=$scope.sortState.indexOf('-'+col);
+                        var i=$scope.sortState.indexOf('-'+field);
                         if(i>=0)
                             $scope.sortState.splice(i,1);
                     }

@@ -1,29 +1,37 @@
-  <form class="form-horizontal">
-    <div class="form-group">
-      <label for="name" class="col-sm-1 control-label">From:</label>
-      <div class="col-sm-4">
-        <input class="form-control" type="text" placeholder="table(s) to query from..." size="40"  typeahead="t for t in tables | filter:$viewValue" ng-model="model.table" typeahead-editable="false" typeahead-on-select="addTable($item, $model, $label)" focus-on="selectTables" />
-        <div class="tags">
-          <span class="label label-primary" ng-repeat="t in fromTables">{{t}} <close-button close="delTable($index)" /> </span>
-        </div>
+<form class="form-horizontal">
+  <div class="form-group">
+    <label for="name" class="col-sm-1 control-label">From:</label>
+    <div class="col-sm-4">
+      <div class="input-group">
+        <input class="form-control" type="text" placeholder="table(s) to query from..." size="40"  typeahead="t for t in tables | filter:$viewValue" ng-model="model.table" typeahead-editable="false" typeahead-on-select="addTable($item, $model, $label)" focus-on="selectTables" typeahead-min-length="0" />
+        <span class="input-group-btn">
+          <button class="btn btn-default" type="button" popover-template="selectTablesTemplate.html" popover-title="Tables">
+            <span class="glyphicon glyphicon-chevron-down"></span>
+          </button>
+        </span>
+      </div>
+      <div class="tags">
+        <span class="label label-primary" ng-repeat="t in fromTables">{{t}} <close-button close="delTable($index)" /> </span>
       </div>
     </div>
-    <div class="form-group">
-      <label for="columns" class="col-sm-1 control-label">Select:</label>
-      <div class="col-sm-4">
-        <select class="form-control" ng-options="col.name for col in availableColumns" multiple></select>
-      </div>
+  </div>
+  <div class="form-group">
+    <label for="columns" class="col-sm-1 control-label">Select:</label>
+    <div class="col-sm-4">
+      <select class="form-control" ng-model="selectedColumns" ng-options="col for col in availableColumns" multiple></select>
     </div>
-    <div class="form-group">
-      <label for="columns" class="col-sm-1 control-label">Where:</label>
-      <div class="col-sm-5">
-        <select class="form-control" ng-options="col.name for col in availableColumns" multiple></select>
-      </div>
+  </div>
+  <div class="form-group">
+    <label for="columns" class="col-sm-1 control-label">Where:</label>
+    <div class="col-sm-5">
+      <select class="form-control" ng-options="col.column_name for col in availableColumns" multiple></select>
     </div>
-  </form>
-  <!--
-      from:crashes, person, traffic_unit; select person.id, traffic_unit.id, 
-    -->
-  
-
-
+  </div>
+</form>
+<script type="text/ng-template" id="selectTablesTemplate.html">
+  <select class="form-control" ng-model="selectedTables"></select>
+  <div class="form-group">
+    <label></label>
+    <input type="text" ng-model="dynamicPopover.title" class="form-control">
+  </div>
+</script>
