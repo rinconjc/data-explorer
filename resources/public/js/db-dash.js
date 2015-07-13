@@ -108,13 +108,18 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                 $scope.model = {selection:[]};
                 $scope.queries = DataService.getQueries(dsId);
                 $scope.results = [];
+                $scope.activeTab = {};
+                var uid=0;
                 $scope.execute = function(){
                     var sql = $scope.editor.getSelection() || $scope.query.sql;
                     var resp = DataService.executeSql(dsId, sql);
+
                     $scope.result=resp;
                     resp.$promise.then(function(){
                         if(resp.data){
-                            $scope.results.push({sql:sql, data:resp.data});
+                            var id = uid++;
+                            $scope.results.push({sql:sql, data:resp.data, id:id});
+                            $scope.activeTab[id]=true;
                         }
                     });
                 };
