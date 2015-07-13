@@ -4,10 +4,31 @@
     <div class="col-sm-4">
       <div class="input-group">
         <input class="form-control" type="text" placeholder="table(s) to query from..." size="40"  typeahead="t for t in tables | filter:$viewValue" ng-model="model.table" typeahead-editable="false" typeahead-on-select="addTable($item, $model, $label)" focus-on="selectTables" typeahead-min-length="0" />
-        <span class="input-group-btn">
-          <button class="btn btn-default" type="button" popover-template="selectTablesTemplate.html" popover-title="Tables">
+        <span class="input-group-btn" dropdown dropdown-append-to-body auto-close="outsideClick">
+          <!-- popover-template="'selectTablesTemplate.html'" popover-placement="bottom"  popover-title="Tables" -->
+          <button class="btn btn-default dropdown-toggle" type="button" dropdown-toggle>
             <span class="glyphicon glyphicon-chevron-down"></span>
           </button>
+          <ul class="dropdown-menu">
+            <li>
+              <form>
+                <div class="form-group">
+                  <input class="form-control" type="text" placeholder="search tables..."/>
+                </div>
+                <div class="form-group">
+                  <select class="form-control" ng-model="selectedTables" ng-options="t for t in tables" multiple></select>
+                </div>
+                <div class="form-group">
+                  <div class="checkbox" ng-repeat="rt in relatedTables">
+                    <label>
+                      <input type="checkbox" ng-model="selectedRelatedTables" />
+                      {{rt}}
+                    </label>
+                  </div>
+                </div>
+              </form>
+            </li>
+          </ul>
         </span>
       </div>
       <div class="tags">
@@ -29,9 +50,20 @@
   </div>
 </form>
 <script type="text/ng-template" id="selectTablesTemplate.html">
-  <select class="form-control" ng-model="selectedTables"></select>
-  <div class="form-group">
-    <label></label>
-    <input type="text" ng-model="dynamicPopover.title" class="form-control">
+  <div class="col-md-12">
+    <form >
+      <div class="form-group">
+        <select class="form-control" ng-model="selectedTables" ng-options="t for t in tables"></select>
+      </div>
+      <div class="form-group">
+        <div class="checkbox" ng-repeat="rt in relatedTables">
+          <label>
+            <input type="checkbox" ng-model="selectedRelatedTables" />
+            {{rt}}
+          </label>
+        </div>
+      </div>
+    </form>
+    
   </div>
 </script>
