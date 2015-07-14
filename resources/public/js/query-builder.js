@@ -17,7 +17,7 @@ angular.module('query.builder',[])
                     var tableMeta = DataService.getTableInfo($scope.dsId, item);
                     tableMeta.$promise.then(function(){
                         angular.forEach(tableMeta.columns, function(r){
-                            $scope.availableColumns.push(r.column_name);
+                            $scope.availableColumns.push(item + '.' + r.column_name);
                         });
                         angular.forEach(tableMeta.foreignKeys, function(v,k){
                             $scope.relatedTables.push(v.pktable_name);
