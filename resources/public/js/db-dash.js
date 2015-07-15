@@ -96,6 +96,7 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
         };
     })
     .directive('sqlPanel', function(DataService, $modal){
+        var pageSize=20;
         return {
             scope:{
                 dsId:'=',
@@ -118,7 +119,7 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                     resp.$promise.then(function(){
                         if(resp.data){
                             var id = uid++;
-                            $scope.results.push({sql:sql, data:resp.data, id:id});
+                            $scope.results.push({sql:sql, data:resp.data, id:id, hasMore:(resp.data.rows.length>=pageSize)});
                             $scope.activeTab[id]=true;
                         }
                     });
@@ -128,12 +129,14 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                 };
 
                 $scope.fetchNext = function(i){
-                    var rows = $scope.results[i].data.rows;
-                    var next = DataService.executeSql(dsId, $scope.results[i].sql, rows.length, 20);
+                    var res = $scope.results[i],
+                        rows = res.data.rows,
+                        next = DataService.executeSql(dsId, $scope.results[i].sql, rows.length, pageSize);
                     next.$promise.then(function(){
                         angular.forEach(next.data.rows, function(row){
                             rows.push(row);
                         });
+                        res.hasMore = next.data.rows.length>=pageSize;
                     });
                 };
 
@@ -153,6 +156,7 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                     $scope.editor = _editor;
                     _editor.focus();
                 };
+                
                 $scope.saveSql = function(){
                     if($scope.query.id){
                         DataService.saveQuery($scope.query);
