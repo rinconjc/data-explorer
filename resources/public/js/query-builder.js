@@ -13,6 +13,7 @@ angular.module('query.builder',[])
                 $scope.relatedTables=[];
                 $scope.addTable = function(item){
                     $scope.fromTables.push(item);
+                    $scope.tables.splice($scope.tables.indexOf(item),1);
                     $scope.model.table = '';
                     var tableMeta = DataService.getTableInfo($scope.dsId, item);
                     tableMeta.$promise.then(function(){
@@ -26,7 +27,8 @@ angular.module('query.builder',[])
                     });
                 };
                 $scope.delTable = function(index){
-                    $scope.fromTables.splice(index,1);
+                    $scope.tables.push($scope.fromTables[index]);
+                    $scope.fromTables.splice(index,1);                    
                 };
             }
         };

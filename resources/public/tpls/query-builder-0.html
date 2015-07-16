@@ -1,0 +1,69 @@
+<form class="form-horizontal">
+  <div class="form-group">
+    <label for="name" class="col-sm-1 control-label">From:</label>
+    <div class="col-sm-4">
+      <div class="input-group">
+        <input class="form-control" type="text" placeholder="table(s) to query from..." size="40"  typeahead="t for t in tables | filter:$viewValue" ng-model="model.table" typeahead-editable="false" typeahead-on-select="addTable($item, $model, $label)" focus-on="selectTables" typeahead-min-length="0" />
+        <span class="input-group-btn" dropdown dropdown-append-to-body auto-close="disabled" is-open="tablesMenuOpen">
+          <!-- popover-template="'selectTablesTemplate.html'" popover-placement="bottom"  popover-title="Tables" -->
+          <button class="btn btn-default dropdown-toggle" type="button" dropdown-toggle>
+            <span class="glyphicon glyphicon-chevron-down"></span>
+          </button>
+          <ul class="dropdown-menu">
+            <li style="padding:10px;">
+              <form>
+                <div class="form-group">
+                  <select class="form-control" ng-model="model.table" ng-options="t for t in tables"></select>
+                </div>
+                <div class="form-group">
+                  <label for="">Related</label>
+                  <div class="checkbox" ng-repeat="rt in relatedTables">
+                    <label>
+                      <input type="checkbox" ng-model="selectedRelatedTables" />{{rt}}
+                    </label>
+                  </div>
+                </div>
+              </form>
+              <div class="text-center">
+                <button class="btn btn-success" ng-click="tablesMenuOpen = false">Close</button>
+              </div>
+            </li>
+          </ul>
+        </span>
+      </div>
+      <div class="tags">
+        <span class="label label-primary" ng-repeat="t in fromTables">{{t}} <close-button close="delTable($index)" /> </span>
+      </div>
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="columns" class="col-sm-1 control-label">Select:</label>
+    <div class="col-sm-4">
+      <select class="form-control" ng-model="selectedColumns" ng-options="col for col in availableColumns" multiple></select>
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="columns" class="col-sm-1 control-label">Where:</label>
+    <div class="col-sm-5">
+      <select class="form-control" ng-options="col.column_name for col in availableColumns" multiple></select>
+    </div>
+  </div>
+</form>
+<script type="text/ng-template" id="selectTablesTemplate.html">
+  <div class="col-md-12">
+    <form >
+      <div class="form-group">
+        <select class="form-control" ng-model="selectedTables" ng-options="t for t in tables"></select>
+      </div>
+      <div class="form-group">
+        <div class="checkbox" ng-repeat="rt in relatedTables">
+          <label>
+            <input type="checkbox" ng-model="selectedRelatedTables" />
+            {{rt}}
+          </label>
+        </div>
+      </div>
+    </form>
+    
+  </div>
+</script>
