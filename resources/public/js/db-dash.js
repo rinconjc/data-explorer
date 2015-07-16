@@ -55,7 +55,8 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
             },
             templateUrl:'tpls/db-dash.html',
             controller: function($scope, CONSTS, DataService, $modal, hotkeys, focus, preventDefault){
-                var dsId = $scope.ds.id; //$routeParams.db;
+                var pageSize = 20,
+                    dsId = $scope.ds.id; //$routeParams.db;
                 $scope.dsId=dsId;
                 $scope.previewTabs={};
                 $scope.infoTabs={};
