@@ -1,21 +1,47 @@
 <form class="form-horizontal">
-  <div class="row">
-    <div class="col-md-3">
-      <label for="">Available Tables:</label>
-      <div class="form-group">
-        <select mutiple size="10" class="form-control">
-          <option value="{{t}}" ng-repeat="t in tables">{{t}}</option>
-        </select>
+  <div class="form-group">
+    <label for="name" class="col-sm-1 control-label">From:</label>
+    <div class="col-sm-4">
+      <div class="input-group">
+        <input class="form-control" type="text" placeholder="table(s) to query from..." size="40"  typeahead="t for t in tables | filter:$viewValue" ng-model="model.table" typeahead-editable="false" typeahead-on-select="addTable($item, $model, $label)" focus-on="selectTables" typeahead-min-length="0" />
+        <span class="input-group-btn">
+          <div class="btn-group" dropdown dropdown-append-to-body auto-close="disabled" is-open="tablesMenuOpen">
+            <button class="btn btn-default dropdown-toggle" type="button" dropdown-toggle>
+              <span class="glyphicon glyphicon-chevron-down"></span>
+            </button>
+            <ul class="dropdown-menu">
+              <li>
+                <select class="form-control" ng-model="model.table" ng-options="t for t in tables" multiple></select>
+              </li>
+            </ul>
+          </div>
+          <div ng-show="relatedTables.length>0" class="btn-group" dropdown dropdown-append-to-body auto-close="disabled">
+            <button class="btn btn-default dropdown-toggle" type="button" dropdown-toggle>
+              Related <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu">
+              <li ng-repeat="rt in relatedTables track by $index"> {{rt}}</li>
+            </ul>
+          </div>
+        </span>
+      </div>
+      
+      
+      <div class="tags">
+        <span class="label label-primary" ng-repeat="t in fromTables">{{t}} <close-button close="delTable($index)" /> </span>
       </div>
     </div>
-    <div class="col-md-1"></div>
-    <div class="col-md-3">
-      <label for="">Selected:</label>
-      <div class="form-group" >
-        <select mutiple size="10" class="form-control">
-          <option value="{{t}}" ng-repeat="t in fromTables">{{t}}</option>
-        </select>
-      </div>
+  </div>
+  <div class="form-group">
+    <label for="columns" class="col-sm-1 control-label">Select:</label>
+    <div class="col-sm-4">
+      <select class="form-control" ng-model="selectedColumns" ng-options="col for col in availableColumns" multiple></select>
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="columns" class="col-sm-1 control-label">Where:</label>
+    <div class="col-sm-5">
+      <select class="form-control" ng-options="col.column_name for col in availableColumns" multiple></select>
     </div>
   </div>
 </form>
