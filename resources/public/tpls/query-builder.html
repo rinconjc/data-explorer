@@ -5,37 +5,52 @@
       <div class="input-group">
         <input class="form-control" type="text" placeholder="table(s) to query from..." size="40"  typeahead="t for t in tables | filter:$viewValue" ng-model="model.table" typeahead-editable="false" typeahead-on-select="addTable($item, $model, $label)" focus-on="selectTables" typeahead-min-length="0" />
         <span class="input-group-btn">
-          <div class="btn-group" dropdown dropdown-append-to-body auto-close="disabled" is-open="tablesMenuOpen">
-            <button class="btn btn-default dropdown-toggle" type="button" dropdown-toggle>
-              <span class="glyphicon glyphicon-chevron-down"></span>
-            </button>
-            <ul class="dropdown-menu">
-              <li>
-                <select class="form-control" ng-model="model.table" ng-options="t for t in tables" multiple></select>
-              </li>
-            </ul>
+          <!--          <div class="btn-group" dropdown dropdown-append-to-body auto-close="disabled" is-open="tablesMenuOpen">
+                        <button class="btn btn-default dropdown-toggle" type="button" dropdown-toggle>
+                          <span class="glyphicon glyphicon-chevron-down"></span>
+                        </button>
+                        <ul class="dropdown-menu">
+                          <li>
+                            <select class="form-control" multiple size="10">
+                              <option value="{{t}}" ng-repeat="t in tables">{{t}}</option>
+                            </select>
+                          </li>
+                        </ul>
           </div>
-          <div ng-show="relatedTables.length>0" class="btn-group" dropdown dropdown-append-to-body auto-close="disabled">
+          -->
+          <div class="btn-group" dropdown dropdown-append-to-body auto-close="disabled">
             <button class="btn btn-default dropdown-toggle" type="button" dropdown-toggle>
               Related <span class="caret"></span>
             </button>
-            <ul class="dropdown-menu">
-              <li ng-repeat="rt in relatedTables track by $index"> {{rt}}</li>
+            <ul class="dropdown-menu" role="menu">
+              <li ng-repeat="(rt,i) in relatedTables"><a href="" ng-click="addRelated(rt)"><span class="glyphicon glyphicon-plus-sign"></span> {{rt}}</a></li>
             </ul>
           </div>
         </span>
       </div>
-      
-      
       <div class="tags">
         <span class="label label-primary" ng-repeat="t in fromTables">{{t}} <close-button close="delTable($index)" /> </span>
       </div>
     </div>
   </div>
   <div class="form-group">
-    <label for="columns" class="col-sm-1 control-label">Select:</label>
-    <div class="col-sm-4">
-      <select class="form-control" ng-model="selectedColumns" ng-options="col for col in availableColumns" multiple></select>
+    <div class="row">
+      <div class="col-md-4">
+        <label for="columns" class="col-sm-1 control-label">Available Columns:</label>
+        <div class="col-sm-4">
+          <select class="form-control" multiple size="6">
+            <option value="{{col}}" ng-repeat="col in availableColumns">{{col}}</option>
+          </select>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <label for="columns" class="col-sm-1 control-label">Selected Columns:</label>
+        <div class="col-sm-4">
+          <select class="form-control" multiple size="6">
+            <option value="{{col}}" ng-repeat="col in selectedColumns">{{col}}</option>
+          </select>
+        </div>
+      </div>
     </div>
   </div>
   <div class="form-group">
