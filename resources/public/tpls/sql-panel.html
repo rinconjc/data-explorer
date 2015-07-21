@@ -29,7 +29,7 @@
   <alert ng-if="result.$error" type="danger">{{result.$error}}</alert>
   <tabset>
     <tab ng-repeat="r in results" active="activeTab[r.id]">
-      <tab-heading>Result #{{$index}} <close-button close="closeResult($index)"/></tab-heading>
+      <tab-heading>Result #{{$index}} <a href="" ng-click="refresh(r)"><span class="glyphicon glyphicon-refresh"></span></a> <close-button close="closeResult($index)"/></tab-heading>
       <div class="table-responsive">
         <ng-table class="table-bordered summary" columns="r.data.columns" data="r.data.rows" has-more="r.hasMore" show-more-fn="fetchNext($index)" />
       </div>

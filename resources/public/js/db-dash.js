@@ -192,6 +192,14 @@ angular.module('db.dash',['dbquery.api', 'ui.codemirror', 'ui.bootstrap','cfp.ho
                 $scope.clear = function(){
                     $scope.query = {};
                 };
+                $scope.refresh = function(r){
+                    var resp = DataService.executeSql(dsId, r.sql);
+                    r.data.rows=[];
+                    resp.$promise.then(function(){
+                        r.data = resp.data;
+                        r.hasMore = resp.data.rows.length>=pageSize;
+                    });                                                            
+                };
             }
         };
     })
