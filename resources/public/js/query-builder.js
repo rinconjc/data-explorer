@@ -24,6 +24,7 @@ angular.module('query.builder',[])
                     $scope.model.table = '';
                     var tableMeta = DataService.getTableInfo($scope.dsId, item);
                     tableMeta.$promise.then(function(){
+                        $scope.availableColumns.push(item+'.*');
                         angular.forEach(tableMeta.columns, function(r){
                             $scope.availableColumns.push(item + '.' + r.column_name);
                         });
@@ -47,6 +48,10 @@ angular.module('query.builder',[])
                 $scope.addColumn = function(col){
                     removeElem($scope.availableColumns, col);
                     $scope.selectedColumns.push(col);
+                };
+                $scope.moveCol = function(col, fromArray, toArray){
+                    removeElem(fromArray, col);
+                    toArray.push(col);
                 };
             }
         };
