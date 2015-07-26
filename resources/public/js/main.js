@@ -21,9 +21,9 @@ angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'common-widg
     })
     .controller('LoginCtrl', function($scope, $http, $rootScope, $location){
         $scope.doLogin = function(loginData){
-            console.debug('logging with ', loginData);
             $http.post('/login', loginData).success(function(user){
                 $rootScope.user=user;
+                //load user modules definitions
                 $location.path('/');
                 $scope.refreshDatasources();
             }).error(function(err){
