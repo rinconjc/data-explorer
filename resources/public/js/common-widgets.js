@@ -64,7 +64,7 @@ angular.module('common-widgets', [])
             },
             replace:true,
             transclude:true,
-            template:'<table class="table {{class}}" data-len="{{columns.length}}"><thead><tr><th></th><th ng-repeat="col in columns track by $index">{{col}} <sort-button field="{{$index}}" sort-fn="sorter"/></th></tr></thead><tbody><tr ng-repeat="row in data"><td>{{$index+1}}</td><td ng-repeat="item in row | toArray:columns track by $index" title="{{item}}">{{item}}</td></tr></tbody><tfoot ng-if="hasMore()"><tr><td colspan="{{columns.length}}"><a ng-click="showMoreFn()" class="btn btn-lnk">More <span class="glyphicon glyphicon-menu-down"></span></a></td></tr></tfoot></table>',
+            template:'<table class="table {{class}}" data-len="{{columns.length}}"><thead><tr><th width="1px;"></th><th ng-repeat="col in columns track by $index">{{col}} <sort-button field="{{$index}}" sort-fn="sorter"/></th></tr></thead><tbody><tr ng-repeat="row in data"><td>{{$index+1}}</td><td ng-repeat="item in row | toArray:columns track by $index" title="{{item}}">{{item}}</td></tr></tbody><tfoot ng-if="hasMore()"><tr><td colspan="{{columns.length}}"><a ng-click="showMoreFn()" class="btn btn-lnk">More <span class="glyphicon glyphicon-menu-down"></span></a></td></tr></tfoot></table>',
             controller:function($scope){
                 $scope.sortState=null;
                 if($scope.keys){
