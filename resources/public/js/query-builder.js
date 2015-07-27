@@ -1,4 +1,8 @@
 angular.module('query.builder',[])
+    .constant('CriteriaConsts', {
+        operators:['=','!=','is','<=','>=','>','<','in', 'like','between'],
+        operandTypes:['value','expression','column']
+    })
     .directive('queryBuilder', function(){
         function removeElem(arr, elem){
             var i = arr.indexOf(elem);
@@ -11,22 +15,24 @@ angular.module('query.builder',[])
                 dsId:'='
             },
             templateUrl:'tpls/query-builder.html',
-            controller:function($scope, DataService){
+            controller:function($scope, DataService, CriteriaConsts){
+                $scope.CriteriaConsts=CriteriaConsts;
                 $scope.model = {};
                 $scope.fromTables=[];
-                $scope.availableColumns=[];
+                $scope.columns=[];
                 $scope.tables = DataService.getTables($scope.dsId);
                 $scope.relatedTables={};
-                $scope.selectedColumns=[];
+                $scope.criteria=[];
+                $scope.criterion={operandType:'Value'};
                 $scope.addTable = function(item){
                     $scope.fromTables.push(item);
                     removeElem($scope.tables, item);
                     $scope.model.table = '';
                     var tableMeta = DataService.getTableInfo($scope.dsId, item);
                     tableMeta.$promise.then(function(){
-                        $scope.availableColumns.push(item+'.*');
+                        $scope.columns.push({table:item, name:'*', special:true, selected:false});
                         angular.forEach(tableMeta.columns, function(r){
-                            $scope.availableColumns.push(item + '.' + r.column_name);
+                            $scope.columns.push({table:item, name:r.column_name, special:false, selected:false});
                         });
                         angular.forEach(tableMeta.foreignKeys, function(v,k){
                             $scope.relatedTables[v.pktable_name]=1;
@@ -37,21 +43,14 @@ angular.module('query.builder',[])
                     var tbl = $scope.fromTables[index];
                     $scope.tables.push(tbl);
                     $scope.fromTables.splice(index,1);
-                    $scope.availableColumns = _.filter($scope.availableColumns, function(item){
-                        return !item.startsWith(tbl+'.');
-                    });
+                    var tableCols = function(item){
+                        return item.table==item;
+                    };
+                    $scope.columns = _.filter($scope.columns, tableCols);
                 };
                 $scope.addRelated = function(rt){
                     $scope.addTable(rt);
                     delete $scope.relatedTables[rt];
-                };
-                $scope.addColumn = function(col){
-                    removeElem($scope.availableColumns, col);
-                    $scope.selectedColumns.push(col);
-                };
-                $scope.moveCol = function(col, fromArray, toArray){
-                    removeElem(fromArray, col);
-                    toArray.push(col);
                 };
             }
         };

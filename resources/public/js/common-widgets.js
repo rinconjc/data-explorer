@@ -14,6 +14,47 @@ angular.module('common-widgets', [])
             });
         };
     })
+    .factory('RecursionHelper', ['$compile', function($compile){
+        return {
+            /**
+             * Manually compiles the element, fixing the recursion loop.
+             * @param element
+             * @param [link] A post-link function, or an object with function(s) registered via pre and post properties.
+             * @returns An object containing the linking functions.
+             */
+            compile: function(element, link){
+                // Normalize the link parameter
+                if(angular.isFunction(link)){
+                    link = { post: link };
+                }
+
+                // Break the recursion loop by removing the contents
+                var contents = element.contents().remove();
+                var compiledContents;
+                return {
+                    pre: (link && link.pre) ? link.pre : null,
+                    /**
+                     * Compiles and re-adds the contents
+                     */
+                    post: function(scope, element){
+                        // Compile the contents
+                        if(!compiledContents){
+                            compiledContents = $compile(contents);
+                        }
+                        // Re-add the compiled contents to the element
+                        compiledContents(scope, function(clone){
+                            element.append(clone);
+                        });
+
+                        // Call the post-linking function, if any
+                        if(link && link.post){
+                            link.post.apply(null, arguments);
+                        }
+                    }
+                };
+            }
+        };
+    }])
     .directive('spinner', function(){
         return {
             scope:{
@@ -76,7 +117,7 @@ angular.module('common-widgets', [])
                     }
 
                     var field = $scope.keys?$scope.columns[col]:col;
-                    
+
                     if(ascDesc === '+'){
                         $scope.sortState.push(field);
                     } else if(ascDesc === '-'){
@@ -159,6 +200,25 @@ angular.module('common-widgets', [])
                     evt.stopPropagation();
                     $scope.close();
                 }
+            }
+        };
+    })
+    .directive('menuBar', function(RecursionHelper){
+        return {
+            restrict:'E',
+            scope:{
+                model:'='
+            },
+            replace:false,
+            transclude:true,
+            templateUrl:'tpls/menu-bar.html',
+            controller:function($scope){
+                $scope.dropdown = function(menu){
+                    return menu.items?'dropdown':''
+                };
+            },
+            compile:function(element){
+                return RecursionHelper.compile(element);
             }
         };
     })
