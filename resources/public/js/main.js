@@ -70,7 +70,15 @@ angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'common-widg
 
         hotkeys.bindTo($scope).add({combo:'alt+o', callback:openDb});
 
-        $scope.menuBar = [{label:'Open DB', action:openDb}, {label:'Add Connection', href:'#/data-source'}];
+        $scope.menuBar = [
+            {label:'Home', href:'#/'},
+            {label:'Open DB', action:openDb},
+            {label:'Add Connection', href:'#/data-source'},
+            {label:'Data', items:[
+                {label:'Import', event:'import-data'},
+                {label:'Export', event:'export-data'},
+            ]}
+        ];
         $scope.refreshDatasources = function(){
             console.debug('refreshing datasources...');
             $rootScope.datasources = DataService.getDatasources();
