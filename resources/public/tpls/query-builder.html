@@ -27,13 +27,13 @@
         <div class="col-md-4">
           <label for="columns" class="control-label">Available:</label>
           <select class="form-control" multiple size="6"  >
-            <option value="{{col}}" ng-dblclick="moveCol(col,availableColumns,selectedColumns)" ng-repeat="col in availableColumns | orderBy:col">{{col}}</option>
+            <option value="{{$index}}" ng-dblclick="col.selected=true" ng-repeat="col in columns | filter:{selected:false} | orderBy:col">{{col.table}}.{{col.name}}</option>
           </select>
         </div>
         <div class="col-md-4">
           <label for="columns" class="control-label">Selected:</label>
           <select class="form-control" multiple size="6">
-            <option value="{{col}}" ng-dblclick="moveCol(col,selectedColumns, availableColumns)" ng-repeat="col in selectedColumns | orderBy:col">{{col}}</option>
+            <option value="{{$index}}" ng-dblclick="col.selected=false" ng-repeat="col in columns | filter:{selected:true} | orderBy:col">{{col.table}}.{{col.name}}</option>
           </select>
         </div>
       </div>
@@ -41,21 +41,22 @@
   </div>
   <div class="form-group">
     <label for="columns" class="col-sm-1 control-label">Where:</label>
-    <div class="col-sm-10 form-inline">
-      <select class="form-control" >
-        <option value="{{col}}" ng-repeat="col in availableColumns">{{col}}</option>
-      </select>
-      <select class="form-control" placeholder="operator">
-        <option value="{{op}}" ng-repeat="op in ['=','is','<=','>=','>','<','in', 'not']">{{op}}</option>
-      </select>
-      <select class="form-control" placeholder="" ng-model="opType">
-        <option value="{{type}}" ng-repeat="type in ['Value','Expression','Column']">{{type}}:</option>
-      </select>
-      <input class="form-control" ng-show="opType=='Value'" name="" type="text" value=""/>
-      <input class="form-control" ng-show="opType=='Expression'" name="" type="text" value=""/>
-      <select ng-show="opType=='Column'" class="form-control" >
-        <option value="{{col}}" ng-repeat="col in availableColumns">{{col}}</option>
-      </select>
+    <div class="col-sm-10">
+      <div class="form-inline">
+        <select class="form-control" ng-model="criterion.column" ng-options="col.table+'.'+col.name for col in columns | filter:{special:false}"/>
+        <select class="form-control" ng-model="criterion.operator" placeholder="operator" ng-options="op for op in CriteriaConsts.operators"/>
+        <select class="form-control" ng-model="criterion.operandType" placeholder="" ng-options="type for type in CriteriaConsts.operandTypes"/>
+        <input class="form-control" ng-show="criterion.operandType=='value'" ng-model="criterion.operand" type="text" value=""/>
+        <input class="form-control" ng-show="criterion.operandType=='expression'" ng-model="criterion.operand" type="text" value=""/>
+        <select ng-show="criterion.operandType=='column'" class="form-control" ng-model="criterion.operand" ng-options="col.table+'.'+col.name for col in columns|filter:{special:false}"/>
+        <button class="btn btn-default" ng-click="criteria.push(criterion)"><span class="glyphicon glyphicon-plus"></span></button>
+      </div>
+      <ul class="list-unstyled">
+        <li ng-repeat="c in criteria">
+          {{c.column.table}}.{{c.column.name}} {{c.operator}} {{c.operand}}
+        </li>
+      </ul>
     </div>
   </div>
+  
 </form>

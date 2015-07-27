@@ -1,0 +1,9 @@
+<li ng-repeat="m in model">
+  <a ng-if="m.action" href="" ng-click="m.action()">{{m.label}}</a>
+  <a ng-if="m.href" href="{{m.href}}">{{m.label}}</a>
+  <a ng-if="m.event" href="" ng-click="$rootScope.$emit(m.event)">{{m.label}}</a>
+  <a ng-if="m.items" class="dropdown-toggle" dropdown-toggle data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">{{m.label}}<span class="caret"></span></a>
+  <ul class="dropdown-menu" role="menu">
+    <menu-bar ng-if="m.items" model="m.items"/>
+  </ul>
+</li>
