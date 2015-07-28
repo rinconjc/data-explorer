@@ -67,6 +67,10 @@
                {:status 401 :body "invalid user or password"})
              (fn [e] {:status 500 :body (.getMessage e)}))))
 
+(defn handle-file-upload [req]
+  
+  )
+
 (defn handle-exec-sql [req ds-id]
   (let [raw-sql (get-in req [:body :raw-sql])
         ds (get-ds ds-id)]
@@ -153,6 +157,7 @@
   (GET "/" [] (slurp (io/resource "public/index.html")))
 
   (POST "/login" req (handle-login req))
+  (POST "/upload" req (handle-file-upload req))
   (GET "/logout" req (assoc (redirect "/") :session nil))
   (GET "/user" req (if-let [user (get-in req [:session :user])]
                      {:body user}

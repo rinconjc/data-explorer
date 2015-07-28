@@ -205,20 +205,76 @@ angular.module('common-widgets', [])
     })
     .directive('menuBar', function(RecursionHelper){
         return {
-            restrict:'E',
+            restrict:'A',
             scope:{
                 model:'='
             },
-            replace:false,
             transclude:true,
             templateUrl:'tpls/menu-bar.html',
-            controller:function($scope){
-                $scope.dropdown = function(menu){
-                    return menu.items?'dropdown':''
+            controller:function($scope, $rootScope){
+                $scope.fireEvent = function(evt){
+                    $rootScope.$emit(evt);
                 };
             },
             compile:function(element){
                 return RecursionHelper.compile(element);
+            }
+        };
+    })
+    .directive('dataForm', function(){
+        return {
+            scope:{
+                meta:'=',
+                model:'='
+            },
+            templateUrl:'tpls/form.html',
+            controller:function($scope){
+
+            }
+        };
+    })
+    .directive('formField', function(){
+        return {
+            scope:{
+                meta:'=',
+                model:'='
+            },
+            templateUrl:'tpls/form-field.html',
+            controller:function($scope){
+
+            }
+        }
+    })
+    .directive('fileModel', function ($parse) {
+        return {
+            restrict: 'A',
+            link: function(scope, element, attrs) {
+                var model = $parse(attrs.fileModel);
+                var modelSetter = model.assign;
+
+                element.bind('change', function(){
+                    scope.$apply(function(){
+                        modelSetter(scope, element[0].files[0]);
+                    });
+                });
+            }
+        };
+    })
+    .service('fileUpload', function ($http, $q) {
+        return {
+            uploadFile: function(file, uploadUrl){
+                var defer = $q.defer();
+                var fd = new FormData();
+                fd.append('file', file);
+                $http.post(uploadUrl, fd, {
+                    transformRequest: angular.identity,
+                    headers: {'Content-Type': undefined}
+                }).success(function(resp){
+                    defer.resolve(resp);
+                }).error(function(err){
+                    defer.reject(err);
+                });
+                return defer.promise;
             }
         };
     })

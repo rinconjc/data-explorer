@@ -1,4 +1,4 @@
-angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'common-widgets', 'dbquery.api','db.dash', 'query.builder','cfp.hotkeys'])
+angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'common-widgets', 'dbquery.api','db.dash', 'query.builder','cfp.hotkeys','data.import'])
     .constant('CONSTS', {
         EVENTS:{
             DS_ADDED:'ds-added',
@@ -75,8 +75,8 @@ angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'common-widg
             {label:'Open DB', action:openDb},
             {label:'Add Connection', href:'#/data-source'},
             {label:'Data', items:[
-                {label:'Import', event:'import-data'},
-                {label:'Export', event:'export-data'},
+                {label:'Import', event:'data.import'},
+                {label:'Export', event:'data.export'},
             ]}
         ];
         $scope.refreshDatasources = function(){
