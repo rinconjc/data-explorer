@@ -35,20 +35,7 @@
         
         <!-- Collect the nav links, forms, and other content for toggling -->
         <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-          <ul class="nav navbar-nav">
-            <menu-bar model="menuBar" />
-            <!-- <li><a href="#/">Home</a></li> -->
-            <!-- <li ng-repeat="m in menuBar"> -->
-            <!--   <a ng-if="m.action" href="" ng-click="m.action()">{{m.label}}</a> -->
-            <!--   <a ng-if="m.href" href="{{m.href}}">{{m.label}}</a> -->
-            <!-- </li> -->
-            <!-- <li dropdown> -->
-            <!--   <a class="dropdown-toggle" dropdown-toggle data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Data<span class="caret"></span></a> -->
-            <!--   <ul class="dropdown-menu" role="menu"> -->
-            <!--     <li><a href="" ng-click="importData()">Import</a></li> -->
-            <!--     <li><a href="">Export</a></li> -->
-            <!--   </ul> -->
-            <!-- </li> -->
+          <ul class="nav navbar-nav" menu-bar model="menuBar">
           </ul>
           <ul class="nav navbar-nav navbar-right">
             <li><p class="navbar-text"><span class="glyphicon glyphicon-user"></span> {{user.nick}}</p></li>
@@ -77,6 +64,7 @@
     <script src="js/api.js"></script>
     <script src="js/db-dash.js"></script>
     <script src="js/query-builder.js"></script>
+    <script src="js/data-import.js"></script>
     <script src="library/angular-hotkeys/build/hotkeys.min.js"></script>
   </body>
 </html>
