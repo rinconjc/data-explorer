@@ -1,0 +1,17 @@
+<div class="modal-header">
+  <h4 class="modal-title">Import Data</h4>
+</div>
+<div class="modal-body">
+  <form class="form-inline">
+    <form-field ng-repeat="f in form" meta="f" model="model"/>
+  </form>
+  <div>
+    <h5>Preview</h5>
+    
+  </div>
+</div>
+
+<div class="modal-footer">
+  <button class="btn btn-primary" ng-click="ok(selected)">Ok</button>
+  <button class="btn btn-default" ng-click="cancel()">Cancel</button>
+</div>
