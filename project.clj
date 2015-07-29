@@ -19,7 +19,8 @@
                  [org.clojure/java.jdbc "0.3.6"]
                  [crypto-password "0.1.3"]
                  [org.clojure/core.cache "0.6.4"]
-                 [liberator "0.13"]]
+                 [liberator "0.13"]
+                 [org.clojure/data.csv "0.1.2"]]
   :resource-paths ["lib/*" "resources"]
   :main ^:skip-aot dbquery.core
   :target-path "target/%s"
