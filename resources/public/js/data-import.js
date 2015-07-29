@@ -11,11 +11,11 @@ angular.module('data.import', ['ui.bootstrap'])
                     };                    
                     $scope.upload = function(){
                         console.debug('Uploading ...', $scope.model);
-                        fileUpload.uploadFile($scope.model.file, 'data-import/upload');
+                        fileUpload.uploadFile($scope.model.file, 'upload');
                     };
                     $scope.form = [
-                        {field:'fileType', type:'select', label:'File Type', values:{CSV:'CSV File'}},
                         {field:'file', type:'file'},
+                        {field:'separator', type:'select', label:'Separator',values:{',':'Comma', '\t':'TAB'}},
                         {type:'button', value:'Upload', handler:$scope.upload}
                     ]                    
                 }
