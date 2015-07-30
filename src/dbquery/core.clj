@@ -1,5 +1,7 @@
 (ns dbquery.core
-  (:import [java.util Date])
+  (:import [java.util Date]
+           [java.io FileReader]
+           )
   (:require [compojure.core :refer :all]
             [compojure.route :as route]
             ;; [compojure.handler :refer [site]]
@@ -7,6 +9,7 @@
             [ring.util.response :refer [response redirect]]
             [ring.middleware.defaults :refer :all]
             [ring.middleware.reload :as reload]
+            [ring.middleware.multipart-params :as mp]
             [org.httpkit.server :refer [run-server]]
             [dbquery.databases :refer :all]
             [dbquery.utils :refer :all]
@@ -16,7 +19,8 @@
             [clojure.core.cache :as cache]
             [liberator.core :refer [defresource resource]]
             [liberator.dev :refer [wrap-trace]]
-            [clojure.tools.logging :as log]))
+            [clojure.tools.logging :as log]
+            [clojure.data.csv :as csv]))
 
 (def ds-cache (atom (cache/lru-cache-factory {})))
 
@@ -67,8 +71,10 @@
                {:status 401 :body "invalid user or password"})
              (fn [e] {:status 500 :body (.getMessage e)}))))
 
-(defn handle-file-upload [req]
-  
+(defn handle-file-upload [{{file :file separator :separator} :params}]
+  ;; extract
+  (log/info "uploaded:" file)
+  {:body (take 4 (csv/read-csv (FileReader. (file :tempfile)) :separator separator))}
   )
 
 (defn handle-exec-sql [req ds-id]
@@ -157,7 +163,7 @@
   (GET "/" [] (slurp (io/resource "public/index.html")))
 
   (POST "/login" req (handle-login req))
-  (POST "/upload" req (handle-file-upload req))
+  (mp/wrap-multipart-params (POST "/upload" req (handle-file-upload req)))
   (GET "/logout" req (assoc (redirect "/") :session nil))
   (GET "/user" req (if-let [user (get-in req [:session :user])]
                      {:body user}
