@@ -4,6 +4,7 @@ angular.module('data.import', ['ui.bootstrap'])
             console.debug('data.import');
             $modal.open({
                 templateUrl:'tpls/data-import.html',
+                size:'lg',
                 controller:function($scope, $modalInstance){
                     $scope.model = {};
                     $scope.cancel = function(){
@@ -11,11 +12,11 @@ angular.module('data.import', ['ui.bootstrap'])
                     };                    
                     $scope.upload = function(){
                         console.debug('Uploading ...', $scope.model);
-                        fileUpload.uploadFile($scope.model.file, 'data-import/upload');
+                        fileUpload.uploadFile($scope.model.file, 'upload', $scope.model);
                     };
                     $scope.form = [
-                        {field:'fileType', type:'select', label:'File Type', values:{CSV:'CSV File'}},
-                        {field:'file', type:'file'},
+                        {field:'file',label:'File', type:'file'},
+                        {field:'separator',label:'Column Separator', type:'select', values:{'\\t':'Tab',',':'Comma'}},
                         {type:'button', value:'Upload', handler:$scope.upload}
                     ]                    
                 }
