@@ -262,10 +262,15 @@ angular.module('common-widgets', [])
     })
     .service('fileUpload', function ($http, $q) {
         return {
-            uploadFile: function(file, uploadUrl){
+            uploadFile: function(file, uploadUrl, data){
                 var defer = $q.defer();
                 var fd = new FormData();
                 fd.append('file', file);
+                if(data){
+                    angular.forEach(data, function(v,k){
+                        fd.append(k, v);                    
+                    });
+                }
                 $http.post(uploadUrl, fd, {
                     transformRequest: angular.identity,
                     headers: {'Content-Type': undefined}
