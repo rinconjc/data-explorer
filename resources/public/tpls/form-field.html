@@ -1,9 +1,12 @@
 
 <div class="form-group" ng-switch="meta.type">
   <label for="{{meta.field}}">{{meta.label}}</label>
-  <select ng-switch-when="select" id="{{meta.field}}" class="form-control" ng-model="model[meta.field]" ng-options="v for (k,v) in meta.values"></select>
-  <button ng-switch-when="button" class="btn btn-default" ng-click="meta.handler()">{{meta.value}}</button>
+  <select ng-switch-when="select" id="{{meta.field}}" class="form-control" ng-change="meta.onchange && meta.onchange()" ng-model="model[meta.field]" ng-options="k as v for (k,v) in meta.options"></select>
+  <button ng-switch-when="button" class="btn" ng-class="btn-{{meta.style}}" ng-click="meta.handler()">{{meta.value}}</button>
   <input ng-switch-when="file" id="{{meta.field}}" class="form-control" type="{{meta.type}}" file-model="model[meta.field]" />
+  <div class="checkbox" ng-switch-when="checkbox">
+    <label><input id="{{meta.field}}" type="{{meta.type}}" ng-model="model[meta.field]" /></label>
+  </div>
   <input ng-switch-default id="{{meta.field}}" class="form-control" type="{{meta.type}}" ng-model="model[meta.field]" />
   
 </div>

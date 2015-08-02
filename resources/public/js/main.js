@@ -1,4 +1,4 @@
-angular.module('dbquery', ['ngResource', 'ngRoute', 'ui.bootstrap', 'common-widgets', 'dbquery.api','db.dash', 'query.builder','cfp.hotkeys','data.import'])
+angular.module('main', ['ngResource', 'ngRoute', 'ui.bootstrap', 'common-widgets', 'data-api','db-dash', 'query-builder','cfp.hotkeys','data-import'])
     .constant('CONSTS', {
         EVENTS:{
             DS_ADDED:'ds-added',

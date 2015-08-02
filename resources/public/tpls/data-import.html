@@ -1,17 +1,25 @@
 <div class="modal-header">
   <h4 class="modal-title">Import Data</h4>
 </div>
+
 <div class="modal-body">
-  <form class="form-inline">
+  <div class="form-inline">
     <form-field ng-repeat="f in form" meta="f" model="model"/>
-  </form>
-  <div>
-    <h5>Preview</h5>
-    
+  </div>
+  <alert ng-if="loaded.$error" type="danger">{{loader.$error}}</alert>
+  <div ng-if="loaded && loaded.$resolved && !loaded.$error">
+    <h4>Preview</h4>
+    <div class="table-responsive">
+      <ng-table class="table-bordered summary" columns="loaded.header" data="loaded.rows" />
+    </div>
+    <h4>Import to:</h4>
+    <div class="form-inline">
+      <form-field ng-repeat="f in destParams" meta="f" model="dest" />
+    </div>
   </div>
 </div>
 
 <div class="modal-footer">
-  <button class="btn btn-primary" ng-click="ok(selected)">Ok</button>
-  <button class="btn btn-default" ng-click="cancel()">Cancel</button>
+  <button class="btn btn-primary" ng-click="ok(selected)">Import</button>
+  <button class="btn btn-default" ng-click="cancel()">Close</button>
 </div>

@@ -1,4 +1,4 @@
-angular.module('query.builder',[])
+angular.module('query-builder',[])
     .constant('CriteriaConsts', {
         operators:['=','!=','is','<=','>=','>','<','in', 'like','between'],
         operandTypes:['value','expression','column']

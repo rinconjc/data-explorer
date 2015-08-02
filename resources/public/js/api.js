@@ -1,4 +1,4 @@
-angular.module('dbquery.api',['ngResource'])
+angular.module('data-api',['ngResource'])
     .factory('DataService', function($resource, $http, $q){
         var resCache = {};
         function getResource(key, path){
