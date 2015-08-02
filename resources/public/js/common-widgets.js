@@ -239,6 +239,7 @@ angular.module('common-widgets', [])
                 meta:'=',
                 model:'='
             },
+            replace:true,
             templateUrl:'tpls/form-field.html',
             controller:function($scope){
 
@@ -257,29 +258,6 @@ angular.module('common-widgets', [])
                         modelSetter(scope, element[0].files[0]);
                     });
                 });
-            }
-        };
-    })
-    .service('fileUpload', function ($http, $q) {
-        return {
-            uploadFile: function(file, uploadUrl, data){
-                var defer = $q.defer();
-                var fd = new FormData();
-                fd.append('file', file);
-                if(data){
-                    angular.forEach(data, function(v,k){
-                        fd.append(k, v);                    
-                    });
-                }
-                $http.post(uploadUrl, fd, {
-                    transformRequest: angular.identity,
-                    headers: {'Content-Type': undefined}
-                }).success(function(resp){
-                    defer.resolve(resp);
-                }).error(function(err){
-                    defer.reject(err);
-                });
-                return defer.promise;
             }
         };
     })
