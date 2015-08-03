@@ -16,6 +16,23 @@
     <div class="form-inline">
       <form-field ng-repeat="f in destParams" meta="f" model="dest" />
     </div>
+    <div ng-show="dest.table">
+      <h4>Field Mappings:</h4>
+      <div class="form-horizontal">
+        <div class="form-group" ng-repeat="c in tableMeta.columns">
+          <label for="{{c.column_name}}">{{c.column_name}} :</label>
+          <div class="form-inline col-sm-6">
+            <div class="form-group">
+              <select class="form-control" ng-model="dest.mappings[c.column_name].source" ng-options="h for h in loaded.header"></select>
+            </div>
+            <div ng-if="requiresFormat(c)" class="form-group">
+              <label for="">format</label>
+              <input class="form-control" type="text" ng-model="dest.mappings[c.column_name].format"/>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
