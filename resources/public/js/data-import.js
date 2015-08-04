@@ -22,10 +22,17 @@ angular.module('data-import', ['ui.bootstrap', 'common-utils', 'common-widgets']
                     ];
                     $scope.dest={};
                     function updateTables(){
-                        $scope.destParams[1].options = CommonUtils.toObject(DataService.getTables($scope.dest.database));
+                        var tables = DataService.getTables($scope.dest.database);
+                        tables.push('New Table');
+                        $scope.destParams[1].options = CommonUtils.toObject(tables);
                     }
+                    
                     function tableChanged(){
-                        $scope.tableMeta = DataService.getTableInfo($scope.dest.database, $scope.dest.table);
+                        if($scope.dest.table=='_'){
+                            $scope.destParams[2].hide=false;
+                        }else{
+                            $scope.tableMeta = DataService.getTableInfo($scope.dest.database, $scope.dest.table);
+                        }   
                     }
                     $scope.requiresFormat = function(col){
                         return FORMAT_REQUIRED_TYPES.indexOf(col.data_type)>=0;
@@ -33,7 +40,8 @@ angular.module('data-import', ['ui.bootstrap', 'common-utils', 'common-widgets']
                     $scope.destParams = [
                         {field:'database', label:'Database', type:'select', onchange:updateTables,
                          options:CommonUtils.toObject(DataService.getDatasources(), 'id', 'name')},
-                        {field:'table', label:'Table', type:'select', onchange:tableChanged, options:{}}
+                        {field:'table', label:'Table', type:'select', onchange:tableChanged, options:{}, staticOptions:{'_':'< New Table >'}},
+                        {field:'newTable', type:'input', hide:true, placeholder:'Table Name'}
                     ];
                     $scope.doImport = function(){
                         console.log('importing into...', $scope.dest);
