@@ -29,7 +29,10 @@ angular.module('data-import', ['ui.bootstrap', 'common-utils', 'common-widgets']
                     
                     function tableChanged(){
                         if($scope.dest.table=='_'){
+                            $scope.dbDataTypes = DataService.getDataTypes($scope.dest.database);
                             $scope.destParams[2].hide=false;
+                            $scope.columns = [];
+                            $scope.tableMeta = {columns:[]};
                         }else{
                             $scope.tableMeta = DataService.getTableInfo($scope.dest.database, $scope.dest.table);
                         }   

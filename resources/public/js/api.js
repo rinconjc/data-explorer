@@ -65,6 +65,9 @@ angular.module('data-api',['ngResource'])
             getDatasources: function(){
                 return dsResource.query();
             },
+            getDataTypes: function(ds){
+                return futureValue($http.get('/ds/'+ds+'/data-types'), true);
+            },
             saveDatasource:function(ds){
                 if(ds.id)
                     return dsResource.update({id:ds.id}, ds).$promise;
@@ -130,6 +133,9 @@ angular.module('data-api',['ngResource'])
             },
             shareQueries:function(qryIds, userIds){
                 return toPromise($http.post('/share/query', {queries:qryIds, users:userIds}));
+            },
+            importData:function(dsId, params){
+                return futureValue($http.post('/ds/' + ds + '/import', params));
             }
         };
     });
