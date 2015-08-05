@@ -46,10 +46,13 @@
   ([rs] (read-rs rs {}))
   )
 
-(defn read-as-map [rs & {:keys [offset limit] :or {offset 0 limit 100}}]
+(defn read-as-map [rs & {:keys [offset limit fields] :or {offset 0 limit 100}}]
   (let [meta (.getMetaData rs)
         col-count (inc (.getColumnCount meta))
-        col-and-readers (doall (for [i (range 1 col-count)] [i (keyword (s/lower-case (.getColumnLabel meta i))) (col-reader (.getColumnType meta i))]))
+        col-and-readers (doall (for [i (range 1 col-count)
+                                     :let [col-name (.getColumnLabel meta i)]
+                                     :when (or (nil? fields) (some #{col-name} fields))]
+                                 [i (keyword (s/lower-case col-name)) (col-reader (.getColumnType meta i))]))
         row-reader (fn [rs] (reduce (fn [row [i col reader]] (assoc row col (apply reader [rs i]))) {} col-and-readers))]
     (rs-rows rs row-reader offset limit)
     ))
@@ -95,6 +98,12 @@
            :rows
            flatten)))))
 
+(defn data-types [ds]
+  (with-db-metadata [meta ds]
+    (with-open [rs (.getTypeInfo meta)]
+      (read-as-map rs :fields ["TYPE_NAME", "DATA_TYPE"])))
+  )
+
 (defn execute
   ([ds sql opts]
    (with-open [con (.getConnection (:datasource ds))]
@@ -134,3 +143,17 @@
           rs (.executeQuery stmt sql)]
       (read-rs rs {:limit limit :offset offset})
       )))
+
+(defn create-table [ds name cols pk]
+  (let [col-defs (for [{name :name type :type size :size} cols
+                       :let [typedef (if (some? size) (str type "(" size ")") type)]]
+                   (str name " " typedef))
+        pk-def (if (some? pk) (str ", PRIMARY KEY(" pk ")") "")]
+    (execute ds (str "CREATE TABLE " name "(" (s/join "," col-defs) pk-def ")"))
+    name)
+  )
+
+(defn load-data [ds table source mappings]
+  
+  )
+

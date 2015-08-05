@@ -80,7 +80,7 @@
         header (if has-header? first (for [i (range  (count first))] (str "Col" i)))
         rows (if has-header? (rest csv) csv)
         ]
-    {:body {:header header :rows (take 4 rows)}})
+    {:body {:header header :rows (take 4 rows) :file (file :tempfile)}})
   )
 
 (defn handle-exec-sql [req ds-id]
@@ -88,10 +88,10 @@
         ds (get-ds ds-id)]
     (let [opts (into {} (for [[k v] (:params req) :when (#{:offset :limit} k)] [k (Integer. v)]))
           r (execute ds raw-sql opts)]
-             (if (number? r)
-               {:body {:rowsAffected r}}
-               {:body {:data  r}})
-             )
+      (if (number? r)
+        {:body {:rowsAffected r}}
+        {:body {:data  r}})
+      )
     ))
 
 (defn handle-exec-query-by-id [id ds-id]
@@ -109,6 +109,21 @@
              {:body ts}
              (fn [e] {:status 500 :body (.getMessage e)}))
     {:status 500 :body "default data source not available"}))
+
+(defn handle-data-types [ds-id]
+  (let [ds (get-ds ds-id)]
+    {:body  (data-types ds)}))
+
+(defn handle-data-import [ds-id {{file-details :fileDetails dest :dest} :body}]
+  (let [ds (get-ds ds-id)
+        table (if (= "_" (dest :table))
+                (create-table ds (dest :newTable) (dest :columns) nil)
+                (dest :table))
+        result (load-data ds table file-details (dest :mappings))]
+    {:body result}
+    )
+  )
+
 ;; resources
 
 (defresource data-sources-list common-opts
@@ -185,7 +200,10 @@
            (POST "/exec-query" req (handle-exec-query req ds-id))
            (POST "/exec-query/:id" [id] (handle-exec-query-by-id id))
            (GET "/tables" req (handle-list-tables ds-id))
-           (GET "/tables/:name" [name] (fn [req] {:body  (table-meta (get-ds ds-id) name)})))
+           (GET "/tables/:name" [name] (fn [req] {:body  (table-meta (get-ds ds-id) name)}))
+           (GET "/data-types" req (handle-data-types ds-id))
+           (POST "/import-data" req (handle-data-import ds-id req))
+           )
   )
 
 
