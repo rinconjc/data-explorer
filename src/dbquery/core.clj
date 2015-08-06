@@ -80,7 +80,7 @@
         header (if has-header? first (for [i (range  (count first))] (str "Col" i)))
         rows (if has-header? (rest csv) csv)
         ]
-    {:body {:header header :rows (take 4 rows) :file (file :tempfile)}})
+    {:body {:header header :rows (take 4 rows) :file (.getAbsolutePath (file :tempfile))}})
   )
 
 (defn handle-exec-sql [req ds-id]
