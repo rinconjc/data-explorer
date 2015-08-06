@@ -71,16 +71,19 @@
                {:status 401 :body "invalid user or password"})
              (fn [e] {:status 500 :body (.getMessage e)}))))
 
+(defn read-csv [file separator has-header]
+  (let [csv (csv/read-csv (FileReader. file) :separator separator)
+        first (first csv)]
+    {:header (if has-header first (for [i (range  (count first))] (str "Col" i)))
+     :rows (if has-header (rest csv) csv)}
+    )
+  )
+
 (defn handle-file-upload [{{file :file separator :separator has-header :hasHeader} :params}]
   ;; extract
   (log/info "separator:" separator)
-  (let [csv (csv/read-csv (FileReader. (file :tempfile)) :separator (.charAt separator 0))
-        first (first csv)
-        has-header? (Boolean/parseBoolean has-header)
-        header (if has-header? first (for [i (range  (count first))] (str "Col" i)))
-        rows (if has-header? (rest csv) csv)
-        ]
-    {:body {:header header :rows (take 4 rows) :file (.getAbsolutePath (file :tempfile))}})
+  (let [{header :header rows :rows} (read-csv (file :tempfile) (.charAt separator 0) (Boolean/parseBoolean has-header))]
+    {:body {:header header :rows (take 4 rows) :file (.getName (file :tempfile))}})
   )
 
 (defn handle-exec-sql [req ds-id]
@@ -114,11 +117,13 @@
   (let [ds (get-ds ds-id)]
     {:body  (data-types ds)}))
 
-(defn handle-data-import [ds-id {{file-details :fileDetails dest :dest} :body}]
+(defn handle-data-import [ds-id {{{file :file separator :separator header :has-header} :inputFile dest :dest} :body}]
   (let [ds (get-ds ds-id)
         table (if (= "_" (dest :table))
                 (create-table ds (dest :newTable) (dest :columns) nil)
                 (dest :table))
+        filePath (System/getProperties)
+        data (read-csv (file :tempfile) (.charAt separator 0) (Boolean/parseBoolean has-header))
         result (load-data ds table file-details (dest :mappings))]
     {:body result}
     )
