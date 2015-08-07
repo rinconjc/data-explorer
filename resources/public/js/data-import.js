@@ -6,6 +6,7 @@ angular.module('data-import', ['ui.bootstrap', 'common-utils', 'common-widgets']
                 size:'lg',
                 controller:function($scope, $modalInstance){
                     var FORMAT_REQUIRED_TYPES = [91,92,93,3,8,2,7];
+                    var SIZE_REQUIRED_TYPES = [2,3,1,12];
                     $scope.model = {separator:'\t', hasHeader:true};
                     $scope.cancel = function(){
                         $modalInstance.dismiss();
@@ -26,20 +27,24 @@ angular.module('data-import', ['ui.bootstrap', 'common-utils', 'common-widgets']
                         tables.push('New Table');
                         $scope.destParams[1].options = CommonUtils.toObject(tables);
                     }
-                    
+
                     function tableChanged(){
                         if($scope.dest.table=='_'){
                             $scope.dbDataTypes = DataService.getDataTypes($scope.dest.database);
                             $scope.destParams[2].hide=false;
-                            $scope.columns = [];
-                            $scope.tableMeta = {columns:[]};
+                            $scope.dest.columns = [];
                         }else{
                             $scope.tableMeta = DataService.getTableInfo($scope.dest.database, $scope.dest.table);
-                        }   
+                        }
                     }
-                    $scope.requiresFormat = function(col){
-                        return FORMAT_REQUIRED_TYPES.indexOf(col.data_type)>=0;
+                    $scope.requiresFormat = function(type){
+                        return FORMAT_REQUIRED_TYPES.indexOf(type)>=0;
                     };
+                    $scope.requiresSize = function(type){
+                        return SIZE_REQUIRED_TYPES.indexOf(type)>=0;
+                        
+                    };
+                    
                     $scope.destParams = [
                         {field:'database', label:'Database', type:'select', onchange:updateTables,
                          options:CommonUtils.toObject(DataService.getDatasources(), 'id', 'name')},
@@ -48,7 +53,10 @@ angular.module('data-import', ['ui.bootstrap', 'common-utils', 'common-widgets']
                     ];
                     $scope.doImport = function(){
                         console.log('importing into...', $scope.dest);
-                                                
+                        var inputFile = angular.copy($scope.model);
+                        inputFile.file = $scope.loaded.file;
+                        $scope.importResult = DataService.importData($scope.dest.database, {inputFile : inputFile, dest:$scope.dest});
+
                     };
                 }
             })

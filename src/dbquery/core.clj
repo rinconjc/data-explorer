@@ -50,7 +50,7 @@
       (handler req)
       (catch Exception e
         (log/error e "Exception handling request")
-        (throw e))
+        {:status 500 :body "backend error"})
       )))
 ;; ds checker middleware
 
@@ -117,15 +117,15 @@
   (let [ds (get-ds ds-id)]
     {:body  (data-types ds)}))
 
-(defn handle-data-import [ds-id {{{file :file separator :separator header :has-header} :inputFile dest :dest} :body}]
+(defn handle-data-import [ds-id {{{file :file separator :separator has-header :has-header} :inputFile dest :dest} :body}]
   (let [ds (get-ds ds-id)
         table (if (= "_" (dest :table))
                 (create-table ds (dest :newTable) (dest :columns) nil)
                 (dest :table))
-        filePath (System/getProperties)
-        data (read-csv (file :tempfile) (.charAt separator 0) (Boolean/parseBoolean has-header))
-        result (load-data ds table file-details (dest :mappings))]
-    {:body result}
+        filePath (str (System/getProperty "java.io.tmpdir") "/" file)
+        data (read-csv (java.io.File. filePath) (.charAt separator 0) (Boolean/parseBoolean has-header))
+        result (load-data ds table data (dest :mappings))]
+    {:body {:rowsImported result}}
     )
   )
 
