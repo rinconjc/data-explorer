@@ -135,7 +135,7 @@ angular.module('data-api',['ngResource'])
                 return toPromise($http.post('/share/query', {queries:qryIds, users:userIds}));
             },
             importData:function(dsId, params){
-                return futureValue($http.post('/ds/' + ds + '/import', params));
+                return futureValue($http.post('/ds/' + dsId + '/import-data', params));
             }
         };
     });
