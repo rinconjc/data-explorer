@@ -51,11 +51,13 @@ angular.module('data-import', ['ui.bootstrap', 'common-utils', 'common-widgets']
                         {field:'table', label:'Table', type:'select', onchange:tableChanged, options:{}, staticOptions:{'_':'< New Table >'}},
                         {field:'newTable', type:'input', hide:true, placeholder:'Table Name'}
                     ];
-                    $scope.doImport = function(){
+                    $scope.doImport = function(){                        
                         console.log('importing into...', $scope.dest);
+                        if(!$scope.loaded || $scope.loaded.$error)
+                            $scope.errors = 'Upload file first'
                         var inputFile = angular.copy($scope.model);
                         inputFile.file = $scope.loaded.file;
-                        $scope.importResult = DataService.importData($scope.dest.database, {inputFile : inputFile, dest:$scope.dest});
+                        $scope.importResp = DataService.importData($scope.dest.database, {inputFile : inputFile, dest:$scope.dest});
 
                     };
                 }
