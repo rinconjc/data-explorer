@@ -50,7 +50,7 @@
       (handler req)
       (catch Exception e
         (log/error e "Exception handling request")
-        {:status 500 :body "backend error"})
+        {:status 500 :body (.getMessage e)})
       )))
 ;; ds checker middleware
 
@@ -117,15 +117,15 @@
   (let [ds (get-ds ds-id)]
     {:body  (data-types ds)}))
 
-(defn handle-data-import [ds-id {{{file :file separator :separator has-header :has-header} :inputFile dest :dest} :body}]
+(defn handle-data-import [ds-id {{{file :file separator :separator has-header :hasHeader} :inputFile dest :dest} :body}]
   (let [ds (get-ds ds-id)
         table (if (= "_" (dest :table))
                 (create-table ds (dest :newTable) (dest :columns) nil)
                 (dest :table))
         filePath (str (System/getProperty "java.io.tmpdir") "/" file)
-        data (read-csv (java.io.File. filePath) (.charAt separator 0) (Boolean/parseBoolean has-header))
+        data (read-csv (java.io.File. filePath) (.charAt separator 0) has-header)
         result (load-data ds table data (dest :mappings))]
-    {:body {:rowsImported result}}
+    {:body result}
     )
   )
 
@@ -215,10 +215,10 @@
 (defroutes all-routes
   static
   (-> app
+      (wrap-exception)
       (wrap-json-response)
       (wrap-json-body {:keywords? true})
       (wrap-trace :header :ui)
-      (wrap-exception)
       (wrap-defaults (assoc site-defaults :security {:anti-forgery false}))))
 ;;
 

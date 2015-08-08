@@ -8,7 +8,8 @@
   </div>
   <alert ng-if="loaded.$error" type="danger">{{loader.$error}}</alert>
   <alert ng-if="importResp.$error" type="danger">{{importResp.$error}}</alert>
-  <alert ng-if="importResp.rowsImported" type="success">{{importResp.$rowsImported}} rows imported successfully!</alert>
+  <alert ng-if="importResp.importCount" type="success">{{importResp.importCount}} rows imported successfully!</alert>
+  <alert ng-if="importResp.invalidCount" type="danger">{{importResp.invalidCount}} rows failed to import</alert>
   <div ng-if="loaded && loaded.$resolved && !loaded.$error">
     <h4>Preview</h4>
     <div class="table-responsive">
@@ -39,7 +40,6 @@
             <td><input class="form-control" type="text" ng-model="c.column_name" size="20" /></td>
             <td><select class="form-control" ng-model="c.type" ng-options="t as t.type_name for t in dbDataTypes"></select></td>
             <td><input ng-if="requiresSize(c.type.data_type)" class="form-control" type="text" ng-model="c.size" size="5" /></td>
-            <td><select class="form-control" ng-model="dest.mappings[c.column_name].source" ng-options="h for h in loaded.header"></select><input type="hidden" ng-model="dest.mappings[c.column_name].type" ng-value="c.type.data_type"/></td>
             <td><input ng-if="requiresFormat(c.type.data_type)" class="form-control" type="text" size="12" ng-model="dest.mappings[c.column_name].format"/></td>
             <td></td>
           </tr>
@@ -59,8 +59,10 @@
         </tr>
         <tr ng-repeat="c in tableMeta.columns">
           <td>{{c.column_name}}</td>
-          <td><select class="form-control" ng-model="dest.mappings[c.column_name].source" ng-options="h for h in loaded.header"></select></td>
-          <td><input ng-if="requiresFormat(c.data_type)" class="form-control" type="text" ng-model="dest.mappings[c.column_name].format"/></td>
+          <td>
+            <select class="form-control" ng-model="dest.mappings[c.column_name].source" ng-change="dest.mappings[c.column_name].type=c.data_type" ng-options="h for h in loaded.header"></select>
+          </td>
+          <td><input ng-if="requiresFormat(c.data_type)" class="form-control" type="text" size="12" ng-model="dest.mappings[c.column_name].format"/></td>
           <td></td>
         </tr>
       </table>

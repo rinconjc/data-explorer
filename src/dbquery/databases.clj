@@ -7,7 +7,7 @@
   (:import [org.h2.jdbcx JdbcDataSource]
            [oracle.jdbc.pool OracleDataSource]
            [java.sql ResultSet Types]
-           [java.text SimpleDateFormat DecimalFormat])
+           [java.text SimpleDateFormat DecimalFormat NumberFormat])
   )
 
 (def ^:private result-extractors
@@ -111,7 +111,7 @@
 (defn execute
   ([ds sql opts]
    (with-open [con (.getConnection (:datasource ds))]
-     (let [sqlv (if (vector? sql) sql [sql])]
+     (let [sqlv (if (coll? sql) sql [sql])]
        (loop [sql (first sqlv)
               sqls (rest sqlv)]
          (let [stmt (.createStatement con ResultSet/TYPE_SCROLL_INSENSITIVE ResultSet/CONCUR_READ_ONLY)
@@ -160,25 +160,28 @@
 (defn load-data [ds table {header :header rows :rows} mappings]
   (defn param-setter [{source :source format :format type :type} i]
     (let [pos (.indexOf header source)
+          _ (if (< pos 0) (throw (Exception. (str "source " source " not found in header " (s/join "," header)))))
           val-fn (cond
             (sql-date-types type) (fn [row] (-> (SimpleDateFormat. format) (.parse (nth row pos))))
-            (sql-number-types type) (fn [row] (-> (DecimalFormat. format) (.parse (nth row pos))))
+            (and (sql-number-types type) (some? format)) (fn [row] (-> (DecimalFormat. format) (.parse (nth row pos))))
             true (fn [row] (nth row pos))
             )]
-      (fn [ps row] (doto ps (.setObject (inc i) (apply val-fn row) type)))
+      (fn [ps row] (doto ps (.setObject (inc i) (val-fn row) type)))
       )
     )
   (let [cols (keys mappings)
-        param-setters (into {} (for [[col mapping] mappings]
-                                 [col (param-setter mapping (.indexOf cols col))]))
-        insert-sql (str "INSERT INTO " table "(" cols ") VALUES("
+        param-setters (doall (into {} (for [[col mapping] mappings]
+                                  [col (param-setter mapping (.indexOf cols col))])))
+        insert-sql (str "INSERT INTO " table "(" (s/join "," (map name cols)) ") VALUES("
                         (s/join "," (repeat (count cols) "?" ) ) ")")]
-    (with-db-connection [con (:datasource ds)]
+    (with-open [con (.getConnection (:datasource ds))]
       (let [ps (.prepareStatement con insert-sql)
-            _ (for [row rows] (.addBatch (reduce #(apply (param-setters %2) %1 row) ps cols)))
-            rows-inserted (.executeUpdate ps)]
-        (log/info "inserted " rows-inserted " into " table)
-        rows-inserted
+            errors (doall (for [row rows] (try-let [_ (reduce #((param-setters %2) %1 row) ps cols)]
+                                              (.addBatch ps)
+                                              (fn [e] (log/warn e "failed mapping row " row)
+                                                [row e]))))
+            rows-inserted (.executeBatch ps)]
+        {:importCount (reduce + rows-inserted) :invalidCount (count (filter some? errors))}
         )
       )
     )
