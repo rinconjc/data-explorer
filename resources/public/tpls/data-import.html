@@ -40,6 +40,8 @@
             <td><input class="form-control" type="text" ng-model="c.column_name" size="20" /></td>
             <td><select class="form-control" ng-model="c.type" ng-options="t as t.type_name for t in dbDataTypes"></select></td>
             <td><input ng-if="requiresSize(c.type.data_type)" class="form-control" type="text" ng-model="c.size" size="5" /></td>
+            <td><select class="form-control" ng-model="dest.mappings[c.column_name].source" ng-change="dest.mappings[c.column_name].type=c.data_type" ng-options="h for h in loaded.header"></select>
+            </td>
             <td><input ng-if="requiresFormat(c.type.data_type)" class="form-control" type="text" size="12" ng-model="dest.mappings[c.column_name].format"/></td>
             <td></td>
           </tr>
