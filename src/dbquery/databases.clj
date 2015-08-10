@@ -163,14 +163,15 @@
           _ (if (< pos 0) (throw (Exception. (str "source " source " not found in header " (s/join "," header)))))
           val-fn (cond
             (sql-date-types type) (fn [row] (-> (SimpleDateFormat. format) (.parse (nth row pos))))
-            (and (sql-number-types type) (some? format)) (fn [row] (-> (DecimalFormat. format) (.parse (nth row pos))))
+            (and (sql-number-types type) (not (s/blank? format))) (fn [row] (-> (DecimalFormat. format) (.parse (nth row pos))))
             true (fn [row] (nth row pos))
             )]
       (fn [ps row] (doto ps (.setObject (inc i) (val-fn row) type)))
       )
     )
-  (let [cols (keys mappings)
-        param-setters (doall (into {} (for [[col mapping] mappings]
+  (let [valid-mappings (filter #(contains? (second %) :source)  mappings)
+        cols (keys) valid-mappings
+        param-setters (doall (into {} (for [[col mapping]] valid-mappings
                                   [col (param-setter mapping (.indexOf cols col))])))
         insert-sql (str "INSERT INTO " table "(" (s/join "," (map name cols)) ") VALUES("
                         (s/join "," (repeat (count cols) "?" ) ) ")")]
