@@ -162,25 +162,32 @@
     (let [pos (.indexOf header source)
           _ (if (< pos 0) (throw (Exception. (str "source " source " not found in header " (s/join "," header)))))
           val-fn (cond
-            (sql-date-types type) (fn [row] (-> (SimpleDateFormat. format) (.parse (nth row pos))))
-            (and (sql-number-types type) (not (s/blank? format))) (fn [row] (-> (DecimalFormat. format) (.parse (nth row pos))))
-            true (fn [row] (nth row pos))
-            )]
-      (fn [ps row] (doto ps (.setObject (inc i) (val-fn row) type)))
+                   (sql-date-types type) (fn [val] (-> (SimpleDateFormat. format) (.parse val)))
+                   (sql-number-types type) (if (s/blank? format)
+                                             (fn [val] (-> (NumberFormat/getNumberInstance) (.parse val)))
+                                             (fn [val] (-> (DecimalFormat. format) (.parse val))))
+                   true identity
+                   )]
+      (fn [ps row] (let [val (nth row pos)]
+                     (if (s/blank? val)
+                       (doto ps (.setNull (inc i) type))
+                       (doto ps (.setObject (inc i) (val-fn val) type)))
+                     )
+        )
       )
     )
   (let [valid-mappings (filter #(contains? (second %) :source)  mappings)
-        cols (keys) valid-mappings
-        param-setters (doall (into {} (for [[col mapping]] valid-mappings
-                                  [col (param-setter mapping (.indexOf cols col))])))
+        cols (keys valid-mappings)
+        param-setters (doall (into {} (for [[col mapping] valid-mappings]
+                                        [col (param-setter mapping (.indexOf cols col))])))
         insert-sql (str "INSERT INTO " table "(" (s/join "," (map name cols)) ") VALUES("
                         (s/join "," (repeat (count cols) "?" ) ) ")")]
     (with-open [con (.getConnection (:datasource ds))]
       (let [ps (.prepareStatement con insert-sql)
             errors (doall (for [row rows] (try-let [_ (reduce #((param-setters %2) %1 row) ps cols)]
-                                              (.addBatch ps)
-                                              (fn [e] (log/warn e "failed mapping row " row)
-                                                [row e]))))
+                                                   (.addBatch ps)
+                                                   (fn [e] (log/warn e "failed mapping row " row)
+                                                     [row e]))))
             rows-inserted (.executeBatch ps)]
         {:importCount (reduce + rows-inserted) :invalidCount (count (filter some? errors))}
         )
