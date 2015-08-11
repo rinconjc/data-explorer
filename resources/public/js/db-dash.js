@@ -104,8 +104,9 @@ angular.module('db-dash',['data-api', 'ui.codemirror', 'ui.bootstrap','cfp.hotke
                 active:'='
             },
             templateUrl:'tpls/sql-panel.html',
-            controller:function($scope, hotkeys, focus, preventDefault){
+            controller:function($scope,$rootScope, hotkeys, focus, preventDefault){
                 var dsId = $scope.dsId;
+                $scope.datasources = $rootScope.datasources;
                 $scope.query = {};
                 $scope.model = {selection:[]};
                 $scope.queries = DataService.getQueries(dsId);
@@ -157,7 +158,7 @@ angular.module('db-dash',['data-api', 'ui.codemirror', 'ui.bootstrap','cfp.hotke
                     $scope.editor = _editor;
                     _editor.focus();
                 };
-                
+
                 $scope.saveSql = function(){
                     if($scope.query.id){
                         DataService.saveQuery($scope.query);
@@ -198,7 +199,7 @@ angular.module('db-dash',['data-api', 'ui.codemirror', 'ui.bootstrap','cfp.hotke
                     resp.$promise.then(function(){
                         r.data = resp.data;
                         r.hasMore = resp.data.rows.length>=pageSize;
-                    });                                                            
+                    });
                 };
             }
         };

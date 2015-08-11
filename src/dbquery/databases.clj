@@ -109,7 +109,7 @@
   )
 
 (defn execute
-  ([ds sql opts]
+  ([ds sql {:keys [rs-reader] :or {rs-reader read-rs} :as opts}]
    (with-open [con (.getConnection (:datasource ds))]
      (let [sqlv (if (coll? sql) sql [sql])]
        (loop [sql (first sqlv)
@@ -118,7 +118,7 @@
                has-rs (.execute stmt sql)]
            (if (empty? sqls)
              (if has-rs
-               (read-rs (.getResultSet stmt) opts)
+               (rs-reader (.getResultSet stmt) opts)
                (.getUpdateCount stmt)
                )
              (recur (first sqls) (rest sqls)))
