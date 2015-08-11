@@ -128,7 +128,8 @@
     {:body result}
     )
   )
-
+(defn handle-ds-queries [ds-id]
+  )
 ;; resources
 
 (defresource data-sources-list common-opts
@@ -208,6 +209,7 @@
            (GET "/tables/:name" [name] (fn [req] {:body  (table-meta (get-ds ds-id) name)}))
            (GET "/data-types" req (handle-data-types ds-id))
            (POST "/import-data" req (handle-data-import ds-id req))
+           (GET "/queries" req (handle-ds-queries ds-id))
            )
   )
 

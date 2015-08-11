@@ -9,8 +9,8 @@
       <div class="btn-group" role="group" aria-label="...">
         <input type="text" class="form-control" placeholder="Search existing queries..." size="40"  typeahead="q.name for q in queries | filter:$viewValue" ng-model="query.name" typeahead-editable="false" typeahead-on-select="loadQuery($item, $model, $label)" focus-on="searchQuery"/>
       </div>
-      <div class="btn-group" role="group" aria-label="...">
-        <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+      <div class="btn-group" role="group" dropdown aria-label="...">
+        <button type="button" class="btn btn-default dropdown-toggle" dropdown-toggle data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
           Copy To <span class="caret"></span>
         </button>
         <ul class="dropdown-menu">
@@ -29,7 +29,7 @@
   <alert ng-if="result.$error" type="danger">{{result.$error}}</alert>
   <tabset>
     <tab ng-repeat="r in results" active="activeTab[r.id]">
-      <tab-heading>Result #{{$index}} <a href="" ng-click="refresh(r)"><span class="glyphicon glyphicon-refresh"></span></a> <close-button close="closeResult($index)"/></tab-heading>
+      <tab-heading title="{{r.sql}}">Result #{{$index}} <a href="" ng-click="refresh(r)"><span class="glyphicon glyphicon-refresh"></span></a> <close-button close="closeResult($index)"/></tab-heading>
       <div class="table-responsive">
         <ng-table class="table-bordered summary" columns="r.data.columns" data="r.data.rows" has-more="r.hasMore" show-more-fn="fetchNext($index)" />
       </div>

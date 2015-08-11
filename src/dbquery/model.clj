@@ -74,3 +74,5 @@ WHERE ud.DATA_SOURCE_ID=d.ID AND ud.APP_USER_ID=?)" [user-id user-id]] :results)
     )
   )
 
+(defn db-queries [db-id]
+  (db/execute {:datasource (force ds)} "select q.* from query q join data_source_query dq on dq.query_id = q.id where dq.data_source_id =?" ))
