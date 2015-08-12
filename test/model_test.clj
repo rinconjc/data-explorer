@@ -25,4 +25,3 @@
     (k/insert query (k/values {:name "q1" :description "test query" :sql "select sysdate from dual"}))
     )
   )
-
