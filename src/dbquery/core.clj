@@ -128,8 +128,7 @@
     {:body result}
     )
   )
-(defn handle-ds-queries [ds-id]
-  )
+
 ;; resources
 
 (defresource data-sources-list common-opts
@@ -168,8 +167,9 @@
   :allowed? #(if-let [user-id (get-in % [:request :session :user :id])]
                {:user-id user-id})
   :post! #(let [{{data :body} :request user-id :user-id} %
-                id (k/insert query (k/values (assoc data :app_user_id user-id)))]
-            {::id (first (vals id))})
+                id (first (vals (k/insert query (k/values (assoc data :app_user_id user-id)))))]
+            (assoc-query-datasource (data :ds) id)
+            {::id id})
   :post-redirect? (fn [ctx] {:location (format "/queries/%s" (::id ctx))})
   :handle-ok (k/select query))
 
@@ -178,7 +178,8 @@
   :exists? (if-let [q (get-query id)]
              {:the-query q})
   :handle-ok #(:the-query %)
-  :put! #(k/update query (k/set-fields (get-in % [:request :body])) (k/where {:id id}))
+  :put! #(k/update query (k/set-fields (get-in % [:request :body]))
+                   (k/where {:id id}))
   :delete! (fn [_] (k/delete query (k/where {:id id}))))
 
 (defroutes static
@@ -200,16 +201,19 @@
   (ANY "/data-sources/:id" [id] (data-sources-entry id))
   (ANY "/queries" [] queries-list)
   (ANY "/queries/:id" [id] (queries-entry id))
+  (PUT "/queries/:id/data-source/:ds" [id ds] (assoc-query-datasource ds id))
+  (DELETE "/queries/:id/data-source/:ds" [id ds] (dissoc-query-datasource ds id))
 
   (context "/ds/:ds-id" [ds-id]
            (POST "/exec-sql" req (handle-exec-sql req ds-id))
            (POST "/exec-query" req (handle-exec-query req ds-id))
            (POST "/exec-query/:id" [id] (handle-exec-query-by-id id))
            (GET "/tables" req (handle-list-tables ds-id))
-           (GET "/tables/:name" [name] (fn [req] {:body  (table-meta (get-ds ds-id) name)}))
+           (GET "/tables/:name" [name] (fn [req]
+                                         {:body (table-meta (get-ds ds-id) name)}))
            (GET "/data-types" req (handle-data-types ds-id))
            (POST "/import-data" req (handle-data-import ds-id req))
-           (GET "/queries" req (handle-ds-queries ds-id))
+           (GET "/queries" req (ds-queries ds-id))
            )
   )
 

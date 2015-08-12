@@ -101,7 +101,7 @@ angular.module('data-api',['ngResource'])
                                                                             predicates:conditions, offset:offset, limit:maxrows}));
             },
             getQueries:function(ds){
-                return qryResource.query();
+                return futureValue($http.get('/ds/'+ds+'/queries'), true);
             },
             saveQuery:function(query){
                 if(query.id){

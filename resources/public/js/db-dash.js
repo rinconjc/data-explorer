@@ -107,7 +107,7 @@ angular.module('db-dash',['data-api', 'ui.codemirror', 'ui.bootstrap','cfp.hotke
             controller:function($scope,$rootScope, hotkeys, focus, preventDefault){
                 var dsId = $scope.dsId;
                 $scope.datasources = $rootScope.datasources;
-                $scope.query = {};
+                $scope.query = {ds:dsId};
                 $scope.model = {selection:[]};
                 $scope.queries = DataService.getQueries(dsId);
                 $scope.results = [];
@@ -166,7 +166,7 @@ angular.module('db-dash',['data-api', 'ui.codemirror', 'ui.bootstrap','cfp.hotke
                         $modal.open({
                             templateUrl:'tpls/query-form.html',
                             resolve:{
-                                query:function(){return $scope.query}
+                                query:function(){return $scope.query;}
                             },
                             controller:function($scope, $modalInstance, query){
                                 $scope.query = query;

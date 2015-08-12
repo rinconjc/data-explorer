@@ -64,7 +64,7 @@ angular.module('main', ['ngResource', 'ngRoute', 'ui.bootstrap', 'common-widgets
                 console.debug('db selected:', db,'location:', $location.path());
                 $timeout(function(){
                     $scope.$emit(CONSTS.EVENTS.OPEN_DB, db);
-                })
+                });
             });
         }
 
