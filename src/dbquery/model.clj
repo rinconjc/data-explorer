@@ -27,7 +27,7 @@
          (.syncToVersion version true true))
      (log/info "db upgrade complete")
      ))
-  ([env] (sync-db 4 env)))
+  ([env] (sync-db 5 env)))
 
 (defdb appdb (h2 db-conf))
 
@@ -74,10 +74,19 @@ WHERE ud.DATA_SOURCE_ID=d.ID AND ud.APP_USER_ID=?)" [user-id user-id]] :results)
     )
   )
 
-(defn db-queries [db-id]
+(defn ds-queries [db-id]
   (db/execute {:datasource (force ds)} "select q.* from query q
 join data_source_query dq on dq.query_id = q.id where dq.data_source_id =?"
               {:rs-reader db/read-as-map :args [db-id]}))
-(defn assoc-query-datasource [ds-id q-id]
 
+(defn assoc-query-datasource [ds-id q-id]
+  (db/execute {:datasource (force ds)}
+              "insert into data_source_query(data_source_id, query_id)
+ values(?,?)" {:args [ds-id q-id]} )
+  )
+
+(defn dissoc-query-datasource [ds-id q-id]
+  (db/execute {:datasource (force ds)}
+              "delete data_source_query where data_source_id=?
+and query_id=?" {:args [ds-id q-id]} )
   )
