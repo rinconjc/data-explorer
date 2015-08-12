@@ -109,13 +109,16 @@
   )
 
 (defn execute
-  ([ds sql {:keys [rs-reader] :or {rs-reader read-rs} :as opts}]
+  ([ds sql {:keys [rs-reader args] :or {rs-reader read-rs} :as opts}]
    (with-open [con (.getConnection (:datasource ds))]
      (let [sqlv (if (coll? sql) sql [sql])]
        (loop [sql (first sqlv)
               sqls (rest sqlv)]
-         (let [stmt (.createStatement con ResultSet/TYPE_SCROLL_INSENSITIVE ResultSet/CONCUR_READ_ONLY)
-               has-rs (.execute stmt sql)]
+         (let [stmt (.prepareStatement sql con ResultSet/TYPE_SCROLL_INSENSITIVE
+                                       ResultSet/CONCUR_READ_ONLY)
+               _ (if (some? args) (reduce #(do (.setObject stmt %1 %2)
+                                               (inc %1)) 1 args))
+               has-rs (.execute stmt)]
            (if (empty? sqls)
              (if has-rs
                (rs-reader (.getResultSet stmt) opts)
