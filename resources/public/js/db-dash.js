@@ -106,7 +106,6 @@ angular.module('db-dash',['data-api', 'ui.codemirror', 'ui.bootstrap','cfp.hotke
             templateUrl:'tpls/sql-panel.html',
             controller:function($scope,$rootScope, hotkeys, focus, preventDefault){
                 var dsId = $scope.dsId;
-                $scope.datasources = $rootScope.datasources;
                 $scope.query = {ds:dsId};
                 $scope.model = {selection:[]};
                 $scope.queries = DataService.getQueries(dsId);
@@ -189,9 +188,11 @@ angular.module('db-dash',['data-api', 'ui.codemirror', 'ui.bootstrap','cfp.hotke
                 };
                 $scope.loadQuery = function(item, model, label){
                     $scope.query = DataService.getQuery(item.id);
+                    $scope.assocs = null;
                 };
                 $scope.clear = function(){
                     $scope.query = {};
+                    $scope.assocs = null;
                 };
                 $scope.refresh = function(r){
                     var resp = DataService.executeSql(dsId, r.sql);
@@ -200,6 +201,23 @@ angular.module('db-dash',['data-api', 'ui.codemirror', 'ui.bootstrap','cfp.hotke
                         r.data = resp.data;
                         r.hasMore = resp.data.rows.length>=pageSize;
                     });
+                };
+                $scope.loadAssocs = function(open){
+                    if(!open || !$scope.query.id || $scope.assocs) return;
+                    $scope.assocs = DataService.getQueryAssocs($scope.query.id);
+                };
+                $scope.flipAssoc = function(assoc){
+                    if(assoc.query_id){
+                        DataService.dissocQuery($scope.query.id, assoc.id).
+                            $promise.then(function(){
+                                assoc.query_id=null;
+                            });
+                    }else{
+                        DataService.assocQuery($scope.query.id, assoc.id).
+                            $promise.then(function(){
+                                assoc.query_id = $scope.query.id;
+                            });
+                    }
                 };
             }
         };

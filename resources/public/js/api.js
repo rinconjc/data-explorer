@@ -31,7 +31,7 @@ angular.module('data-api',['ngResource'])
                     otherFuture.then(function(){
                         angular.forEach(otherFuture, value.push);
                     });
-                }
+                };
             }
             r.success(function(res){
                 if(isArray){
@@ -87,18 +87,22 @@ angular.module('data-api',['ngResource'])
                 return getDsResource(ds, 'views').query();
             },
             getTableData:function(ds, name, offset, maxrows){
-                return futureValue($http.post('/ds/' + ds +'/exec-query', {tables:[name], fields:['*'], offset:offset, limit:maxrows}), false);
+                return futureValue($http.post('/ds/' + ds +'/exec-query', {
+                    tables:[name], fields:['*'], offset:offset, limit:maxrows
+                }), false);
             },
             getTableInfo:function(ds, table){
                 return getDsResource(ds, 'tables').get({id:table});
             },
             executeSql:function(ds,sql, offset, limit){
                 var params = offset && limit? {offset:offset, limit:limit} : {};
-                return futureValue($http.post('/ds/'+ds+'/exec-sql', {"raw-sql":sql}, {params:params}));
+                return futureValue($http.post('/ds/'+ds+'/exec-sql', {
+                    "raw-sql":sql}, {params:params}));
             },
             executeQuery:function(tables, fields, conditions, offset, maxrows){
-                return futureValue($http.post('/ds/' + ds + '/exec-query', {tables:tables, fields:fields,
-                                                                            predicates:conditions, offset:offset, limit:maxrows}));
+                return futureValue($http.post('/ds/' + ds + '/exec-query', {
+                    tables:tables, fields:fields
+                    ,predicates:conditions, offset:offset, limit:maxrows}));
             },
             getQueries:function(ds){
                 return futureValue($http.get('/ds/'+ds+'/queries'), true);
@@ -115,6 +119,17 @@ angular.module('data-api',['ngResource'])
             },
             deleteQuery:function(qid){
                 return qryResource.delete({id:qid});
+            },
+            getQueryAssocs:function(qid){
+                return futureValue($http.get('/queries/'+qid+'/data-source'), true);
+            },
+            assocQuery:function(qid, dsid){
+                return futureValue($http.put('/queries/'+qid+'/data-source/'
+                                             + dsid));
+            },
+            dissocQuery:function(qid, dsid){
+                return futureValue($http.delete('/queries/'+qid+'/data-source/'
+                                             + dsid));
             },
             execSavedQuery:function(ds, qid){
                 return futureValue($http.post('/ds/' + ds + '/exec-query/' + qid));
