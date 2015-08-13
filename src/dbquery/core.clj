@@ -129,6 +129,14 @@
     )
   )
 
+(defn with-body [b]
+  (if (or (instance? Number b)
+          (instance? Boolean b)
+          )
+    {:body {:result b}}
+    {:body b}
+    )
+  )
 ;; resources
 
 (defresource data-sources-list common-opts
@@ -201,8 +209,11 @@
   (ANY "/data-sources/:id" [id] (data-sources-entry id))
   (ANY "/queries" [] queries-list)
   (ANY "/queries/:id" [id] (queries-entry id))
-  (PUT "/queries/:id/data-source/:ds" [id ds] (assoc-query-datasource ds id))
-  (DELETE "/queries/:id/data-source/:ds" [id ds] (dissoc-query-datasource ds id))
+  (PUT "/queries/:id/data-source/:ds" [id ds]
+       (with-body (assoc-query-datasource ds id)))
+  (DELETE "/queries/:id/data-source/:ds" [id ds]
+          (with-body (dissoc-query-datasource ds id)))
+  (GET "/queries/:id/data-source" [id] (with-body (query-assocs id)))
 
   (context "/ds/:ds-id" [ds-id]
            (POST "/exec-sql" req (handle-exec-sql req ds-id))
@@ -213,7 +224,7 @@
                                          {:body (table-meta (get-ds ds-id) name)}))
            (GET "/data-types" req (handle-data-types ds-id))
            (POST "/import-data" req (handle-data-import ds-id req))
-           (GET "/queries" req (ds-queries ds-id))
+           (GET "/queries" req (with-body (ds-queries ds-id)))
            )
   )
 
