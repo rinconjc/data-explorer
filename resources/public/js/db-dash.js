@@ -106,7 +106,7 @@ angular.module('db-dash',['data-api', 'ui.codemirror', 'ui.bootstrap','cfp.hotke
             templateUrl:'tpls/sql-panel.html',
             controller:function($scope,$rootScope, hotkeys, focus, preventDefault){
                 var dsId = $scope.dsId;
-                $scope.query = {ds:dsId};
+                $scope.query = {};
                 $scope.model = {selection:[]};
                 $scope.queries = DataService.getQueries(dsId);
                 $scope.results = [];
@@ -183,6 +183,7 @@ angular.module('db-dash',['data-api', 'ui.codemirror', 'ui.bootstrap','cfp.hotke
                         }).result.then(function(saved){
                             console.debug('saved!', saved);
                             angular.extend(saved, $scope.query);
+                            DataService.assocQuery(saved.id, dsId);
                         });
                     }
                 };

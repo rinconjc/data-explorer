@@ -113,10 +113,6 @@
              (fn [e] {:status 500 :body (.getMessage e)}))
     {:status 500 :body "default data source not available"}))
 
-(defn handle-data-types [ds-id]
-  (let [ds (get-ds ds-id)]
-    {:body  (data-types ds)}))
-
 (defn handle-data-import [ds-id {{{file :file separator :separator has-header :hasHeader} :inputFile dest :dest} :body}]
   (let [ds (get-ds ds-id)
         table (if (= "_" (dest :table))
@@ -176,7 +172,6 @@
                {:user-id user-id})
   :post! #(let [{{data :body} :request user-id :user-id} %
                 id (first (vals (k/insert query (k/values (assoc data :app_user_id user-id)))))]
-            (assoc-query-datasource (data :ds) id)
             {::id id})
   :post-redirect? (fn [ctx] {:location (format "/queries/%s" (::id ctx))})
   :handle-ok (k/select query))
@@ -222,7 +217,7 @@
            (GET "/tables" req (handle-list-tables ds-id))
            (GET "/tables/:name" [name] (fn [req]
                                          {:body (table-meta (get-ds ds-id) name)}))
-           (GET "/data-types" req (handle-data-types ds-id))
+           (GET "/data-types" req (with-body (data-types (get-ds ds-id))))
            (POST "/import-data" req (handle-data-import ds-id req))
            (GET "/queries" req (with-body (ds-queries ds-id)))
            )

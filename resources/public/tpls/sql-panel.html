@@ -41,7 +41,7 @@
   <tabset>
     <tab ng-repeat="r in results" active="activeTab[r.id]">
         <tab-heading title="{{r.sql}}">Result #{{$index}}
-            <a href="" ng-click="refresh(r)"><span class="glyphicon glyphicon-refresh"></span></a>
+            <a href="" title="refresh" ng-click="refresh(r)"><span class="glyphicon glyphicon-refresh"></span></a>
             <close-button close="closeResult($index)"/>
         </tab-heading>
       <div class="table-responsive">
