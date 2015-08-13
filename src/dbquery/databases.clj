@@ -108,7 +108,7 @@
 (defn data-types [ds]
   (with-db-metadata [meta ds]
     (with-open [rs (.getTypeInfo meta)]
-      (read-as-map rs :fields ["TYPE_NAME", "DATA_TYPE"])))
+      (read-as-map rs {:fields ["TYPE_NAME", "DATA_TYPE"]})))
   )
 
 (defn execute
