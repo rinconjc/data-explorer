@@ -115,7 +115,6 @@ angular.module('db-dash',['data-api', 'ui.codemirror', 'ui.bootstrap','cfp.hotke
                 $scope.execute = function(){
                     var sql = $scope.editor.getSelection() || $scope.query.sql;
                     var resp = DataService.executeSql(dsId, sql);
-
                     $scope.result=resp;
                     resp.$promise.then(function(){
                         if(resp.data){
@@ -195,6 +194,13 @@ angular.module('db-dash',['data-api', 'ui.codemirror', 'ui.bootstrap','cfp.hotke
                     $scope.query = {};
                     $scope.assocs = null;
                 };
+                $scope.deleteQuery = function(){
+                    if($scope.query.id){
+                        DataService.deleteQuery($scope.query.id);
+                        $scope.clear();
+                    }
+                };
+
                 $scope.refresh = function(r){
                     var resp = DataService.executeSql(dsId, r.sql);
                     r.data.rows=[];
