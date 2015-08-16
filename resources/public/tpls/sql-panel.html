@@ -2,12 +2,17 @@
   <div class="panel-heading" style="padding:2px;">
     <div class="btn-toolbar" role="toolbar" aria-label="...">
       <div class="btn-group" role="group" aria-label="...">
-          <button type="button" class="btn btn-default" ng-click="execute()">
-              Execute <span class="glyphicon glyphicon-play"></span> </button>
-          <button type="button" class="btn btn-default" ng-click="saveSql()">
-              Save <span class="glyphicon glyphicon-save"></span></button>
-          <button type="button" class="btn btn-default" ng-click="clear()">
-              Clear <span class="glyphicon glyphicon-erase"></span></button>
+          <button type="button" class="btn btn-default" ng-click="execute()"
+                  title="Execute Query">
+              <span class="glyphicon glyphicon-play"></span> </button>
+          <button type="button" class="btn btn-default" ng-click="saveSql()"
+                  title="Save Query">
+     <span class="glyphicon glyphicon-save"></span></button>
+          <button type="button" class="btn btn-default" ng-click="clear()"
+                  title="Clear">
+              <span class="glyphicon glyphicon-erase"></span></button>
+          <button type="button" class="btn btn-default" ng-click="deleteQuery()" title="Delete query" ng-disabled="!query.id">
+              <span class="glyphicon glyphicon-trash"></span></button>
       </div>
       <div class="btn-group" role="group" aria-label="...">
           <input type="text" class="form-control" placeholder="Search existing queries..."
