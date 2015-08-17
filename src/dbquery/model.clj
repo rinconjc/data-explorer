@@ -41,7 +41,7 @@
          (.syncToVersion version true true))
      (log/info "db upgrade complete")
      ))
-  ([env] (sync-db 5 env)))
+  ([env] (sync-db 6 env)))
 
 (defdb appdb (h2 db-conf))
 
@@ -55,7 +55,6 @@
   (prepare (fn [{pass :password :as ds}]
              (assoc ds :password (encrypt pass))))
   (transform (fn [{pass :password :as ds}]
-               (log/info "decrypting " pass)
                (if (some? pass) (assoc ds :password (decrypt pass))
                    ds)))
   )
