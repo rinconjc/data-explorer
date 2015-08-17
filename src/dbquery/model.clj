@@ -55,7 +55,6 @@
   (prepare (fn [{pass :password :as ds}]
              (assoc ds :password (encrypt pass))))
   (transform (fn [{pass :password :as ds}]
-               (log/info "decrypting " pass)
                (if (some? pass) (assoc ds :password (decrypt pass))
                    ds)))
   )
