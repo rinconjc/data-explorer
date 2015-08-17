@@ -41,7 +41,7 @@
          (.syncToVersion version true true))
      (log/info "db upgrade complete")
      ))
-  ([env] (sync-db 5 env)))
+  ([env] (sync-db 6 env)))
 
 (defdb appdb (h2 db-conf))
 
