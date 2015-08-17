@@ -1,3 +1,5 @@
+alter table data_source
+modify
 create table ds_table(id int not null
 , name varchar(100) not null
 , alias varchar(100)

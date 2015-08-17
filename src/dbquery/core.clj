@@ -32,7 +32,7 @@
   )
 
 (defn get-ds [ds-id]
-  (with-cache ds-cache ds-id #(-> (k/select data_source (k/where {:id %}))
+  (with-cache ds-cache ds-id #(-> (k/select data_source (k/fields [:password]) (k/where {:id %}))
                                   first
                                   safe-mk-ds))
   )

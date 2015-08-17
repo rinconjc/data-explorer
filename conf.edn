@@ -1,0 +1,8 @@
+{:app-env "dev"
+ :db {
+      :db "~/dbquery-dev-h2.db;AUTO_SERVER=TRUE"
+      :user "sa"
+      :password "sa"
+      }
+ :secret-key "clojure super awesome language that rocks!"
+ }

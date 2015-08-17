@@ -1,0 +1,8 @@
+{:app-env "test"
+ :db {
+      :db "mem:test-model"
+      :user "sa"
+      :password "sa"
+      }
+ :secret-key "some secret phrase for password encryption"
+ }
