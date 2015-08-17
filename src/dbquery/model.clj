@@ -2,10 +2,63 @@
 (ns dbquery.model
   (:import [com.rinconj.dbupgrader DbUpgrader]
            [org.h2.jdbcx JdbcDataSource]
-           [org.jasypt.util.text StrongTextEncryptor]
+           [org.jasypt.util.text BasicTextEncryptor]
            )
   (:require [korma.db :refer :all]
             [clojure.tools.logging :as log]
+            [korma.core :refer :all]
+            [dbquery.conf :refer :all]
+            [crypto.password.bcrypt :as password]
+            [clojure.java.jdbc :as j]
+            [dbquery.databases :as db]
+            )
+  )
+
+
+(defn encrypt [str]
+  (-> (doto (BasicTextEncryptor.)
+        (.setPassword (conf :secret-key)))
+      (.encrypt str))
+  )
+
+(defn decrypt [str]
+  (-> (doto (BasicTextEncryptor.)
+        (.setPassword (conf :secret-key)))
+      (.decrypt str))
+  )
+;;(password/encrypt "admin")
+
+(def ds (delay (doto (JdbcDataSource.)
+                 (.setUrl (str "jdbc:h2:" (db-conf :db)))
+                 (.setUser (db-conf :user))
+                 (.setPassword (db-conf :password)))))
+
+(defn sync-db
+  ([version env]
+   (do
+     (log/info "starting db upgrade:" version env)
+     (-> (DbUpgrader. (force ds) env)
+         (.syncToVersion version true true))
+     (log/info "db upgrade complete")
+     ))
+  ([env] (sync-db 5 env)))
+
+(defdb appdb (h2 db-conf))
+
+(declare data_source app_user query query_params)
+
+(defentity data_source
+  (entity-fields :id :name :dbms :user_name :url :app_user_id :schema)
+  (belongs-to app_user)
+  (many-to-many query :data_source_query)
+  (many-to-many app_user :user_data_source)
+  (prepare (fn [{pass :password :as ds}]
+             (assoc ds :password (encrypt pass))))
+  (transform (fn [{pass :password :as ds}]
+               (log/info "decrypting " pass)
+               (if (some? pass) (assoc ds :password (decrypt pass))
+                   ds)))
+  )
 
 (defentity app_user
   (entity-fields :id :nick :full_name :active)
