@@ -1,5 +1,6 @@
 alter table data_source
-modify
+alter password varchar(255)
+;
 create table ds_table(id int not null
 , name varchar(100) not null
 , alias varchar(100)
