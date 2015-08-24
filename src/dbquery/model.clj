@@ -125,3 +125,6 @@ and q.query_id = ?" {:rs-reader db/read-as-map :args [qid]}))
               "delete data_source_query where data_source_id=?
 and query_id=?" {:args [ds-id q-id]} )
   )
+
+(defn load-metadata [ds-id]
+  )

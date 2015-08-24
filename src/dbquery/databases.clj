@@ -133,15 +133,18 @@
   ([ds sql] (execute ds sql {}))
   )
 
-(defn table-meta [ds name]
-  (with-db-metadata [meta ds]
-    (let [cols  (with-open [rs (.getColumns meta nil nil name "%")]
-                  (read-as-map rs))
-          pks (with-open [rs (.getPrimaryKeys meta nil nil name)]
-                (read-as-map rs))
-          fks (with-open [rs (.getImportedKeys meta nil nil name)]
-                (read-as-map rs))]
-      {:columns cols :primaryKeys pks :foreignKeys fks})))
+(defn table-meta
+  ([ds name]
+   (with-db-metadata [meta ds]
+     (let [cols  (with-open [rs (.getColumns meta nil nil name "%")]
+                   (read-as-map rs))
+           pks (with-open [rs (.getPrimaryKeys meta nil nil name)]
+                 (read-as-map rs))
+           fks (with-open [rs (.getImportedKeys meta nil nil name)]
+                 (read-as-map rs))]
+       {:columns cols :primaryKeys pks :foreignKeys fks})))
+  ([ds] (table-meta "%"))
+  )
 
 (defn exec-query [ds {:keys [tables fields predicates offset limit] :or {offset 0 limit 20}}]
   (with-open [con (.getConnection (:datasource ds))]
