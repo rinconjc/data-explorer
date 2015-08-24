@@ -1,6 +1,6 @@
-# dbquery
+# Data Explorer
 
-FIXME: description
+A multi-user web-based database query tool.
 
 ## Installation
 
