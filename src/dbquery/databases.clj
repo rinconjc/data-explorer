@@ -133,17 +133,40 @@
   ([ds sql] (execute ds sql {}))
   )
 
-(defn table-meta
-  ([ds name]
-   (with-db-metadata [meta ds]
-     (let [cols  (with-open [rs (.getColumns meta nil nil name "%")]
-                   (read-as-map rs))
-           pks (with-open [rs (.getPrimaryKeys meta nil nil name)]
-                 (read-as-map rs))
-           fks (with-open [rs (.getImportedKeys meta nil nil name)]
-                 (read-as-map rs))]
-       {:columns cols :primaryKeys pks :foreignKeys fks})))
-  ([ds] (table-meta "%"))
+(defn table-meta [ds name]
+  (with-db-metadata [meta ds]
+    (let [cols  (with-open [rs (.getColumns meta nil nil name "%")]
+                  (read-as-map rs))
+          pks (with-open [rs (.getPrimaryKeys meta nil nil name)]
+                (read-as-map rs))
+          fks (with-open [rs (.getImportedKeys meta nil nil name)]
+                (read-as-map rs))]
+      {:columns cols :primaryKeys pks :foreignKeys fks}))
+  )
+
+(defn- find-and-replace [col pred f]
+  (loop ))
+
+(defn db-meta [ds]
+  (defn merge-col-keys [cols pks fks]
+    (reduce #(update cols ()))
+    )
+  (with-db-metadata [meta ds]
+    (let [tables (future (with-open [rs (.getTables meta nil (:schema ds) "%" (into-array ["TABLE" "VIEW"]))]
+                           (read-as-map rs {:fields ["TABLE_NAME" "TABLE_TYPE"]})))
+          cols (future (with-open [rs (.getColumns meta nil nil "%" "%")]
+                         (-> rs
+                             (read-as-map {:fields ["TABLE_NAME" "COLUMN_NAME" "DATA_TYPE" "TYPE_NAME" "COLUMN_SIZE" "NULLABLE"]})
+                             (#(hash-map (for [e %] [(:table_name e) e] ))))))
+          pkfn (fn [tbl] (with-open [rs (.getPrimaryKeys meta nil nil tbl)]
+                           (read-as-map rs {:fields ["COLUMN_NAME" "KEY_SEQ"]})))
+          fkfn (fn [tbl] (with-open [rs (.getImportedKeys meta nil nil tbl)]
+                           (read-as-map rs {:fields ["PKTABLE_NAME" "PKCOLUMN_NAME" "FKCOLUMN_NAME" "KEY_SEQ" "FK_NAME" "PK_NAME"]})))
+          pks (for [tbl @tables][tbl (future (pkfn tbl))])
+          fks (for [tbl @tables][tbl (future (fkfn tbl))])
+          ]
+      (for [tbl @tables] (assoc :columns (@cols (:table_name tbl))))
+      ))
   )
 
 (defn exec-query [ds {:keys [tables fields predicates offset limit] :or {offset 0 limit 20}}]
