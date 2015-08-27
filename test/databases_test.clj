@@ -77,4 +77,10 @@
       )
     )
 
+  (testing "db metadata retrieve"
+    (let [m (db-meta (dummy-ds))]
+      (print-str m)
+      (is (some? m)))
+    )
+
   )

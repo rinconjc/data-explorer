@@ -144,13 +144,19 @@
       {:columns cols :primaryKeys pks :foreignKeys fks}))
   )
 
-(defn- find-and-replace [col pred f]
-  (loop ))
+(defn- merge-col-keys [cols pks fks]
+  (map (fn [{col-name :column_name :as col}]
+         (-> col
+             (assoc :is_pk (some? (some #(= col-name (:column_name %)) pks)))
+             ((fn [m]
+                (if-let [fk (some #(= col-name (:fkcolumn_name %)) fks)]
+                  (assoc m :is-fk true :fk_table (:pktable_name fk) :fk_column (:pkcolumn_name))
+                  (assoc m :is-fk false)
+                  )))
+             )) cols)
+  )
 
 (defn db-meta [ds]
-  (defn merge-col-keys [cols pks fks]
-    (reduce #(update cols ()))
-    )
   (with-db-metadata [meta ds]
     (let [tables (future (with-open [rs (.getTables meta nil (:schema ds) "%" (into-array ["TABLE" "VIEW"]))]
                            (read-as-map rs {:fields ["TABLE_NAME" "TABLE_TYPE"]})))
@@ -162,10 +168,10 @@
                            (read-as-map rs {:fields ["COLUMN_NAME" "KEY_SEQ"]})))
           fkfn (fn [tbl] (with-open [rs (.getImportedKeys meta nil nil tbl)]
                            (read-as-map rs {:fields ["PKTABLE_NAME" "PKCOLUMN_NAME" "FKCOLUMN_NAME" "KEY_SEQ" "FK_NAME" "PK_NAME"]})))
-          pks (for [tbl @tables][tbl (future (pkfn tbl))])
-          fks (for [tbl @tables][tbl (future (fkfn tbl))])
+          pks (into {} (for [tbl @tables][tbl (future (pkfn tbl))]))
+          fks (into {} (for [tbl @tables][tbl (future (fkfn tbl))]))
           ]
-      (for [tbl @tables] (assoc :columns (@cols (:table_name tbl))))
+      (for [tbl @tables] (assoc :columns (merge-col-keys (@cols (:table_name tbl)) (deref (pks tbl)) (deref (fks tbl)))))
       ))
   )
 
