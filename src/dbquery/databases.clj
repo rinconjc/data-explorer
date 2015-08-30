@@ -50,14 +50,22 @@
   ([rs] (read-rs rs {}))
   )
 
+(defn- key-map [xs]
+  (and xs (into {} (for [e xs] (cond
+                          (string? e) [e (keyword (s/lower-case e))]
+                          (seq? e) [(first e) (second e)] ) ))))
+
 (defn read-as-map
   ([rs {:keys [offset limit fields] :or {offset 0 limit 100}}]
-   (let [meta (.getMetaData rs)
+   (let [fields-map (key-map fields)
+         meta (.getMetaData rs)
          col-count (inc (.getColumnCount meta))
          col-and-readers (doall (for [i (range 1 col-count)
-                                      :let [col-name (.getColumnLabel meta i)]
-                                      :when (or (nil? fields) (some #{col-name} fields))]
-                                  [i (keyword (s/lower-case col-name)) (col-reader (.getColumnType meta i))]))
+                                      :let [col-name (.getColumnLabel meta i)
+                                            key (or (and (nil? fields) (keyword (s/lower-case col-name)))
+                                                    (some #{col-name} fields-map))]
+                                      :when key]
+                                  [i key (col-reader (.getColumnType meta i))]))
          row-reader (fn [rs] (reduce (fn [row [i col reader]]
                                        (assoc row col (apply reader [rs i]))) {} col-and-readers))]
      (rs-rows rs row-reader offset limit)
@@ -180,8 +188,8 @@
           ]
       (doall (for [tbl @tables :let [tbl-name (:table_name tbl)]]
                (assoc tbl :columns (merge-col-keys (@cols tbl-name)
-                                               (deref (pks tbl-name))
-                                               (deref (fks tbl-name))))))
+                                                   (deref (pks tbl-name))
+                                                   (deref (fks tbl-name))))))
       ))
   )
 

@@ -126,5 +126,17 @@ and q.query_id = ?" {:rs-reader db/read-as-map :args [qid]}))
 and query_id=?" {:args [ds-id q-id]} )
   )
 
-(defn load-metadata [ds-id]
+(defn sync-table-meta [ds-id table-meta]
+  (if-let [t (select ds_table (where {:name (:table_name table-meta)}))]
+    (delete ds_column (where {:table_id (:id t)}))
+    (do
+      (insert ds_table (values ))
+      (insert ds_column (values (for [c (:columns table-meta)] (dissoc c :table_name)))))
+    )
+  )
+
+(defn load-metadata [ds ds-id]
+  (doseq (db/db-meta ds)
+
+    )
   )
