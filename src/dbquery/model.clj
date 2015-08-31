@@ -127,16 +127,26 @@ and query_id=?" {:args [ds-id q-id]} )
   )
 
 (defn sync-table-meta [ds-id table-meta]
+  "creates or updates the table metadata in the specified datasource"
+  (log/info "syncing table metadata:" ds-id (:name table))
   (if-let [t (select ds_table (where {:name (:table_name table-meta)}))]
     (delete ds_column (where {:table_id (:id t)}))
-    (do
-      (insert ds_table (values ))
-      (insert ds_column (values (for [c (:columns table-meta)] (dissoc c :table_name)))))
+    (let [id (-> (insert ds_table
+                         (values (-> table-meta
+                                     (select-keys [:name :type])
+                                     (assoc :data_source_id ds-id)) ))
+                 vals first)]
+      (insert ds_column
+              (values (for [c (:columns table-meta)]
+                        (-> c
+                            (dissoc :table_name)
+                            (assoc :table_id id)
+                            )))))
     )
   )
 
 (defn load-metadata [ds ds-id]
-  (doseq (db/db-meta ds)
-
+  (doseq [tm (db/db-meta ds)]
+    (sync-table-meta ds-id tm)
     )
   )

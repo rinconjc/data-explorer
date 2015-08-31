@@ -53,7 +53,7 @@
 (defn- key-map [xs]
   (and xs (into {} (for [e xs] (cond
                           (string? e) [e (keyword (s/lower-case e))]
-                          (seq? e) [(first e) (second e)] ) ))))
+                          (vector? e) [(first e) (second e)] ) ))))
 
 (defn read-as-map
   ([rs {:keys [offset limit fields] :or {offset 0 limit 100}}]
@@ -63,8 +63,8 @@
          col-and-readers (doall (for [i (range 1 col-count)
                                       :let [col-name (.getColumnLabel meta i)
                                             key (or (and (nil? fields) (keyword (s/lower-case col-name)))
-                                                    (some #{col-name} fields-map))]
-                                      :when key]
+                                                    (fields-map col-name))]
+                                      :when (some? key)]
                                   [i key (col-reader (.getColumnType meta i))]))
          row-reader (fn [rs] (reduce (fn [row [i col reader]]
                                        (assoc row col (apply reader [rs i]))) {} col-and-readers))]
@@ -104,14 +104,16 @@
    )
   ([ds table] (table-data ds table 100)))
 
-(defn tables
-  ([ds] (tables ds (:schema ds)))
+(defn- get-db-tables [meta schema]
+  (with-open [rs (.getTables meta nil schema "%"
+                             (into-array ["TABLE" "VIEW"]))]
+    (read-as-map rs {:fields [["TABLE_NAME" :name] ["TABLE_TYPE" :type]]})))
+
+(defn get-tables
+  ([ds] (get-tables ds (:schema ds)))
   ([ds schema]
    (with-db-metadata [meta ds]
-     (with-open [rs (.getTables meta nil schema "%" (into-array ["TABLE" "VIEW"]))]
-       (-> (read-rs rs {:columns ["TABLE_NAME"] :limit 1000})
-           :rows
-           flatten)))))
+     (get-db-tables meta schema))))
 
 (defn data-types [ds]
   (with-db-metadata [meta ds]
@@ -153,9 +155,9 @@
   )
 
 (defn- merge-col-keys [cols pks fks]
-  (map (fn [{col-name :column_name :as col}]
+  (map (fn [{col-name :name :as col}]
          (-> col
-             (assoc :is_pk (some? (some #(= col-name (:column_name %)) pks)))
+             (assoc :is_pk (some? (some #(= col-name (:name %)) pks)))
              ((fn [m]
                 (if-let [fk (some #(= col-name (:fkcolumn_name %)) fks)]
                   (assoc m :is-fk true :fk_table (:pktable_name fk) :fk_column (:pkcolumn_name))
@@ -166,27 +168,26 @@
 
 (defn db-meta [ds]
   (with-db-metadata [meta ds]
-    (let [tables (future (with-open [rs (.getTables meta nil (:schema ds) "%"
-                                                    (into-array ["TABLE" "VIEW"]))]
-                           (read-as-map rs {:fields ["TABLE_NAME" "TABLE_TYPE"]})))
+    (let [tables (future (get-db-tables meta (:schema ds)))
           cols (future (with-open [rs (.getColumns meta nil nil "%" "%")]
                          (-> rs
-                             (read-as-map {:fields ["TABLE_NAME" "COLUMN_NAME"
+                             (read-as-map {:fields ["TABLE_NAME" ["COLUMN_NAME" :name]
                                                     "DATA_TYPE" "TYPE_NAME"
                                                     "COLUMN_SIZE" "NULLABLE"]})
                              (#(into {} (for [e %] [(:table_name e) e] ))))))
           pkfn (fn [tbl] (with-open [rs (.getPrimaryKeys meta nil nil tbl)]
-                           (read-as-map rs {:fields ["COLUMN_NAME" "KEY_SEQ"]})))
+                           (read-as-map rs {:fields [["COLUMN_NAME" :name] "KEY_SEQ"]})))
           fkfn (fn [tbl] (with-open [rs (.getImportedKeys meta nil nil tbl)]
                            (read-as-map rs {:fields ["PKTABLE_NAME" "PKCOLUMN_NAME"
                                                      "FKCOLUMN_NAME" "KEY_SEQ"
                                                      "FK_NAME" "PK_NAME"]})))
-          pks (into {} (for [tbl @tables :let [tbl-name (:table_name tbl)]]
+          pks (into {} (for [tbl @tables :let [tbl-name (:name tbl)]]
                          [tbl-name (future (pkfn tbl-name))]))
-          fks (into {} (for [tbl @tables :let [tbl-name (:table_name tbl)]]
+          fks (into {} (for [tbl @tables :let [tbl-name (:name tbl)]]
                          [tbl-name (future (fkfn tbl-name))]))
           ]
-      (doall (for [tbl @tables :let [tbl-name (:table_name tbl)]]
+
+      (doall (for [tbl @tables :let [tbl-name (:name tbl)]]
                (assoc tbl :columns (merge-col-keys (@cols tbl-name)
                                                    (deref (pks tbl-name))
                                                    (deref (fks tbl-name))))))

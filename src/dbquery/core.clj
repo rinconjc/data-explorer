@@ -107,11 +107,15 @@
     {:status 404 :body "no such query exists!"}))
 
 (defn handle-list-tables [ds-id]
-  (if-let [ds (get-ds ds-id)]
-    (try-let [ts (tables ds)]
-             {:body ts}
-             (fn [e] {:status 500 :body (.getMessage e)}))
-    {:status 500 :body "default data source not available"}))
+  (let [tables  (k/select ds_table (k/where {:data_source_id ds-id}))]
+    (if (empty? tables)
+      (let [ds (get-ds ds-id)]
+        (log/info "table metadata not found. fallback to quick table list...")
+        (future (load-metadata ds ds-id))
+        (get-tables ds))
+      tables)
+    )
+  )
 
 (defn handle-data-import [ds-id {{{file :file separator :separator has-header :hasHeader} :inputFile dest :dest} :body}]
   (let [ds (get-ds ds-id)
@@ -214,7 +218,7 @@
            (POST "/exec-sql" req (handle-exec-sql req ds-id))
            (POST "/exec-query" req (handle-exec-query req ds-id))
            (POST "/exec-query/:id" [id] (handle-exec-query-by-id id))
-           (GET "/tables" req (handle-list-tables ds-id))
+           (GET "/tables" req (with-body (handle-list-tables ds-id)))
            (GET "/tables/:name" [name] (fn [req]
                                          {:body (table-meta (get-ds ds-id) name)}))
            (GET "/data-types" req (with-body (data-types (get-ds ds-id))))
