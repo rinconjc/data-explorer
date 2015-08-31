@@ -15,9 +15,10 @@
   (testing "get tables"
     (let [ds (dummy-ds)]
       (execute ds "create table tablex(id int, name varchar(10))")
-      (def result (tables ds))
-      (println "tables:" result)
+      (def result (get-tables ds))
+      (println "db tables :" result)
       (is (= 1 (count result)))
+      (is (contains? (first result) :name))
       )
     )
 

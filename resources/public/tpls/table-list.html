@@ -1,4 +1,3 @@
-
 <div class="panel panel-default">
   <div class="panel-heading" style="padding:2px;">
     <div class="btn-group btn-group-sm" role="group" aria-label="...">
@@ -14,7 +13,7 @@
         <tab-heading>Tables </tab-heading>
         <input ng-show="model.searchActive" focus-on="tableSearchActivated" type="text" class="form-control" placeholder="Type table name..." size="30"  ng-model="model.filterValue"/>
         <spinner hide-when="tables.$resolved"></spinner>
-        <select ng-show="tables.$resolved" ng-model="model.items" class="form-control" style="width:100%; height:80%" ng-options="table for table in tables | filter:model.filterValue" multiple
+        <select ng-show="tables.$resolved" ng-model="model.items" class="form-control" style="width:100%; height:80%" ng-options="table.name as table.name for table in tables | filter:model.filterValue" multiple
                 size="25" >
         </select>
       </tab>
@@ -24,6 +23,6 @@
         </select>
       </tab>
     </tabset>
-    
+
   </div>
 </div>
