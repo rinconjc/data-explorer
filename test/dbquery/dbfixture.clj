@@ -3,11 +3,15 @@
             [dbquery.model :refer :all]
             [korma.core :as k]))
 
-(defn dummy-ds [] (safe-mk-ds {:dbms "H2" :url  "mem:test;DB_CLOSE_DELAY=0" :user_name  "sa" :password "sa"}))
+(defn dummy-ds [] (safe-mk-ds {:dbms "H2" :url  "mem:test1;DB_CLOSE_DELAY=0" :user_name  "sa" :password "sa"}))
 (defn fixture [f]
   (def con (.getConnection (:datasource (dummy-ds))))
-  (f)
-  (.close con)
+  (println "dummy ds connection active")
+  (try
+    (f)
+    (finally
+      (.close con)
+      (println "dummy ds connection closed")))
   )
 
 (defn model-fixture [f]

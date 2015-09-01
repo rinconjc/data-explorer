@@ -52,8 +52,8 @@
 
 (defn- key-map [xs]
   (and xs (into {} (for [e xs] (cond
-                          (string? e) [e (keyword (s/lower-case e))]
-                          (vector? e) [(first e) (second e)] ) ))))
+                                 (string? e) [e (keyword (s/lower-case e))]
+                                 (vector? e) [(first e) (second e)] ) ))))
 
 (defn read-as-map
   ([rs {:keys [offset limit fields] :or {offset 0 limit 100}}]
@@ -169,11 +169,11 @@
 (defn db-meta [ds]
   (with-db-metadata [meta ds]
     (let [tables (future (get-db-tables meta (:schema ds)))
-          cols (future (with-open [rs (.getColumns meta nil nil "%" "%")]
+          cols (future (with-open [rs (.getColumns meta nil (:schema ds) "%" "%")]
                          (-> rs
                              (read-as-map {:fields ["TABLE_NAME" ["COLUMN_NAME" :name]
                                                     "DATA_TYPE" "TYPE_NAME"
-                                                    "COLUMN_SIZE" "NULLABLE"]})
+                                                    "COLUMN_SIZE" "NULLABLE"] :limit Integer/MAX_VALUE})
                              (#(into {} (for [e %] [(:table_name e) e] ))))))
           pkfn (fn [tbl] (with-open [rs (.getPrimaryKeys meta nil nil tbl)]
                            (read-as-map rs {:fields [["COLUMN_NAME" :name] "KEY_SEQ"]})))
@@ -186,6 +186,8 @@
           fks (into {} (for [tbl @tables :let [tbl-name (:name tbl)]]
                          [tbl-name (future (fkfn tbl-name))]))
           ]
+      (println "debug: tables:" (prn-str @tables))
+      (println "debug: columns:" (prn-str @cols))
 
       (doall (for [tbl @tables :let [tbl-name (:name tbl)]]
                (assoc tbl :columns (merge-col-keys (@cols tbl-name)

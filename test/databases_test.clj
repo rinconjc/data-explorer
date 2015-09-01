@@ -80,8 +80,10 @@
 
   (testing "db metadata retrieve"
     (let [m (db-meta (dummy-ds))]
-      (print-str m)
-      (is (some? m)))
+      (println "metadata:" (prn-str m))
+      (is (some? m))
+      (is (> (count (:columns (first m))) 0)))
+
     )
 
   )

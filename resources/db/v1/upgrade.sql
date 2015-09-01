@@ -4,12 +4,10 @@ active bit, primary key (id));
 
 create table data_source(id int not null identity,
 name varchar(50) not null,
-dbms varchar(50) not null,
 user_name varchar(60),
 password varchar(255),
 url varchar(250) not null,
 app_user_id int,
-schema varchar(50),
 primary key (id),
 foreign key (app_user_id) references app_user (id));
 
