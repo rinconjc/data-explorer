@@ -6,7 +6,7 @@ create table data_source(id int not null identity,
 name varchar(50) not null,
 dbms varchar(50) not null,
 user_name varchar(60),
-password varchar(20),
+password varchar(255),
 url varchar(250) not null,
 app_user_id int,
 schema varchar(50),
@@ -40,4 +40,3 @@ primary key(app_user_id, data_source_id))
 insert into app_user(nick, password, active)
 values('admin', '$2a$11$E7b.iZnDDHygsZ7ACXdOtOKreLTxY7L1rGC6mKzXfKls7HQ.VXPLe', 1)
 ;
-

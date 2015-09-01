@@ -16,7 +16,7 @@
     (def ds1 (mk-ds dsinfo))
     (with-open [con2 (.getConnection ds1)]
       (execute {:datasource ds1} "create table tablea(id int, name varchar(20))")
-      (sync-db "dev")
+      (sync-db "test")
       (println "creating test datasource:")
       (if (nil? (first (k/select data_source (k/where {:id 1}))))
         (k/insert data_source (k/values (merge {:name "test" :id 1} dsinfo))))
