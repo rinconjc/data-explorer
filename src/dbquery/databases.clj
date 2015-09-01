@@ -107,7 +107,7 @@
 (defn- get-db-tables [meta schema]
   (with-open [rs (.getTables meta nil schema "%"
                              (into-array ["TABLE" "VIEW"]))]
-    (read-as-map rs {:fields [["TABLE_NAME" :name] ["TABLE_TYPE" :type]]})))
+    (read-as-map rs {:fields [["TABLE_NAME" :name] ["TABLE_TYPE" :type]] :limit 1000})))
 
 (defn get-tables
   ([ds] (get-tables ds (:schema ds)))
