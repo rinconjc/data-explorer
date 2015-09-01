@@ -38,7 +38,7 @@
    (do
      (log/info "starting db upgrade:" version env)
      (-> (DbUpgrader. (force ds) env)
-         (.syncToVersion version true true))
+         (.syncToVersion version false false))
      (log/info "db upgrade complete")
      ))
   ([env] (sync-db 6 env)))
@@ -128,8 +128,8 @@ and query_id=?" {:args [ds-id q-id]} )
 
 (defn sync-table-meta [ds-id table-meta]
   "creates or updates the table metadata in the specified datasource"
-  (log/info "syncing table metadata:" ds-id (:name table))
-  (if-let [t (select ds_table (where {:name (:table_name table-meta)}))]
+  (log/info "syncing table metadata:" ds-id (prn table-meta))
+  (if-let [t (select ds_table (where {:name (:name table-meta) :data_source_id ds-id}))]
     (delete ds_column (where {:table_id (:id t)}))
     (let [id (-> (insert ds_table
                          (values (-> table-meta
