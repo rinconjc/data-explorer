@@ -160,8 +160,8 @@
              (assoc :is_pk (some? (some #(= col-name (:name %)) pks)))
              ((fn [m]
                 (if-let [fk (some #(= col-name (:fkcolumn_name %)) fks)]
-                  (assoc m :is-fk true :fk_table (:pktable_name fk) :fk_column (:pkcolumn_name fk))
-                  (assoc m :is-fk false)
+                  (assoc m :is_fk true :fk_table (:pktable_name fk) :fk_column (:pkcolumn_name fk))
+                  (assoc m :is_fk false)
                   )))
              )) cols)
   )
@@ -173,7 +173,7 @@
                          (-> rs
                              (read-as-map {:fields ["TABLE_NAME" ["COLUMN_NAME" :name]
                                                     "DATA_TYPE" "TYPE_NAME"
-                                                    "COLUMN_SIZE" "NULLABLE"] :limit Integer/MAX_VALUE})
+                                                    ["COLUMN_SIZE" :size] "NULLABLE"] :limit Integer/MAX_VALUE})
                              (#(group-by (partial :table_name) %)))))
           pkfn (fn [tbl] (with-open [rs (.getPrimaryKeys meta nil nil tbl)]
                            (read-as-map rs {:fields [["COLUMN_NAME" :name] "KEY_SEQ"]})))
