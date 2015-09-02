@@ -160,7 +160,7 @@
              (assoc :is_pk (some? (some #(= col-name (:name %)) pks)))
              ((fn [m]
                 (if-let [fk (some #(= col-name (:fkcolumn_name %)) fks)]
-                  (assoc m :is-fk true :fk_table (:pktable_name fk) :fk_column (:pkcolumn_name))
+                  (assoc m :is-fk true :fk_table (:pktable_name fk) :fk_column (:pkcolumn_name fk))
                   (assoc m :is-fk false)
                   )))
              )) cols)
@@ -174,7 +174,7 @@
                              (read-as-map {:fields ["TABLE_NAME" ["COLUMN_NAME" :name]
                                                     "DATA_TYPE" "TYPE_NAME"
                                                     "COLUMN_SIZE" "NULLABLE"] :limit Integer/MAX_VALUE})
-                             (#(into {} (for [e %] [(:table_name e) e] ))))))
+                             (#(group-by (partial :table_name) %)))))
           pkfn (fn [tbl] (with-open [rs (.getPrimaryKeys meta nil nil tbl)]
                            (read-as-map rs {:fields [["COLUMN_NAME" :name] "KEY_SEQ"]})))
           fkfn (fn [tbl] (with-open [rs (.getImportedKeys meta nil nil tbl)]
@@ -186,9 +186,6 @@
           fks (into {} (for [tbl @tables :let [tbl-name (:name tbl)]]
                          [tbl-name (future (fkfn tbl-name))]))
           ]
-      (println "debug: tables:" (prn-str @tables))
-      (println "debug: columns:" (prn-str @cols))
-
       (doall (for [tbl @tables :let [tbl-name (:name tbl)]]
                (assoc tbl :columns (merge-col-keys (@cols tbl-name)
                                                    (deref (pks tbl-name))
