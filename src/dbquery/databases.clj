@@ -7,7 +7,8 @@
   (:import [org.h2.jdbcx JdbcDataSource]
            [oracle.jdbc.pool OracleDataSource]
            [java.sql ResultSet Types]
-           [java.text SimpleDateFormat DecimalFormat NumberFormat])
+           [java.text SimpleDateFormat DecimalFormat NumberFormat]
+           [java.sql Date])
   )
 
 (def ^:private result-extractors
@@ -218,16 +219,23 @@
     (let [pos (.indexOf header source)
           _ (if (< pos 0) (throw (Exception. (str "source " source " not found in header " (s/join "," header)))))
           val-fn (cond
-                   (sql-date-types type) (fn [val] (-> (SimpleDateFormat. format) (.parse val)))
+                   (sql-date-types type) (fn [val] (-> (SimpleDateFormat. format)
+                                                       (.parse val)
+                                                       .getTime
+                                                       (Date.)))
                    (sql-number-types type) (if (s/blank? format)
                                              (fn [val] (-> (NumberFormat/getNumberInstance) (.parse val)))
                                              (fn [val] (-> (DecimalFormat. format) (.parse val))))
                    true identity
                    )]
       (fn [ps row] (let [val (nth row pos)]
-                     (if (s/blank? val)
-                       (doto ps (.setNull (inc i) type))
-                       (doto ps (.setObject (inc i) (val-fn val) type)))
+                     (try
+                       (if (s/blank? val)
+                        (doto ps (.setNull (inc i) type))
+                        (doto ps (.setObject (inc i) (val-fn val) type)))
+                       (catch Exception e
+                         (log/error e "failed converting col " pos " in " row)
+                         (throw e)))
                      )
         )
       )

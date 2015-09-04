@@ -152,3 +152,10 @@ and query_id=?" {:args [ds-id q-id]} )
         (log/error e "failed syncing table " tm)))
     )
   )
+
+(defn sync-tables [ds ds-id]
+  (let [tables  (db/get-tables ds)]
+    ;; TODO sync tables
+    tables
+    )
+  )

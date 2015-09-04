@@ -23,9 +23,8 @@ angular.module('data-import', ['ui.bootstrap', 'common-utils', 'common-widgets']
                     ];
                     $scope.dest={};
                     function updateTables(){
-                        var tables = DataService.getTables($scope.dest.database);
-                        tables.push('New Table');
-                        $scope.destParams[1].options = CommonUtils.toObject(tables);
+                        var tables = DataService.getTables($scope.dest.database, true);
+                        $scope.destParams[1].options = CommonUtils.toObject(tables, 'name', 'name');
                     }
 
                     function tableChanged(){
@@ -42,16 +41,16 @@ angular.module('data-import', ['ui.bootstrap', 'common-utils', 'common-widgets']
                     };
                     $scope.requiresSize = function(type){
                         return SIZE_REQUIRED_TYPES.indexOf(type)>=0;
-                        
+
                     };
-                    
+
                     $scope.destParams = [
                         {field:'database', label:'Database', type:'select', onchange:updateTables,
                          options:CommonUtils.toObject(DataService.getDatasources(), 'id', 'name')},
                         {field:'table', label:'Table', type:'select', onchange:tableChanged, options:{}, staticOptions:{'_':'< New Table >'}},
                         {field:'newTable', type:'input', hide:true, placeholder:'Table Name'}
                     ];
-                    $scope.doImport = function(){                        
+                    $scope.doImport = function(){
                         console.log('importing into...', $scope.dest);
                         if(!$scope.loaded || $scope.loaded.$error)
                             $scope.errors = 'Upload file first'

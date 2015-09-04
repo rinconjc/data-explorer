@@ -106,14 +106,16 @@
       )
     {:status 404 :body "no such query exists!"}))
 
-(defn handle-list-tables [ds-id]
+(defn handle-list-tables [req ds-id]
   (let [tables  (k/select ds_table (k/where {:data_source_id ds-id}))]
     (if (empty? tables)
       (let [ds (get-ds ds-id)]
         (log/info "table metadata not found. fallback to quick table list...")
         (future (load-metadata ds ds-id))
         (get-tables ds))
-      tables)
+      (if (= "true" (get-in req [:params :refresh]))
+        (sync-tables (get-ds ds-id) ds-id)
+        tables))
     )
   )
 
@@ -218,7 +220,7 @@
            (POST "/exec-sql" req (handle-exec-sql req ds-id))
            (POST "/exec-query" req (handle-exec-query req ds-id))
            (POST "/exec-query/:id" [id] (handle-exec-query-by-id id))
-           (GET "/tables" req (with-body (handle-list-tables ds-id)))
+           (GET "/tables" req (with-body (handle-list-tables req ds-id)))
            (GET "/tables/:name" [name] (fn [req]
                                          {:body (table-meta (get-ds ds-id) name)}))
            (GET "/data-types" req (with-body (data-types (get-ds ds-id))))
