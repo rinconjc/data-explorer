@@ -111,6 +111,22 @@ angular.module('db-dash',['data-api', 'ui.codemirror', 'ui.bootstrap','cfp.hotke
                 $scope.results = [];
                 $scope.activeTab = {};
                 var uid=0;
+                var prefixes = {'f:':['Fox', 'Wolf', 'Horse', 'Hunter'],
+                                'lf:':['Water', 'Earth','Fire']};
+
+                $scope.smartQueryItems = function(input){
+                    var prefNtext = input.split(':');
+                    if(!prefNtext[0]) return [];
+                    var items = prefixes[prefNtext[0]];
+                    if(items) return prefNtext[1]?angular.filter(items, prefNtext) : items;
+                    return [];
+                };
+                $scope.updateQuery = function(entry){
+                    var prefNtext = input.split(':');
+
+
+
+                };
                 $scope.execute = function(){
                     var sql = $scope.editor.getSelection() || $scope.query.sql;
                     var resp = DataService.executeSql(dsId, sql);
