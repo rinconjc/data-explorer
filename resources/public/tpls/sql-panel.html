@@ -7,12 +7,20 @@
               <span class="glyphicon glyphicon-play"></span> </button>
           <button type="button" class="btn btn-default" ng-click="saveSql()"
                   title="Save Query">
-     <span class="glyphicon glyphicon-save"></span></button>
+              <span class="glyphicon glyphicon-save"></span>
+          </button>
           <button type="button" class="btn btn-default" ng-click="clear()"
                   title="Clear">
               <span class="glyphicon glyphicon-erase"></span></button>
           <button type="button" class="btn btn-default" ng-click="deleteQuery()" title="Delete query" ng-disabled="!query.id">
-              <span class="glyphicon glyphicon-trash"></span></button>
+              <span class="glyphicon glyphicon-trash"></span>
+          </button>
+      </div>
+      <div class="btn-group" role="group" aria-label="...">
+          <input type="text" class="form-control" placeholder="Quick query builder..."
+                 size="40"  typeahead="item for item in smartQueryItems($viewvalue)"
+                 ng-model="smartQuery" typeahead-editable="false"
+                 typeahead-on-select="updateQuery($item, $model, $label)" focus-on="smartQuery"/>
       </div>
       <div class="btn-group" role="group" aria-label="...">
           <input type="text" class="form-control" placeholder="Search existing queries..."
