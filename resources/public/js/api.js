@@ -80,8 +80,8 @@ angular.module('data-api',['ngResource'])
             getDataSource:function(id){
                 return dsResource.get({id:id});
             },
-            getTables:function(ds){
-                return getDsResource(ds, 'tables').query();
+            getTables:function(ds, refresh){
+                return getDsResource(ds, 'tables').query({refresh:refresh});
             },
             getViews:function(ds){
                 return getDsResource(ds, 'views').query();

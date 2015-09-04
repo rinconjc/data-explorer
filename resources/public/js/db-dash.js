@@ -18,9 +18,8 @@ angular.module('db-dash',['data-api', 'ui.codemirror', 'ui.bootstrap','cfp.hotke
             },
             controller:function($scope){
                 $scope.model={items:[]};
-                $scope.refresh = function(){
-                    $scope.tables = DataService.getTables($scope.ds);
-                    $scope.views = DataService.getViews($scope.ds);
+                $scope.refresh = function(resync){
+                    $scope.tables = DataService.getTables($scope.ds, resync);
                 };
                 $scope.switchSearch = function(onOff){
                     $scope.model.searchActive=onOff;
