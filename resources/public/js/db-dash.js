@@ -95,6 +95,70 @@ angular.module('db-dash',['data-api', 'ui.codemirror', 'ui.bootstrap','cfp.hotke
             }
         };
     })
+    .factory('QueryBuilder', function(DataService, $filter){
+        return function(dsId){
+            var tables =DataService.getTables(dsId);
+            var prefixes = {
+                'f': {
+                    options:function (q) {
+                        return tables; // exclude q.from?
+                    },
+                    selected:function(q, input){
+                        q.from.push(input);
+                        if(!q._forJoin) q._forJoin=[];
+                        q._forJoin.push(input);
+                    }
+                },
+                'j': {
+                    options: function (q, input) {
+                        if(!q.from || q.from.length<=0) return [];
+                        if(!q._forJoin || q._forJoin.length==0)
+                            return _.keys(q._joinOptions);
+                        var related = DataService.getRelatedTables(dsId, q._forJoin);
+                        if(!q._joinOptions) q._joinOptions={};
+                        var items = _.keys(q._joinOptions);
+                        related.$promise.then(function(){
+                            q._joinOptions = _.extend(related,q._joinOptions);
+                        });
+                        q._forJoin=[];
+                        return _.keys(q._joinOptions);
+                    },
+                    selected:function(q, input){
+                        var joinT = q._joinOptions[input];
+                        q.joins.push(joinT);
+                        q._forJoin.push(input);
+                    }
+                },
+                's':{
+                    options: function (q, input) {
+                        if(q._selectOptions) return q._selectOptions;
+                        if(!q.from || q.from.length<=0) return [];
+                        q._selectOptions = [];//... union of all from tables - selected columns
+                        return q._selectOptions;
+                    }
+                }
+            };
+            return {
+                from:[],
+                columns:[],
+                joins:[],
+                suggestions:function(input){
+                    var prefNtext = input.split(':'),
+                        items=[];
+                    if(prefNtext[0]) {
+                        items=prefixes[prefNtext[0]].(this);
+                        items=prefNtext[1]?$filter('filter')(items, prefNtext[1]) : items;
+                        this._prefix=prefNtext[0];
+                    }
+                    console.debug('type ahead:', input, items);
+                    return items;
+                },
+                update:function(input){
+
+                }
+            };
+        };
+    })
     .directive('sqlPanel', function(DataService, $modal){
         var pageSize=20;
         return {
@@ -103,7 +167,7 @@ angular.module('db-dash',['data-api', 'ui.codemirror', 'ui.bootstrap','cfp.hotke
                 active:'='
             },
             templateUrl:'tpls/sql-panel.html',
-            controller:function($scope,$rootScope, hotkeys, focus, preventDefault){
+            controller:function($scope,$rootScope,$filter, hotkeys, focus, preventDefault){
                 var dsId = $scope.dsId;
                 $scope.query = {};
                 $scope.model = {selection:[]};
@@ -111,20 +175,21 @@ angular.module('db-dash',['data-api', 'ui.codemirror', 'ui.bootstrap','cfp.hotke
                 $scope.results = [];
                 $scope.activeTab = {};
                 var uid=0;
-                var prefixes = {'f:':['Fox', 'Wolf', 'Horse', 'Hunter'],
-                                'lf:':['Water', 'Earth','Fire']};
+                var prefixes = {'f':['Fox', 'Wolf', 'Horse', 'Hunter'],
+                                'lf':['Water', 'Earth','Fire']};
 
                 $scope.smartQueryItems = function(input){
-                    var prefNtext = input.split(':');
-                    if(!prefNtext[0]) return [];
-                    var items = prefixes[prefNtext[0]];
-                    if(items) return prefNtext[1]?angular.filter(items, prefNtext) : items;
-                    return [];
+                    var prefNtext = input.split(':'),
+                        items=[];
+                    if(prefNtext[0]) {
+                        items=prefixes[prefNtext[0]];
+                        items=prefNtext[1]?$filter('filter')(items, prefNtext[1]) : items;
+                    }
+                    console.debug('type ahead:', input, items);
+                    return items;
                 };
                 $scope.updateQuery = function(entry){
                     var prefNtext = input.split(':');
-
-
 
                 };
                 $scope.execute = function(){

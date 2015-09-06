@@ -146,13 +146,27 @@
 
 (defn table-meta [ds name]
   (with-db-metadata [meta ds]
-    (let [cols  (with-open [rs (.getColumns meta nil nil name "%")]
-                  (read-as-map rs))
-          pks (with-open [rs (.getPrimaryKeys meta nil nil name)]
-                (read-as-map rs))
-          fks (with-open [rs (.getImportedKeys meta nil nil name)]
-                (read-as-map rs))]
-      {:columns cols :primaryKeys pks :foreignKeys fks}))
+    (let [cols  (future (table-columns meta nil name))
+          pks (future (table-pks meta name))
+          fks (future (table-fks meta name))]
+      (merge-col-keys @cols @pks @fks)
+  )
+
+(defn- table-columns [meta schema table]
+  (with-open [rs (.getColumns meta nil schema table "%")]
+    (read-as-map rs {:fields ["TABLE_NAME" ["COLUMN_NAME" :name]
+                              "DATA_TYPE" "TYPE_NAME"
+                              ["COLUMN_SIZE" :size] "NULLABLE"] :limit Integer/MAX_VALUE}))
+  )
+(defn- table-pks [meta table]
+  (with-open [rs (.getPrimaryKeys meta nil nil tbl)]
+    (read-as-map rs {:fields [["COLUMN_NAME" :name] "KEY_SEQ"]}))
+  )
+(defn- table-fks [meta table]
+  (with-open [rs (.getImportedKeys meta nil nil tbl)]
+    (read-as-map rs {:fields ["PKTABLE_NAME" "PKCOLUMN_NAME"
+                              "FKCOLUMN_NAME" "KEY_SEQ"
+                              "FK_NAME" "PK_NAME"]}))
   )
 
 (defn- merge-col-keys [cols pks fks]
@@ -170,22 +184,11 @@
 (defn db-meta [ds]
   (with-db-metadata [meta ds]
     (let [tables (future (get-db-tables meta (:schema ds)))
-          cols (future (with-open [rs (.getColumns meta nil (:schema ds) "%" "%")]
-                         (-> rs
-                             (read-as-map {:fields ["TABLE_NAME" ["COLUMN_NAME" :name]
-                                                    "DATA_TYPE" "TYPE_NAME"
-                                                    ["COLUMN_SIZE" :size] "NULLABLE"] :limit Integer/MAX_VALUE})
-                             (#(group-by (partial :table_name) %)))))
-          pkfn (fn [tbl] (with-open [rs (.getPrimaryKeys meta nil nil tbl)]
-                           (read-as-map rs {:fields [["COLUMN_NAME" :name] "KEY_SEQ"]})))
-          fkfn (fn [tbl] (with-open [rs (.getImportedKeys meta nil nil tbl)]
-                           (read-as-map rs {:fields ["PKTABLE_NAME" "PKCOLUMN_NAME"
-                                                     "FKCOLUMN_NAME" "KEY_SEQ"
-                                                     "FK_NAME" "PK_NAME"]})))
+          cols (future (group-by #(:table_name %) (table-columns meta (:schema ds) "%")))
           pks (into {} (for [tbl @tables :let [tbl-name (:name tbl)]]
-                         [tbl-name (future (pkfn tbl-name))]))
+                         [tbl-name (future (table-pks meta tbl-name))]))
           fks (into {} (for [tbl @tables :let [tbl-name (:name tbl)]]
-                         [tbl-name (future (fkfn tbl-name))]))
+                         [tbl-name (future (table-fks meta tbl-name))]))
           ]
       (doall (for [tbl @tables :let [tbl-name (:name tbl)]]
                (assoc tbl :columns (merge-col-keys (@cols tbl-name)
