@@ -144,14 +144,6 @@
   ([ds sql] (execute ds sql {}))
   )
 
-(defn table-meta [ds name]
-  (with-db-metadata [meta ds]
-    (let [cols  (future (table-columns meta nil name))
-          pks (future (table-pks meta name))
-          fks (future (table-fks meta name))]
-      (merge-col-keys @cols @pks @fks)
-  )
-
 (defn- table-columns [meta schema table]
   (with-open [rs (.getColumns meta nil schema table "%")]
     (read-as-map rs {:fields ["TABLE_NAME" ["COLUMN_NAME" :name]
@@ -159,11 +151,12 @@
                               ["COLUMN_SIZE" :size] "NULLABLE"] :limit Integer/MAX_VALUE}))
   )
 (defn- table-pks [meta table]
-  (with-open [rs (.getPrimaryKeys meta nil nil tbl)]
+  (with-open [rs (.getPrimaryKeys meta nil nil table)]
     (read-as-map rs {:fields [["COLUMN_NAME" :name] "KEY_SEQ"]}))
   )
+
 (defn- table-fks [meta table]
-  (with-open [rs (.getImportedKeys meta nil nil tbl)]
+  (with-open [rs (.getImportedKeys meta nil nil table)]
     (read-as-map rs {:fields ["PKTABLE_NAME" "PKCOLUMN_NAME"
                               "FKCOLUMN_NAME" "KEY_SEQ"
                               "FK_NAME" "PK_NAME"]}))
@@ -179,6 +172,16 @@
                   (assoc m :is_fk false)
                   )))
              )) cols)
+  )
+
+(defn table-meta [ds name]
+  (with-db-metadata [meta ds]
+    (let [cols  (future (table-columns meta nil name))
+          pks (future (table-pks meta name))
+          fks (future (table-fks meta name))]
+      (merge-col-keys @cols @pks @fks)
+      )
+    )
   )
 
 (defn db-meta [ds]

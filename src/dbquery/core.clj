@@ -119,6 +119,20 @@
     )
   )
 
+(defn handle-table-meta [{{refresh :refresh} :params} ds-id table]
+  (let [tm (delay (k/select ds_column (k/where
+                                 {:table_id (k/subselect ds_table (k/fields :id)
+                                                         (k/where {:name table}))})))
+        ]
+    (if (or refresh (empty? (force tm)))
+      (let [tm (table-meta (get-ds ds-id) table)]
+
+        )
+
+      )
+    )
+  )
+
 (defn handle-data-import [ds-id {{{file :file separator :separator has-header :hasHeader} :inputFile dest :dest} :body}]
   (let [ds (get-ds ds-id)
         table (if (= "_" (dest :table))

@@ -43,13 +43,10 @@
     (def ds (dummy-ds))
     (execute ds ["create table tablea(id int, desc varchar(40), primary key(id))"
                  "create table tableb(id int, aid int, desc varchar(20), primary key (id), foreign key(aid) references tablea(id) )"])
-    (let [{cols :columns pks :primaryKeys fks :foreignKeys} (table-meta ds "TABLEB")]
+    (let [cols (table-meta ds "TABLEB")]
       (println "cols: " (pr-str cols))
-      (println "pks: " (pr-str pks))
-      (println "fks: " (pr-str fks))
       (is (= 3 (count cols)))
-      (is (= 1 (count pks)))
-      (is (= 1 (count fks))))
+      )
     )
 
   (testing "exec raw sql - query"
