@@ -155,6 +155,19 @@ and query_id=?" {:args [ds-id q-id]} )
 
 (defn sync-tables [ds ds-id]
   (let [tables  (db/get-tables ds)]
+    (future
+      (let [new-tables (into {} (for [t tables] [(:name t) t]))
+            old-tables (into {} (for [t (select ds_table (fields ::* :name :id)
+                                                (where {:data_source_id ds-id}))]
+                                  [(:name t) (:id t)]))
+            ]
+        (doseq [added (for [[name table] new-tables :when  ])]
+          (sync-table-meta ds-id (assoc (new-tables added) :columns (table-meta ds added))))
+        (doseq [deleted (difference old-tables (keys new-tables))]
+          (delete ds_column (where ))
+          (delete ds_table (where {:name deleted :data_source_id ds-id})))
+        )
+      )
     ;; TODO sync tables
 
 
