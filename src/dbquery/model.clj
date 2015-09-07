@@ -156,6 +156,8 @@ and query_id=?" {:args [ds-id q-id]} )
 (defn sync-tables [ds ds-id]
   (let [tables  (db/get-tables ds)]
     ;; TODO sync tables
+
+
     tables
     )
   )
