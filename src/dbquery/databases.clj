@@ -174,7 +174,7 @@
              )) cols)
   )
 
-(defn table-meta [ds name]
+(defn table-cols [ds name]
   (with-db-metadata [meta ds]
     (let [cols  (future (table-columns meta nil name))
           pks (future (table-pks meta name))

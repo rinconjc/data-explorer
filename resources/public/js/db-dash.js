@@ -98,18 +98,8 @@ angular.module('db-dash',['data-api', 'ui.codemirror', 'ui.bootstrap','cfp.hotke
     .factory('QueryBuilder', function(DataService, $filter){
         return function(dsId){
             var tables =DataService.getTables(dsId);
-            var prefixes = {
-                'f': {
-                    options:function (q) {
-                        return tables; // exclude q.from?
-                    },
-                    selected:function(q, input){
-                        q.from.push(input);
-                        if(!q._forJoin) q._forJoin=[];
-                        q._forJoin.push(input);
-                    }
-                },
-                'j': {
+            function joinCompletions(joinType){
+                return {
                     options: function (q, input) {
                         if(!q.from || q.from.length<=0) return [];
                         if(!q._forJoin || q._forJoin.length==0)
@@ -128,7 +118,22 @@ angular.module('db-dash',['data-api', 'ui.codemirror', 'ui.bootstrap','cfp.hotke
                         q.joins.push(joinT);
                         q._forJoin.push(input);
                     }
+                };
+            }
+            var prefixes = {
+                'f': {
+                    options:function (q) {
+                        return tables; // exclude q.from?
+                    },
+                    selected:function(q, input){
+                        q.from.push(input);
+                        if(!q._forJoin) q._forJoin=[];
+                        q._forJoin.push(input);
+                    }
                 },
+                'j': joinCompletions('j') ,
+                'lf':joinCompletions('lj'),
+                'rj':joinCompletions('rj'),
                 's':{
                     options: function (q, input) {
                         if(q._selectOptions) return q._selectOptions;
@@ -146,7 +151,7 @@ angular.module('db-dash',['data-api', 'ui.codemirror', 'ui.bootstrap','cfp.hotke
                     var prefNtext = input.split(':'),
                         items=[];
                     if(prefNtext[0]) {
-                        items=prefixes[prefNtext[0]].(this);
+                        items=prefixes[prefNtext[0]](this);
                         items=prefNtext[1]?$filter('filter')(items, prefNtext[1]) : items;
                         this._prefix=prefNtext[0];
                     }

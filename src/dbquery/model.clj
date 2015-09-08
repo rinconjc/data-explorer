@@ -126,23 +126,29 @@ and q.query_id = ?" {:rs-reader db/read-as-map :args [qid]}))
 and query_id=?" {:args [ds-id q-id]} )
   )
 
-(defn sync-table-meta [ds-id table-meta]
-  "creates or updates the table metadata in the specified datasource"
-  (log/info "syncing table metadata:" ds-id (prn-str table-meta))
-  (def table-id
-    (if-let [t (first (select ds_table (where {:name (:name table-meta) :data_source_id ds-id})))]
-      (do (delete ds_column (where {:table_id (:id t)}))
-          (:id t))
-      (-> (insert ds_table (values (-> table-meta
-                                       (select-keys [:name :type])
-                                       (assoc :data_source_id ds-id)) ))
-          vals first)))
-  (insert ds_column (values (for [c (:columns table-meta)]
+
+(defn sync-table-cols [table-id cols]
+  (delete ds_column (where {:table_id table-id}))
+  (insert ds_column (values (for [c cols]
                               (-> c
                                   (dissoc :table_name)
                                   (assoc :table_id table-id)
                                   ))))
   )
+
+(defn sync-table-meta [ds-id table-meta]
+  "creates or updates the table metadata in the specified datasource"
+  (log/info "syncing table metadata:" ds-id (prn-str table-meta))
+  (def table-id
+    (or (:id (first (select ds_table (where {:name (:name table-meta) :data_source_id ds-id}))))
+        (-> (insert ds_table (values (-> table-meta
+                                         (select-keys [:name :type])
+                                         (assoc :data_source_id ds-id)) ))
+            vals first)))
+  (sync-table-cols table-id (:columns table-meta))
+  )
+
+
 
 (defn load-metadata [ds ds-id]
   (doseq [tm (db/db-meta ds)]
@@ -159,18 +165,16 @@ and query_id=?" {:args [ds-id q-id]} )
       (let [new-tables (into {} (for [t tables] [(:name t) t]))
             old-tables (into {} (for [t (select ds_table (fields ::* :name :id)
                                                 (where {:data_source_id ds-id}))]
-                                  [(:name t) (:id t)]))
-            ]
-        (doseq [added (for [[name table] new-tables :when  ])]
-          (sync-table-meta ds-id (assoc (new-tables added) :columns (table-meta ds added))))
-        (doseq [deleted (difference old-tables (keys new-tables))]
-          (delete ds_column (where ))
-          (delete ds_table (where {:name deleted :data_source_id ds-id})))
+                                  [(:name t) (:id t)]))]
+        (doseq [[name table] new-tables :when (not (contains? old-tables name)) ]
+          (log/info "syncing new table metadata:" name)
+          (sync-table-meta ds-id (assoc table :columns (db/table-cols ds name))))
+        (doseq [[name id] old-tables :when (not (contains? new-tables name))]
+          (log/info "deleting removed table metadata:" name)
+          (delete ds_column (where {:table_id id}))
+          (delete ds_table (where {:id id})))
         )
       )
-    ;; TODO sync tables
-
-
     tables
     )
   )
