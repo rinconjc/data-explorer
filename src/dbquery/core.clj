@@ -120,16 +120,14 @@
   )
 
 (defn handle-table-meta [{{refresh :refresh} :params} ds-id table]
-  (let [tm (delay (k/select ds_column (k/where
-                                 {:table_id (k/subselect ds_table (k/fields :id)
-                                                         (k/where {:name table}))})))
-        ]
-    (if (or refresh (empty? (force tm)))
-      (let [tm (table-meta (get-ds ds-id) table)]
-
-        )
-
-      )
+  (if-let [table-id (:id (first (k/select ds_table (k/fields ::* :id)
+                                      (k/where {:name table}))))]
+    {:columns (if refresh
+       (let [cols (table-cols (get-ds ds-id) table)]
+         (sync-table-cols table-id cols)
+         cols)
+       (k/select ds_column (k/where {:table_id table-id}))
+       )}
     )
   )
 
@@ -146,11 +144,10 @@
   )
 
 (defn with-body [b]
-  (if (or (instance? Number b)
-          (instance? Boolean b)
-          )
-    {:body {:result b}}
-    {:body b}
+  (cond
+    (or (instance? Number b) (instance? Boolean b)) {:body {:result b}}
+    (nil? b) {:status 404}
+    true {:body b}
     )
   )
 ;; resources
@@ -236,7 +233,7 @@
            (POST "/exec-query/:id" [id] (handle-exec-query-by-id id))
            (GET "/tables" req (with-body (handle-list-tables req ds-id)))
            (GET "/tables/:name" [name] (fn [req]
-                                         {:body (table-meta (get-ds ds-id) name)}))
+                                         (with-body (handle-table-meta req ds-id name))))
            (GET "/data-types" req (with-body (data-types (get-ds ds-id))))
            (POST "/import-data" req (handle-data-import ds-id req))
            (GET "/queries" req (with-body (ds-queries ds-id)))
