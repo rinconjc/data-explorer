@@ -29,4 +29,9 @@
   (testing "load metadata"
     (load-metadata {:datasource (force ds)} 1)
     )
+
+  (testing "related tables"
+    (k/insert ds_table (k/values {:}))
+    (get-related-tables 1 [""])
+    )
   )

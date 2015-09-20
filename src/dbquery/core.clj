@@ -237,6 +237,7 @@
            (GET "/data-types" req (with-body (data-types (get-ds ds-id))))
            (POST "/import-data" req (handle-data-import ds-id req))
            (GET "/queries" req (with-body (ds-queries ds-id)))
+           (GET "/related/:tables" [tables] (with-body (get-related-tables ds-id (.split tables ",\\s*"))))
            )
   )
 
