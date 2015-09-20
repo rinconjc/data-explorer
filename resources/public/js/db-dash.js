@@ -104,7 +104,7 @@ angular.module('db-dash',['data-api', 'ui.codemirror', 'ui.bootstrap','cfp.hotke
                         if(!q.from || q.from.length<=0) return [];
                         if(!q._forJoin || q._forJoin.length==0)
                             return _.keys(q._joinOptions);
-                        var related = DataService.getRelatedTables(dsId, q._forJoin);
+                        var related = DataService.getRelatedTables(dsId, q._forJoin); //p<-c
                         if(!q._joinOptions) q._joinOptions={};
                         var items = _.keys(q._joinOptions);
                         related.$promise.then(function(){

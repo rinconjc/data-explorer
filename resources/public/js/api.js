@@ -94,6 +94,9 @@ angular.module('data-api',['ngResource'])
             getTableInfo:function(ds, table){
                 return getDsResource(ds, 'tables').get({id:table});
             },
+            getRelatedTables:function(ds, tables){
+                return futureValue($http.get('/ds/'+ds+'/related-tables/'+ tables.join(',')));
+            },
             executeSql:function(ds,sql, offset, limit){
                 var params = offset && limit? {offset:offset, limit:limit} : {};
                 return futureValue($http.post('/ds/'+ds+'/exec-sql', {

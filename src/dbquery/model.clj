@@ -148,8 +148,6 @@ and query_id=?" {:args [ds-id q-id]} )
   (sync-table-cols table-id (:columns table-meta))
   )
 
-
-
 (defn load-metadata [ds ds-id]
   (doseq [tm (db/db-meta ds)]
     (try
@@ -177,4 +175,18 @@ and query_id=?" {:args [ds-id q-id]} )
       )
     tables
     )
+  )
+
+(defn get-related-tables [ds-id tables]
+  (->>(select
+       ds_column
+       (fields ::* [:fk_table :parent-table] [:fk_column :parent-col]
+               [:name :child-col])
+       (with ds_table (fields ::* [:name :child-table])
+             (where {:name [in tables]}))
+       (where {:data_source_id ds-id :is_fk true}))
+      (group-by #(select-keys % [:parent-table :child-table]))
+      (map (fn [key cols]
+             (assoc key :cols (map #(select-keys % [:child-col :parent-col]) cols))))
+      )
   )
