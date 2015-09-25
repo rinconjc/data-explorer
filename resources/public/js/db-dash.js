@@ -96,30 +96,36 @@ angular.module('db-dash',['data-api', 'ui.codemirror', 'ui.bootstrap','cfp.hotke
         };
     })
     .factory('QueryBuilder', function(DataService, $filter){
+
         return function(dsId){
             var tables =DataService.getTables(dsId);
+            function addTable(q, table){
+                var tblMeta = DataService.getTableInfo(dsId, input);
+                tblMeta.$promise.then(function(){
+                    q._columns.push({table:input, name:'*', special:true, selected:false});
+                    _.each(tblMeta.columns, function(c){
+                        q._columns.push({table:input, name:c.name, special:false, selected:false});
+                        if(c.is_fk){
+                            q._relatedTables[c.fk_table] = {child:input, childCol:c.name, parent:c.fk_table, parentCol:c.fk_column};
+                        }
+                    });
+                });
+            }
+
             function joinCompletions(joinType){
                 return {
                     options: function (q, input) {
-                        if(!q.from || q.from.length<=0) return [];
-                        if(!q._forJoin || q._forJoin.length==0)
-                            return _.keys(q._joinOptions);
-                        var related = DataService.getRelatedTables(dsId, q._forJoin); //p<-c
-                        if(!q._joinOptions) q._joinOptions={};
-                        var items = _.keys(q._joinOptions);
-                        related.$promise.then(function(){
-                            q._joinOptions = _.extend(related,q._joinOptions);
-                        });
-                        q._forJoin=[];
-                        return _.keys(q._joinOptions);
+                        return _.keys(q._relatedTables);
                     },
                     selected:function(q, input){
-                        var joinT = q._joinOptions[input];
-                        q.joins.push(joinT);
-                        q._forJoin.push(input);
+                        var j = {};
+                        j[joinType]=q._relatedTables[input];
+                        q.joins.push(j);
+                        addTable(q, input);
                     }
                 };
             }
+
             var prefixes = {
                 'f': {
                     options:function (q) {
@@ -127,8 +133,7 @@ angular.module('db-dash',['data-api', 'ui.codemirror', 'ui.bootstrap','cfp.hotke
                     },
                     selected:function(q, input){
                         q.from.push(input);
-                        if(!q._forJoin) q._forJoin=[];
-                        q._forJoin.push(input);
+                        addTable(q, input);
                     }
                 },
                 'j': joinCompletions('j') ,
@@ -136,10 +141,12 @@ angular.module('db-dash',['data-api', 'ui.codemirror', 'ui.bootstrap','cfp.hotke
                 'rj':joinCompletions('rj'),
                 's':{
                     options: function (q, input) {
-                        if(q._selectOptions) return q._selectOptions;
-                        if(!q.from || q.from.length<=0) return [];
-                        q._selectOptions = [];//... union of all from tables - selected columns
-                        return q._selectOptions;
+                        return _.map(q._columns, function(c){
+                            return c.table + '.' + c.name;
+                        });
+                    },
+                    selected:function(q,input){
+                        q.columns.push(input);
                     }
                 }
             };
@@ -147,11 +154,14 @@ angular.module('db-dash',['data-api', 'ui.codemirror', 'ui.bootstrap','cfp.hotke
                 from:[],
                 columns:[],
                 joins:[],
+                _columns:[],
+                _relatedTables:{},
                 suggestions:function(input){
                     var prefNtext = input.split(':'),
                         items=[];
                     if(prefNtext[0]) {
-                        items=prefixes[prefNtext[0]](this);
+                        this._lastPrefixHandler = prefixes[prefNtext[0]];
+                        items=this._lastPrefixHandler.options(this, );
                         items=prefNtext[1]?$filter('filter')(items, prefNtext[1]) : items;
                         this._prefix=prefNtext[0];
                     }
