@@ -128,34 +128,34 @@ and query_id=?" {:args [ds-id q-id]} )
 
 
 (defn sync-table-cols [table-id cols]
-  (delete ds_column (where {:table_id table-id}))
-  (insert ds_column (values (for [c cols]
-                              (-> c
-                                  (dissoc :table_name)
-                                  (assoc :table_id table-id)
-                                  ))))
-  )
+  (delete ds_column
+          (where {:table_id table-id}))
+  (insert ds_column
+          (values (for [c cols]
+                    (-> c
+                        (dissoc :table_name)
+                        (assoc :table_id table-id)
+                        )))))
 
 (defn sync-table-meta [ds-id table-meta]
-  "creates or updates the table metadata in the specified datasource"
   (log/info "syncing table metadata:" ds-id (prn-str table-meta))
-  (def table-id
-    (or (:id (first (select ds_table (where {:name (:name table-meta) :data_source_id ds-id}))))
-        (-> (insert ds_table (values (-> table-meta
-                                         (select-keys [:name :type])
-                                         (assoc :data_source_id ds-id)) ))
-            vals first)))
-  (sync-table-cols table-id (:columns table-meta))
-  )
+  (let [table-id
+        (or (-> (select ds_table (where {:name (:name table-meta)
+                                         :data_source_id ds-id}))
+                first :id)
+            (-> (insert ds_table
+                        (values (-> table-meta
+                                    (select-keys [:name :type])
+                                    (assoc :data_source_id ds-id)) ))
+                vals first))]
+    (sync-table-cols table-id (:columns table-meta))))
 
 (defn load-metadata [ds ds-id]
   (doseq [tm (db/db-meta ds)]
     (try
       (sync-table-meta ds-id tm)
       (catch Exception e
-        (log/error e "failed syncing table " tm)))
-    )
-  )
+        (log/error e "failed syncing table " tm)))))
 
 (defn sync-tables [ds ds-id]
   (let [tables  (db/get-tables ds)]
@@ -170,23 +170,17 @@ and query_id=?" {:args [ds-id q-id]} )
         (doseq [[name id] old-tables :when (not (contains? new-tables name))]
           (log/info "deleting removed table metadata:" name)
           (delete ds_column (where {:table_id id}))
-          (delete ds_table (where {:id id})))
-        )
-      )
-    tables
-    )
-  )
+          (delete ds_table (where {:id id})))))
+    tables))
 
-(defn get-related-tables [ds-id tables]
-  (->>(select
-       ds_column
-       (fields ::* [:fk_table :parent-table] [:fk_column :parent-col]
-               [:name :child-col])
-       (with ds_table (fields ::* [:name :child-table])
-             (where {:name [in tables]}))
-       (where {:data_source_id ds-id :is_fk true}))
-      (group-by #(select-keys % [:parent-table :child-table]))
-      (map (fn [key cols]
-             (assoc key :cols (map #(select-keys % [:child-col :parent-col]) cols))))
-      )
-  )
+;; (defn get-table-joins [ds-id table]
+;;   (->>(select
+;;        ds_column
+;;        (fields ::* [:fk_table :parent-table] [:fk_column :parent-col]
+;;                [:name :child-col])
+;;        (with ds_table (fields ::*)
+;;              (where {:name table}))
+;;        (where {:data_source_id ds-id :is_fk true}))
+;;       (group-by :parent-table)
+;;       (map (fn [key cols]
+;;              (assoc key :cols (map #(select-keys % [:child-col :parent-col]) cols))))))

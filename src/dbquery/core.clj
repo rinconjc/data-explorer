@@ -14,6 +14,7 @@
             [dbquery.databases :refer :all]
             [dbquery.utils :refer :all]
             [clojure.java.io :as io]
+            [clojure.string :as s]
             [korma.core :as k]
             [dbquery.model :refer :all]
             [clojure.core.cache :as cache]
@@ -120,8 +121,8 @@
   )
 
 (defn handle-table-meta [{{refresh :refresh} :params} ds-id table]
-  (if-let [table-id (:id (first (k/select ds_table (k/fields ::* :id)
-                                      (k/where {:name table}))))]
+  (if-let [table-id (-> (k/select ds_table (k/fields ::* :id)
+                                  (k/where {:name table})) first :id)]
     {:columns (if refresh
        (let [cols (table-cols (get-ds ds-id) table)]
          (sync-table-cols table-id cols)
@@ -237,7 +238,7 @@
            (GET "/data-types" req (with-body (data-types (get-ds ds-id))))
            (POST "/import-data" req (handle-data-import ds-id req))
            (GET "/queries" req (with-body (ds-queries ds-id)))
-           (GET "/related/:tables" [tables] (with-body (get-related-tables ds-id (.split tables ",\\s*"))))
+           ;; (GET "/related/:tables" [tables] (with-body (get-related-tables ds-id (s/split tables #",\s*"))))
            )
   )
 
