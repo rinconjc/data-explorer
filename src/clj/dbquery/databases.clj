@@ -21,22 +21,17 @@
 (def ^:private sql-number-types #{Types/NUMERIC Types/DECIMAL Types/INTEGER Types/DOUBLE})
 
 (defn- col-reader [sql-type]
-  (get result-extractors sql-type (fn [rs i] (.getObject rs i)))
-  )
+  (get result-extractors sql-type (fn [rs i] (.getObject rs i))))
 
 (defn ^:private rs-rows [rs row-reader offset limit]
   (if (and (> offset 0) (= ResultSet/TYPE_SCROLL_INSENSITIVE (.getType rs)))
-    (.absolute rs offset)
-    )
+    (.absolute rs offset))
   (loop [rows [] count 0]
     (if (and (.next rs) (< count limit))
       (let [row (doall (apply row-reader [rs]))]
         (recur (conj rows row) (inc count))
         )
-      rows
-      )
-    )
-  )
+      rows)))
 
 (defn ^:private read-rs
   ([rs {:keys [offset limit columns] :or {offset 0 limit 20}}]
@@ -48,8 +43,7 @@
          ]
      {:columns (map second cols) :rows (doall (rs-rows rs row-reader offset limit))}
      ))
-  ([rs] (read-rs rs {}))
-  )
+  ([rs] (read-rs rs {})))
 
 (defn- key-map [xs]
   (and xs (into {} (for [e xs] (cond
@@ -69,8 +63,7 @@
                                   [i key (col-reader (.getColumnType meta i))]))
          row-reader (fn [rs] (reduce (fn [row [i col reader]]
                                        (assoc row col (apply reader [rs i]))) {} col-and-readers))]
-     (rs-rows rs row-reader offset limit)
-     ))
+     (rs-rows rs row-reader offset limit)))
   ([rs] (read-as-map rs {})))
 
 (defn mk-ds [{:keys [dbms url user_name password]}]
@@ -86,23 +79,18 @@
                         (.setPassword password))
              (throw (Exception. (format "DBMS %s not supported." dbms))))]
     (with-open [con (.getConnection ds)]
-      ds)
-    )
-  )
+      ds)))
 
 (defn safe-mk-ds [ds-info]
   "Creates a datasource"
   (with-recovery {:datasource (mk-ds ds-info) :schema (:schema ds-info)}
-    (fn [e] {:error (.getMessage e)})
-    )
-  )
+    (fn [e] {:error (.getMessage e)})))
 
 (defn table-data
   ([ds table limit]
    (db-query-with-resultset ds
                             [(str "SELECT * FROM " table)]
-                            #(read-rs % {:limit limit}))
-   )
+                            #(read-rs % {:limit limit})))
   ([ds table] (table-data ds table 100)))
 
 (defn- get-db-tables [meta schema]
