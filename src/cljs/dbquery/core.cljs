@@ -1,55 +1,51 @@
 (ns dbquery.core
-    (:require [reagent.core :as r :refer [atom]]
-              [reagent.session :as session]
-              [secretary.core :as secretary :include-macros true]
-              [goog.events :as events]
-              [goog.history.EventType :as EventType]
-              [cljsjs.react-bootstrap])
-    (:import goog.History))
+  (:require [reagent.core :as r :refer [atom]]
+            [reagent.session :as session]
+            [secretary.core :as secretary :include-macros true]
+            [goog.events :as events]
+            [goog.history.EventType :as EventType]
+            [dbquery.db-admin :as dba]
+            [dbquery.commons :as c])
+  (:import goog.History))
 
 ;; --------------------------
 ;; navigation menu
-(def navbar (r/adapt-react-class js/ReactBootstrap.Navbar))
-(def nav (r/adapt-react-class js/ReactBootstrap.Nav))
-(def nav-item (r/adapt-react-class js/ReactBootstrap.NavItem))
-(def nav-dropdown (r/adapt-react-class js/ReactBootstrap.NavDropdown))
-(def menu-item (r/adapt-react-class js/ReactBootstrap.MenuItem))
-(def modal (r/adapt-react-class js/ReactBootstrap.Modal))
-(def modal-header (r/adapt-react-class js/ReactBootstrap.Modal.Header))
-(def modal-body (r/adapt-react-class js/ReactBootstrap.Modal.Body))
-(def modal-footer (r/adapt-react-class js/ReactBootstrap.Modal.Footer))
-(def button (r/adapt-react-class js/ReactBootstrap.Modal.Button))
 
-
-(defn text-field [name label :keys {placeholder label-class field-class}]
-  [:div.form-group
-   [:label.control-label {:for name :class field-class} label]
-   [:div {:class label-class}
-    [:input.form-control {:type "text" :id name :placeholder placeholder}]]])
 ;; -------------------------
 ;; Views
 
-(defn database-window []
-  [modal
-   [modal-header "Database Connection"]
-   [modal-body
-    [:form.horizontal
-     [text-field "name" "Name"
-      {:placelhoder "A unique name" :label-class "col-sm-4" :field-class "col-sm-8"}]
-     [text-field "other" "other"
-      {:placelhoder "A unique name" :label-class "col-sm-4" :field-class "col-sm-8"}]]]
-   [modal-footer
-    ]])
+(defn show-modal [e]
+  (let [show? (r/atom true)
+        data (r/atom {:name "db name" :dbms "H2"})
+        comp (r/render [dba/database-window show? data] (.-target e))]
+    (doseq [c (r/children comp)]
+      (.log js/console "child:" c))))
 
 (defn home-page []
   [:div
-   [navbar {:brand "DataExplorer"}
-    [nav
-     [nav-item {:href "#/"} "Home"]
-     [nav-dropdown {:title "Databases" :id "db-dropdown"}
-      [menu-item "Add ..."]
-      [menu-item "Open ..."]]
+   [c/navbar {:brand "DataExplorer"}
+    [c/nav
+     [c/nav-item {:href "#/"} "Home"]
+     [c/nav-dropdown {:title "Databases" :id "db-dropdown"}
+      [c/menu-item {:on-select show-modal} "Add ..." ]
+      [c/menu-item "Open ..."]]
      ]]])
+
+(defn login-page []
+  (let [login-data (r/atom {})
+        error (r/atom nil)]
+    (fn []
+     [:div
+      [:form
+       [:h2 "Please sign in"]
+       [:div (if @error [c/alert {:bsStyle "Danger"} @error])]
+       [c/input (c/bind-value login-data :userName :type "text"
+                              :placeholder "User Name")]
+       [c/input (c/bind-value login-data :password :type "password"
+                              :placeholder "User Name")]
+       [c/button {:bsStyle "primary"
+                  :on-click (fn [e] (reset! error nil)
+                              )}]]])))
 
 (defn about-page []
   [:div [:h2 "About dbquery"]
