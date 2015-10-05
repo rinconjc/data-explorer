@@ -18,5 +18,5 @@
 
 (defn bind-value [an-atom id & attrs]
   (apply hash-map  (list* :value (@an-atom id)
-                          :on-change (fn [e] (.log js/console "changed!")
+                          :on-change (fn [e]
                                        (swap! an-atom #(assoc % id (-> e .-target .-value)))) attrs)))
