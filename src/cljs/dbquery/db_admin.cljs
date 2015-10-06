@@ -53,7 +53,7 @@
         dbs (atom [])
         handle-ok (fn [_]
                     (reset! show? false)
-                    (return-fn @db-id))]
+                    (return-fn (@dbs @db-id)))]
     (GET "/data-sources" :response-format :json
          :handler #(reset! dbs %)
          :error-handler #(js/console.log "failed retrieving dbs..." %))
@@ -67,8 +67,8 @@
           [c/input {:value @db-id :type "select" :label "Database"
                     :on-change #(reset! db-id (-> % .-target .-value))}
            [:option {:disabled true}  "Select a Database"]
-           (for [db @dbs]
-             ^{:key db}[:option {:value (db "id")} (db "name")])]]]]
+           (for [[i db] (map-indexed vector @dbs)]
+             ^{:key i}[:option {:value i} (db "name")])]]]]
        [c/modal-footer
         [c/button {:bsStyle "primary"
                    :on-click handle-ok} "OK"]]])))

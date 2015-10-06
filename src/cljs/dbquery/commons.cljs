@@ -14,9 +14,15 @@
 (def button (r/adapt-react-class js/ReactBootstrap.Button))
 (def input (r/adapt-react-class js/ReactBootstrap.Input))
 (def alert (r/adapt-react-class js/ReactBootstrap.Alert))
+(def tabs (r/adapt-react-class js/ReactBootstrap.Tabs))
+(def tab (r/adapt-react-class js/ReactBootstrap.Tab))
 
 
 (defn bind-value [an-atom id & attrs]
   (apply hash-map  (list* :value (@an-atom id)
                           :on-change (fn [e]
                                        (swap! an-atom #(assoc % id (-> e .-target .-value)))) attrs)))
+
+(defn close-button [close-fn]
+  [button {:on-click close-fn :class "close"}
+   [:span "×"]])
