@@ -24,6 +24,8 @@
 ;; Views
 
 (def db-tabs (atom []))
+(def active-tab (atom ""))
+
 (defn show-modal [e]
   (let [show? (r/atom true)
         data (r/atom {:name "db name" :dbms "H2"})]
@@ -31,7 +33,9 @@
 
 (defn open-db [e]
   (open-modal [dba/select-db-dialog
-               (fn [db] (and (some? db) (swap! db-tabs #(conj % db))))]))
+               (fn [db] (when (some? db)
+                          (swap! db-tabs #(conj % db))
+                          (reset! active-tab (db "id"))))]))
 
 (defn home-page []
   (js/Mousetrap.bind "alt+o", open-db)
@@ -45,9 +49,10 @@
      [c/nav-item {:href "#/"} "Import Data"]]]
    [:div {:id "modals"}]
    [:div.container-fluid
-    [c/tabs
+    [c/tabs {:activeKey @active-tab}
      (for [db @db-tabs]
-       ^{:key db} [c/tab {:eventKey (db "id") :title (db "name")}
+       ^{:key db} [c/tab {:eventKey (db "id")
+                          :title (r/as-element [:span (db "name") [c/close-button #(c/log "close" (db "id"))]])}
                    "Placeholder for db console:" (db "name")])]]])
 
 (defn login-page []
@@ -114,6 +119,6 @@
   (r/render [current-page] (.getElementById js/document "app")))
 
 (defn init! []
-  (js/console.log "init...")
+  (c/log "init...")
   (hook-browser-navigation!)
   (mount-root))
