@@ -53,14 +53,16 @@
                                     [:cljsbuild :builds :app :compiler :output-dir]
                                     [:cljsbuild :builds :app :compiler :output-to]]
 
-  :profiles {:dev {:repl-options {:init-ns dbquery.repl}
+  :profiles {:dev {:repl-options {:init-ns dbquery.repl
+                                  :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
 
                    :dependencies [[org.clojure/tools.namespace "0.2.3"]
                                   [ring/ring-mock "0.3.0"]
                                   [ring/ring-devel "1.4.0"]
                                   [lein-figwheel "0.4.0"]
                                   [org.clojure/tools.nrepl "0.2.11"]
-                                  [pjstadig/humane-test-output "0.7.0"]]
+                                  [pjstadig/humane-test-output "0.7.0"]
+                                  [com.cemerick/piggieback "0.2.1"]]
 
                    :source-paths ["env/dev/clj"]
                    :plugins [[lein-figwheel "0.4.0"]

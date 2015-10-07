@@ -2,6 +2,8 @@
   (:require [reagent.core :as r :refer [atom]]
             [cljsjs.react-bootstrap]))
 
+(def log js/console.log)
+
 (def navbar (r/adapt-react-class js/ReactBootstrap.Navbar))
 (def nav (r/adapt-react-class js/ReactBootstrap.Nav))
 (def nav-item (r/adapt-react-class js/ReactBootstrap.NavItem))
@@ -22,6 +24,8 @@
   (apply hash-map  (list* :value (@an-atom id)
                           :on-change (fn [e]
                                        (swap! an-atom #(assoc % id (-> e .-target .-value)))) attrs)))
+
+
 
 (defn close-button [close-fn]
   [button {:on-click close-fn :class "close"}
