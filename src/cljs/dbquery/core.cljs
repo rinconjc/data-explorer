@@ -6,6 +6,7 @@
             [goog.history.EventType :as EventType]
             [dbquery.db-admin :as dba]
             [dbquery.commons :as c]
+            [dbquery.db-console :refer [db-console]]
             [ajax.core :refer [GET POST]]
             [cljsjs.mousetrap])
   (:import goog.History))
@@ -39,7 +40,7 @@
 
 (defn home-page []
   (js/Mousetrap.bind "alt+o", open-db)
-  [:div
+  [:div {:style {:height "100%"}}
    [c/navbar {:brand "DataExplorer" :fluid true}
     [c/nav
      [c/nav-item {:href "#/"} "Home"]
@@ -48,12 +49,12 @@
       [c/menu-item {:on-select open-db} "Open ..."]]
      [c/nav-item {:href "#/"} "Import Data"]]]
    [:div {:id "modals"}]
-   [:div.container-fluid
-    [c/tabs {:activeKey @active-tab}
+   [:div.container-fluid {:class "full-height"}
+    [c/tabs {:activeKey @active-tab :on-select #(reset! active-tab %) :class "small-tabs"}
      (for [db @db-tabs]
        ^{:key db} [c/tab {:eventKey (db "id")
-                          :title (r/as-element [:span (db "name") [c/close-button #(c/log "close" (db "id"))]])}
-                   "Placeholder for db console:" (db "name")])]]])
+                          :title (r/as-element [:span (db "name") [c/close-button (fn[e] (swap! db-tabs c/remove-x db))]])}
+                   [db-console db]])]]])
 
 (defn login-page []
   (let [login-data (r/atom {})
@@ -116,9 +117,8 @@
 ;; -------------------------
 ;; Initialize app
 (defn mount-root []
-  (r/render [current-page] (.getElementById js/document "app")))
+  (r/render [current-page] (.-body js/document)))
 
 (defn init! []
-  (c/log "init...")
   (hook-browser-navigation!)
   (mount-root))

@@ -2,8 +2,6 @@
   (:require [reagent.core :as r :refer [atom]]
             [cljsjs.react-bootstrap]))
 
-(def log js/console.log)
-
 (def navbar (r/adapt-react-class js/ReactBootstrap.Navbar))
 (def nav (r/adapt-react-class js/ReactBootstrap.Nav))
 (def nav-item (r/adapt-react-class js/ReactBootstrap.NavItem))
@@ -25,7 +23,8 @@
                           :on-change (fn [e]
                                        (swap! an-atom #(assoc % id (-> e .-target .-value)))) attrs)))
 
-
+(defn remove-x [xs x]
+  (remove #(= x %) xs))
 
 (defn close-button [close-fn]
   [button {:on-click close-fn :class "close"}
