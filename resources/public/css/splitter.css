@@ -2,7 +2,7 @@
 {
   left: 0px;
   right: 0px;
-/*  top: 0px;*/
+  /* top: 0px; */
   bottom: 0px;
   position: relative;
 }
@@ -15,6 +15,9 @@
 }
 
 /* Horizontal */
+.split-panes.horizontal{
+  height:100%;
+}
 
 .split-panes.horizontal > .split-handler
 {
@@ -23,14 +26,15 @@
   left: 50%;
   bottom: 0px;
   cursor: ew-resize;
+  height:100%;
 }
 
 .split-panes.horizontal > .split-pane1,
 .split-panes.horizontal > .split-pane2
-{
-  position: absolute;
-  height: 100%;
-}
+ {
+   position: absolute;
+   height: 100%;
+ }
 
 .split-panes.horizontal > .split-pane1
 {
@@ -46,6 +50,9 @@
 
 
 /* Vertical */
+.split-panes.vertical{
+  height:100%;
+}
 
 .split-panes.vertical > .split-handler
 {
@@ -58,10 +65,10 @@
 
 .split-panes.vertical > .split-pane1,
 .split-panes.vertical > .split-pane2
-{
-  position: absolute;
-  width: 100%;
-}
+ {
+   position: absolute;
+   width: 100%;
+ }
 
 .split-panes.vertical > .split-pane1
 {
