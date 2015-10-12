@@ -50,7 +50,7 @@
      [c/nav-item {:href "#/"} "Import Data"]]]
    [:div {:id "modals"}]
    [:div.container-fluid {:class "full-height"}
-    [c/tabs {:activeKey @active-tab :on-select #(reset! active-tab %) :class "small-tabs"}
+    [c/tabs {:activeKey @active-tab :on-select #(reset! active-tab %) :class "small-tabs full-height"}
      (for [db @db-tabs]
        ^{:key db} [c/tab {:eventKey (db "id")
                           :title (r/as-element [:span (db "name") [c/close-button (fn[e] (swap! db-tabs c/remove-x db))]])}

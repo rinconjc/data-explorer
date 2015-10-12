@@ -16,6 +16,14 @@
 (def alert (r/adapt-react-class js/ReactBootstrap.Alert))
 (def tabs (r/adapt-react-class js/ReactBootstrap.Tabs))
 (def tab (r/adapt-react-class js/ReactBootstrap.Tab))
+(def button-toolbar (r/adapt-react-class js/ReactBootstrap.ButtonToolbar))
+(def button-group (r/adapt-react-class js/ReactBootstrap.ButtonGroup))
+(def panel (r/adapt-react-class js/ReactBootstrap.Panel))
+(def list-group (r/adapt-react-class js/ReactBootstrap.ListGroup))
+(def list-group-item (r/adapt-react-class js/ReactBootstrap.ListGroupItem))
+
+
+
 
 
 (defn bind-value [an-atom id & attrs]
