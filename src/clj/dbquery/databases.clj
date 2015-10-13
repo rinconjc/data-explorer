@@ -126,11 +126,8 @@
                (rs-reader (.getResultSet stmt) opts)
                (.getUpdateCount stmt)
                )
-             (recur (first sqls) (rest sqls)))
-           )))
-     ))
-  ([ds sql] (execute ds sql {}))
-  )
+             (recur (first sqls) (rest sqls))))))))
+  ([ds sql] (execute ds sql {})))
 
 (defn- table-columns [meta schema table]
   (with-open [rs (.getColumns meta nil schema table "%")]
