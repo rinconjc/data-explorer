@@ -10,23 +10,35 @@ body > div {
   height:100%;
 }
 
+.compact {
+  padding:2px;
+}
+
+.selected {
+  background:#dddddd;
+}
+
+.pointed {
+  background:#dddddd;
+}
+
 .tabset, .tab-content, .tab-pane, .tabbable {
   height:100%;
 }
 
 .form-signin{
-    max-width:360px;
-    margin:0 auto;
-    padding:15px;
+  max-width:360px;
+  margin:0 auto;
+  padding:15px;
 }
 
 .nav, .pagination, .carousel, .panel-title a { cursor: pointer; }
 
 .small-tabs ul li a {
-    padding:4px !important;
+  padding:4px !important;
 }
 .CodeMirror {
-    height:200px !important;
+  height:200px !important;
 }
 /* .navbar { min-height:28px; height: 28px; } */
 /* .navbar .navbar-brand{ padding: 0px 12px;font-size: 16px;line-height: 28px; } */
@@ -39,5 +51,5 @@ body > div {
 
 .tab-content {margin-top:5px;}
 .table > tbody > tr > td {
-    line-height:0.6 !important;
+  line-height:0.6 !important;
 }

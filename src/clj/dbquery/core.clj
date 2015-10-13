@@ -94,9 +94,7 @@
           r (execute ds raw-sql opts)]
       (if (number? r)
         {:body {:rowsAffected r}}
-        {:body {:data  r}})
-      )
-    ))
+        {:body {:data  r}}))))
 
 (defn handle-exec-query-by-id [id ds-id]
   (if-let [q (first (k/select query (k/fields [:sql]) (k/where {:id id})))]
