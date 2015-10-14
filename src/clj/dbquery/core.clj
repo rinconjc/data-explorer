@@ -255,4 +255,4 @@
 
 (defn -main []
   (sync-db "dev")
-  (run-server (reload/wrap-reload #'all-routes) {:port 3000}))
+  (run-server (reload/wrap-reload #'all-routes) {:port 3001}))
