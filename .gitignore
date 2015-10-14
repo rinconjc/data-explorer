@@ -16,3 +16,4 @@ conf.edn
 resources/public/js/out/
 *.log
 /resources/public/js/app.js
+.cljs_node_repl

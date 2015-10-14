@@ -6,6 +6,7 @@
             [goog.history.EventType :as EventType]
             [dbquery.db-admin :as dba]
             [dbquery.commons :as c]
+            [dbquery.db-console :refer [db-console]]
             [ajax.core :refer [GET POST]]
             [cljsjs.mousetrap])
   (:import goog.History))
@@ -24,6 +25,8 @@
 ;; Views
 
 (def db-tabs (atom []))
+(def active-tab (atom ""))
+
 (defn show-modal [e]
   (let [show? (r/atom true)
         data (r/atom {:name "db name" :dbms "H2"})]
@@ -31,11 +34,13 @@
 
 (defn open-db [e]
   (open-modal [dba/select-db-dialog
-               (fn [db] (and (some? db) (swap! db-tabs #(conj % db))))]))
+               (fn [db] (when (some? db)
+                          (swap! db-tabs #(conj % db))
+                          (reset! active-tab (db "id"))))]))
 
 (defn home-page []
   (js/Mousetrap.bind "alt+o", open-db)
-  [:div
+  [:div {:style {:height "100%"}}
    [c/navbar {:brand "DataExplorer" :fluid true}
     [c/nav
      [c/nav-item {:href "#/"} "Home"]
@@ -44,11 +49,12 @@
       [c/menu-item {:on-select open-db} "Open ..."]]
      [c/nav-item {:href "#/"} "Import Data"]]]
    [:div {:id "modals"}]
-   [:div.container-fluid
-    [c/tabs
+   [:div.container-fluid {:class "full-height"}
+    [c/tabs {:activeKey @active-tab :on-select #(reset! active-tab %) :class "small-tabs full-height"}
      (for [db @db-tabs]
-       ^{:key db} [c/tab {:eventKey (db "id") :title (db "name")}
-                   "Placeholder for db console:" (db "name")])]]])
+       ^{:key db} [c/tab {:eventKey (db "id")
+                          :title (r/as-element [:span (db "name") [c/close-button (fn[e] (swap! db-tabs c/remove-x db))]])}
+                   [db-console db]])]]])
 
 (defn login-page []
   (let [login-data (r/atom {})
@@ -111,9 +117,8 @@
 ;; -------------------------
 ;; Initialize app
 (defn mount-root []
-  (r/render [current-page] (.getElementById js/document "app")))
+  (r/render [current-page] (.-body js/document)))
 
 (defn init! []
-  (js/console.log "init...")
   (hook-browser-navigation!)
   (mount-root))
