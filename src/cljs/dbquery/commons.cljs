@@ -22,10 +22,6 @@
 (def list-group (r/adapt-react-class js/ReactBootstrap.ListGroup))
 (def list-group-item (r/adapt-react-class js/ReactBootstrap.ListGroupItem))
 
-
-
-
-
 (defn bind-value [an-atom id & attrs]
   (apply hash-map  (list* :value (@an-atom id)
                           :on-change (fn [e]
