@@ -30,7 +30,7 @@
                  [org.clojure/data.csv "0.1.2"]
                  [org.jasypt/jasypt "1.9.2"]
                  [com.oracle/ojdbc16 "11.2.0.3"]
-                 [cljsjs/react-bootstrap "0.25.1-0"]
+                 [cljsjs/react-bootstrap "0.25.1-0" :exclusions [org.webjars.bower/jquery]]
                  [cljsjs/mousetrap "1.5.3-0"]]
   :plugins [[lein-ring "0.8.11"]
             [lein-environ "1.0.1"]
