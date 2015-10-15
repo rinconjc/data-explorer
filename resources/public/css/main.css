@@ -27,6 +27,10 @@ body > div {
   background:#dddddd;
 }
 
+.list > li:hover {
+  background-color:#eee;
+}
+
 .tabset, .tab-content, .tab-pane, .tabbable {
   height:100%;
 }

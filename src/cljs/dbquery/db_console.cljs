@@ -15,11 +15,10 @@
   (let [tables (atom [])
         error (atom nil)
         selected (atom nil)
-        pointed (atom nil)
         icons {"TABLE" "fa-table fa-fw"
                "VIEW" "fa-copy fa-fw"}
         _ (retrieve-db-objects db tables error)]
-    (fn []
+    (fn [db ops]
       [:div {:class "full-height panel panel-default"}
        [:div.panel-heading {:class "compact"}
         [c/button-group
@@ -30,14 +29,13 @@
           [:span.glyphicon
            {:class "glyphicon-list-alt" :title "Preview Data"}]]
          [c/button [:span.glyphicon {:class "glyphicon-info-sign" :title "Show metadata"}]]]]
-       [:div.panel-body {:on-mouse-leave #(reset! pointed nil)}
+       [:div.panel-body
         [:span @error]
-        [:ul {:class "list-unstyled" :style {:height "100%" :cursor "pointer"}}
+        [:ul {:class "list-unstyled list" :style {:height "100%" :cursor "pointer"}}
          (doall (for [tb @tables]
                   ^{:key (tb "name")}
-                  [:li {:class (condp = tb @selected "selected" @pointed "pointed" "")
-                        :on-click #(reset! selected tb)
-                        :on-mouse-over #(reset! pointed tb)}
+                  [:li {:class (if (= tb @selected) "selected" "")
+                        :on-click #(reset! selected tb)}
                    [:i.fa {:class (icons (tb "type"))}] (tb "name")]))]]])))
 
 (defn db-console [db]
@@ -48,7 +46,7 @@
                                 (.log js/console "adding table " tbl)
                                 (swap! data-tabs conj {:id tbl :raw-sql (str "select * from " tbl)}))
                               (reset! active-tab tbl))}]
-    (fn[]
+    (fn[db]
       [st/horizontal-splitter {:split-at 240}
        [db-objects db ops]
        [st/vertical-splitter {:split-at 200}

@@ -33,7 +33,7 @@
 
     (.addEventListener js/document "mouseup" #(reset! elem nil))
 
-    (fn[]
+    (fn[{:keys [orientation min-size split-at] :or {split-at "50%" min-size [0 0]}} pane1 pane2]
       [:div {:class (:css-class @styles) :on-mouse-move mouse-move}
        [:div {:class "split-pane1" :style (:pane1 @styles)} pane1]
        [:div {:class "split-handler" :style (:handler @styles)

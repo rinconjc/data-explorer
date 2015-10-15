@@ -57,7 +57,7 @@
     (GET "/data-sources" :response-format :json
          :handler #(reset! dbs %)
          :error-handler #(js/console.log "failed retrieving dbs..." %))
-    (fn []
+    (fn [return-fn]
       [c/modal {:show @show? :on-hide #(reset! show? false) :bsSize "small"}
        [c/modal-header
         [:h4 "Open Database"]]
