@@ -7,7 +7,12 @@ body > div {
 }
 
 .full-height{
-  height:100%;
+  height:95%;
+}
+
+.full-height > .panel-body {
+  height:95%;
+  overflow-y:scroll;
 }
 
 .compact {

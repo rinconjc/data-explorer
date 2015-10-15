@@ -42,7 +42,7 @@
        [:div {:class "split-pane2" :style (:pane2 @styles)} pane2]])))
 
 (defn vertical-splitter [opts pane1 pane2]
-  (splitter (assoc opts :orientation :vertical) pane1 pane2))
+  [splitter (assoc opts :orientation :vertical) pane1 pane2])
 
 (defn horizontal-splitter [opts pane1 pane2]
-  (splitter (assoc opts :orientation :horizontal) pane1 pane2))
+  [splitter (assoc opts :orientation :horizontal) pane1 pane2])
