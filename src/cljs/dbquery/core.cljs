@@ -52,7 +52,7 @@
    [:div.container-fluid {:class "full-height"}
     [c/tabs {:activeKey @active-tab :on-select #(reset! active-tab %) :class "small-tabs full-height"}
      (for [db @db-tabs]
-       ^{:key db} [c/tab {:eventKey (db "id")
+       ^{:key db} [c/tab {:eventKey (db "id") :class "full-height"
                           :title (r/as-element [:span (db "name") [c/close-button (fn[e] (swap! db-tabs c/remove-x db))]])}
                    [db-console db]])]]])
 
