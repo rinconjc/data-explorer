@@ -22,7 +22,7 @@
           (doall (map-indexed
             (fn[i c] ^{:key i}
               [:th c [:a {:class "btn-link" :on-click #(roll-sort i)}
-                      [:i.fa {:class (@sort-icons i "fa-sort")}]]]) (@data "columns")))]]
+                      [:i.fa.btn-sort {:class (@sort-icons i "fa-sort")}]]]) (@data "columns")))]]
         [:tbody
          (map-indexed
           (fn [i row]
