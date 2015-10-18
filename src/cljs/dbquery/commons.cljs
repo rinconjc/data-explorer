@@ -18,9 +18,15 @@
 (def tab (r/adapt-react-class js/ReactBootstrap.Tab))
 (def button-toolbar (r/adapt-react-class js/ReactBootstrap.ButtonToolbar))
 (def button-group (r/adapt-react-class js/ReactBootstrap.ButtonGroup))
+(def split-button (r/adapt-react-class js/ReactBootstrap.SplitButton))
+
 (def panel (r/adapt-react-class js/ReactBootstrap.Panel))
 (def list-group (r/adapt-react-class js/ReactBootstrap.ListGroup))
 (def list-group-item (r/adapt-react-class js/ReactBootstrap.ListGroupItem))
+(def popover (r/adapt-react-class js/ReactBootstrap.Popover))
+(def overlay-trigger (r/adapt-react-class js/ReactBootstrap.OverlayTrigger))
+
+
 
 (defn bind-value [an-atom id & attrs]
   (apply hash-map  (list* :value (@an-atom id)
