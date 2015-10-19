@@ -3,6 +3,7 @@
             [widgets.splitter :as st]
             [dbquery.data-table :refer [query-table]]
             [reagent.core :as r :refer [atom]]
+            [cljsjs.codemirror]
             [ajax.core :refer [GET POST]]))
 
 
