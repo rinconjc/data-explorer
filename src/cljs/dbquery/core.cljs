@@ -24,37 +24,39 @@
 ;; -------------------------
 ;; Views
 
-(def db-tabs (atom []))
-(def active-tab (atom ""))
-
 (defn show-modal [e]
   (let [show? (r/atom true)
         data (r/atom {:name "db name" :dbms "H2"})]
     (open-modal [dba/database-window show? data])))
 
-(defn open-db [e]
-  (open-modal [dba/select-db-dialog
-               (fn [db] (when (some? db)
-                          (swap! db-tabs #(conj % db))
-                          (reset! active-tab (db "id"))))]))
-
 (defn home-page []
-  (js/Mousetrap.bind "alt+o", open-db)
-  [:div {:style {:height "100%"}}
-   [c/navbar {:brand "DataExplorer" :fluid true}
-    [c/nav
-     [c/nav-item {:href "#/"} "Home"]
-     [c/nav-dropdown {:title "Databases" :id "db-dropdown"}
-      [c/menu-item {:on-select show-modal} "Add ..." ]
-      [c/menu-item {:on-select open-db} "Open ..."]]
-     [c/nav-item {:href "#/"} "Import Data"]]]
-   [:div {:id "modals"}]
-   [:div.container-fluid {:class "full-height"}
-    [c/tabs {:activeKey @active-tab :on-select #(reset! active-tab %) :class "small-tabs full-height"}
-     (for [db @db-tabs]
-       ^{:key db} [c/tab {:eventKey (db "id") :class "full-height"
-                          :title (r/as-element [:span (db "name") [c/close-button (fn[e] (swap! db-tabs c/remove-x db))]])}
-                   [db-console db]])]]])
+  (let [db-tabs (atom [])
+        active-tab (atom "")
+        open-db (fn[e]
+                  (open-modal
+                   [dba/select-db-dialog
+                    (fn [db] (when (some? db)
+                               (swap! db-tabs #(conj % db))
+                               (reset! active-tab (db "id"))))]))]
+    (js/Mousetrap.bind "alt+o", open-db)
+    (fn[]
+      [:div {:style {:height "100%"}}
+       [c/navbar {:brand "DataExplorer" :fluid true}
+        [c/nav
+         [c/nav-item {:href "#/"} "Home"]
+         [c/nav-dropdown {:title "Databases" :id "db-dropdown"}
+          [c/menu-item {:on-select show-modal} "Add ..." ]
+          [c/menu-item {:on-select open-db} "Open ..."]]
+         [c/nav-item {:href "#/"} "Import Data"]]]
+       [:div {:id "modals"}]
+       [:div.container-fluid {:class "full-height"}
+        [c/tabs {:activeKey @active-tab :on-select #(reset! active-tab %)
+                 :class "small-tabs full-height"}
+         (doall
+          (for [db @db-tabs :let [id (db "id")]]
+            ^{:key id} [c/tab {:eventKey id :class "full-height"
+                               :title (r/as-element [:span (db "name") [c/close-button (fn[e] (swap! db-tabs c/remove-x db))]])}
+                        [db-console db (= id @active-tab)]]))]]])))
 
 (defn login-page []
   (let [login-data (r/atom {})
