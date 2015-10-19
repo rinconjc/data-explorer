@@ -27,11 +27,11 @@ body > div {
 .list{
   height:100%;
   cursor:pointer;
-  margin-left:-10px;
 }
 
 .list > li:hover {
   background-color:#eee;
+  color:black;
 }
 
 .list > li {
