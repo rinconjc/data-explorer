@@ -50,13 +50,15 @@
          [c/nav-item {:href "#/"} "Import Data"]]]
        [:div {:id "modals"}]
        [:div.container-fluid {:class "full-height"}
-        [c/tabs {:activeKey @active-tab :on-select #(reset! active-tab %)
-                 :class "small-tabs full-height"}
-         (doall
-          (for [db @db-tabs :let [id (db "id")]]
-            ^{:key id} [c/tab {:eventKey id :class "full-height"
-                               :title (r/as-element [:span (db "name") [c/close-button (fn[e] (swap! db-tabs c/remove-x db))]])}
-                        [db-console db (= id @active-tab)]]))]]])))
+        (if-not (empty? @db-tabs)
+          [c/tabs {:activeKey @active-tab :on-select #(reset! active-tab %)
+                  :class "small-tabs full-height"}
+          (doall
+           (for [db @db-tabs :let [id (db "id")]]
+             ^{:key id} [c/tab {:eventKey id :class "full-height"
+                                :title (r/as-element [:span (db "name") [c/close-button (fn[e] (swap! db-tabs c/remove-x db))]])}
+                         [db-console db (= id @active-tab)]]))]
+          [:h3 "Welcome to Data Explorer. Open a DB ..."])]])))
 
 (defn login-page []
   (let [login-data (r/atom {})
