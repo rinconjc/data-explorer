@@ -3,6 +3,7 @@
             [widgets.splitter :as st]
             [dbquery.data-table :refer [query-table]]
             [reagent.core :as r :refer [atom]]
+            [clojure.string :as s]
             [cljsjs.codemirror]
             [cljsjs.mousetrap]
             [ajax.core :refer [GET POST]]))
@@ -13,40 +14,63 @@
        :handler #(reset! resp-atom %)
        :error-handler #(reset! error-atom %)))
 
+(defn search-box [f]
+  (r/create-class
+   {:component-did-mount #(.focus (r/dom-node %))
+    :reagent-render (fn[f]
+                      [:input.form-control.mousetrap
+                       {:on-change #(f (-> % .-target .-value))
+                        :placeholder "search..." :size 35 :style {:width "100%"}}])}))
+
 (defn db-objects [db ops active?]
   (let [tables (atom [])
+        filtered (atom nil)
         error (atom nil)
         selected (atom nil)
         search? (atom false)
         icons {"TABLE" "fa-table fa-fw"
                "VIEW" "fa-copy fa-fw"}
-        _ (retrieve-db-objects db tables error)]
-
+        search-fn (fn[text]
+                    (let [re (re-pattern (s/upper-case text))]
+                      (reset! filtered (filter #(re-find re (% "name")) @tables))))]
+    (retrieve-db-objects db tables error)
     (fn [db ops active?]
       (when active?
         (js/Mousetrap.bind "alt+d" #((:preview-table ops) (@selected "name")))
         (js/Mousetrap.bind "/" #(swap! search? not))
         (js/Mousetrap.bind "esc" #(reset! search? false)))
-      [:div {:class "full-height panel panel-default"}
-       [:div.panel-heading {:class "compact"}
+      [:div.full-height.panel.panel-default
+       [:div.panel-heading.compact
         [c/button-group
-         [c/button [:span.glyphicon
-                    {:class "glyphicon-refresh" :title "Refresh Objects"
+         [c/button [:span.glyphicon.glyphicon-refresh
+                    {:title "Refresh Objects"
                      :on-click #(retrieve-db-objects db tables error :refresh true)}]]
          [c/button {:on-click #((:preview-table ops) (@selected "name"))}
           [:span.glyphicon.glyphicon-list-alt {:title "Preview Data"}]]
          [c/button
           [:span.glyphicon.glyphicon-info-sign {:title "Show metadata"}]]]]
        [:div.panel-body {:style {:padding "4px 4px"}}
-        (if @search? (with-meta [:input.form-control {:placeholder "search..." :size 35 :style {:width "100%"}}]
-                       {:component-did-mount #(.focus (r/dom-node %))}))
+        (if @search?
+          [search-box search-fn])
         [:span @error]
         [:ul {:class "list-unstyled list" :style {:height "100%" :cursor "pointer"}}
-         (doall (for [tb @tables]
+         (doall (for [tb (or (and @search? @filtered) @tables)]
                   ^{:key (tb "name")}
                   [:li {:class (if (= tb @selected) "selected" "")
                         :on-click #(reset! selected tb)}
                    [:i.fa {:class (icons (tb "type"))}] (tb "name")]))]]])))
+
+(defn code-mirror [config]
+  (r/create-class
+   {:reagent-render (fn[] [:text-area "//code here"])
+    :component-did-mount #(.fromTextArea js/CodeMirror (r/dom-node %) (clj->js config))}))
+
+(defn sql-panel [db]
+  [:div.panel.panel-default.full-height
+   [:div.panel-heading.compact
+    "SQL Editor"]
+   [:div.panel-body
+    [code-mirror {:mode "text/x-sql"}]]])
 
 (defn db-console [db active?]
   (let [active-tab (atom nil)
@@ -61,7 +85,7 @@
       [st/horizontal-splitter {:split-at 240}
        [db-objects db ops active?]
        [st/vertical-splitter {:split-at 200}
-        [:div "active?:" (if active? "active" "not-active")]
+        [sql-panel db]
         [c/tabs {:activeKey @active-tab :on-select #(reset! active-tab %)
                  :class "small-tabs full-height"}
          (for [t @data-tabs]
