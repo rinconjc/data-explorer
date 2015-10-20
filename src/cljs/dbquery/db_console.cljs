@@ -62,15 +62,17 @@
 
 (defn code-mirror [config]
   (r/create-class
-   {:reagent-render (fn[] [:text-area "//code here"])
-    :component-did-mount #(.fromTextArea js/CodeMirror (r/dom-node %) (clj->js config))}))
+   {:reagent-render (fn[config] [:textarea {:style {:width "100%" :height "100%"}}  "--SQL code here"])
+    :component-did-mount #(.fromTextArea js/CodeMirror (r/dom-node %) (clj->js config))
+    }))
 
 (defn sql-panel [db]
-  [:div.panel.panel-default.full-height
+  [:div.panel.panel-default.full-height {:style {:padding "0px" :margin "0px" :height "100%"}}
    [:div.panel-heading.compact
     "SQL Editor"]
-   [:div.panel-body
-    [code-mirror {:mode "text/x-sql"}]]])
+   [:div.panel-body {:style {:padding "0px" :overflow "hidden" :height "calc(100% - 48px)"}}
+    [code-mirror {:mode "text/x-sql" :autofocus true}]]
+   [:div.panel-footer]])
 
 (defn db-console [db active?]
   (let [active-tab (atom nil)
