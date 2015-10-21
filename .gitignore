@@ -17,3 +17,5 @@ resources/public/js/out/
 *.log
 /resources/public/js/app.js
 .cljs_node_repl
+/resources/public/css/assets.css
+/resources/public/js/assets.js

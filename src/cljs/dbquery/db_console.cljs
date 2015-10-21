@@ -79,16 +79,16 @@
         (doto js/Mousetrap
           (. bindGlobal "ctrl+enter" exec-sql)))
       [:div.panel.panel-default.full-height {:style {:padding "0px" :margin "0px" :height "100%"}}
-      [:div.panel-heading.compact
-       "SQL Editor "
-       [c/button-group {:bsSize "small"}
-        [c/button {:title "Execute" :on-click exec-sql}
-         [:i.fa.fa-play]]
-        [c/button [:i.fa.fa-save]]
-        [c/button [:i.fa.fa-file-o]]]]
-      [:div.panel-body {:style {:padding "0px" :overflow "hidden" :height "calc(100% - 56px)"}}
-       [code-mirror cm {:mode "text/x-sql"}]]
-      [:div.panel-footer]])))
+       [:div.panel-heading.compact
+        "SQL Editor "
+        [c/button-group {:bsSize "small"}
+         [c/button {:title "Execute" :on-click exec-sql}
+          [:i.fa.fa-play]]
+         [c/button [:i.fa.fa-save]]
+         [c/button [:i.fa.fa-file-o]]]]
+       [:div.panel-body {:style {:padding "0px" :overflow "hidden" :height "calc(100% - 56px)"}}
+        [code-mirror cm {:mode "text/x-sql"}]]
+       [:div.panel-footer]])))
 
 
 (defn db-console-ops [data-tabs active-tab]
@@ -99,11 +99,11 @@
          (.log js/console "adding table " tbl)
          (swap! data-tabs conj {:id tbl :raw-sql (str "select * from " tbl)}))
        (reset! active-tab tbl))
-     :exec-sql (fn[sql]
-                 (let [id (str "Query #" (swap! q-id inc))]
-                   (.log js/console "executing sql" sql)
-                   (swap! data-tabs conj {:id id :raw-sql sql})
-                   (reset! active-tab id)))}))
+     :exec-sql
+     (fn[sql]
+       (let [id (str "Query #" (swap! q-id inc))]
+         (swap! data-tabs conj {:id id :raw-sql sql})
+         (reset! active-tab id)))}))
 
 (defn db-console [db active?]
   (let [active-tab (atom nil)
@@ -116,9 +116,15 @@
         [sql-panel db ops active?]
         [c/tabs {:activeKey @active-tab :on-select #(reset! active-tab %)
                  :class "small-tabs full-height"}
-         (for [t @data-tabs]
-           ^{:key (:id t)}
-           [c/tab {:eventKey (:id t)
-                   :title (r/as-element [:span (:id t)
-                                         [c/close-button (fn[_](swap! data-tabs (partial remove #(= t %))))]])}
+         (for [t @data-tabs :let [id (:id t)]]
+           ^{:key id}
+           [c/tab {:eventKey id
+                   :title (r/as-element
+                           [:span id
+                            [c/close-button
+                             (fn[_]
+                               (swap! data-tabs
+                                      (partial remove #(= t %)))
+                               (if (= id @active-tab)
+                                 (reset! active-tab (:id (first @data-tabs)))))]])}
             [query-table db t]])]]])))
