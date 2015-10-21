@@ -37,5 +37,7 @@
   (remove #(= x %) xs))
 
 (defn close-button [close-fn]
-  [button {:on-click close-fn :class "close"}
+  [button {:on-click #(do (close-fn)
+                          (doto % .stopPropagation .preventDefault))
+           :class "close"}
    [:span "×"]])

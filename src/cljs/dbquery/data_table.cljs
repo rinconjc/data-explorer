@@ -26,7 +26,9 @@
                       (swap! sort-icons assoc i next-icon)))]
     (fn [data sort-fn refresh-fn]
       [:div.table-responsive
-       {:style {:overflow-y "scroll" :height "100%"}}
+       {:style {:overflow-y "scroll" :height "100%"}
+        ;;element.scrollHeight - element.scrollTop === element.clientHeight
+        :on-scroll #(.log js/console %)}
        [:table.table {:class "table-hover table-bordered summary"}
         [:thead
          [:tr [:th {:style {:width "1px" :padding-left "2px" :padding-right "2px"}}
