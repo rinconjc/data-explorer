@@ -76,4 +76,7 @@
             (reset! cur-query (update query :raw-sql #(-> % (s/replace #"(?im)\s+order\s+by\+.+$" "") (str order-by))))
             (refresh-fn)))]
     (refresh-fn)
-    (fn[ds query] [data-table data sort-data-fn refresh-fn])))
+    (fn[ds query]
+      (if (some? @error)
+        [c/alert {:bsStyle "danger"} (or (:response @error) (get-in @error [:parse-error :original-text]))]
+        [data-table data sort-data-fn refresh-fn]))))

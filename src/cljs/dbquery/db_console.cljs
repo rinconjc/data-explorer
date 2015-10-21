@@ -36,9 +36,10 @@
     (retrieve-db-objects db tables error)
     (fn [db ops active?]
       (when active?
-        (js/Mousetrap.bind "alt+d" #((:preview-table ops) (@selected "name")))
-        (js/Mousetrap.bind "/" #(swap! search? not))
-        (js/Mousetrap.bind "esc" #(reset! search? false)))
+        (doto js/Mousetrap
+          (.bind "alt+d" #((:preview-table ops) (@selected "name")))
+          (.bind "/" #(swap! search? not))
+          (.bind "esc" #(reset! search? false))))
       [:div.full-height.panel.panel-default
        [:div.panel-heading.compact
         [c/button-group
@@ -60,34 +61,59 @@
                         :on-click #(reset! selected tb)}
                    [:i.fa {:class (icons (tb "type"))}] (tb "name")]))]]])))
 
-(defn code-mirror [config]
+(defn code-mirror [instance config]
   (r/create-class
-   {:reagent-render (fn[config] [:textarea {:style {:width "100%" :height "100%"}}  "--SQL code here"])
-    :component-did-mount #(.fromTextArea js/CodeMirror (r/dom-node %) (clj->js config))
-    }))
+   {:reagent-render (fn[config] [:textarea.mousetrap {:style {:width "100%" :height "100%"}}])
+    :component-did-mount (fn[c]
+                           (let [cm (.fromTextArea js/CodeMirror (r/dom-node c) (clj->js config))]
+                             (.setTimeout js/window #(.focus cm) 1000)
+                             (reset! instance cm)))}))
 
-(defn sql-panel [db]
-  [:div.panel.panel-default.full-height {:style {:padding "0px" :margin "0px" :height "100%"}}
-   [:div.panel-heading.compact
-    "SQL Editor"]
-   [:div.panel-body {:style {:padding "0px" :overflow "hidden" :height "calc(100% - 48px)"}}
-    [code-mirror {:mode "text/x-sql" :autofocus true}]]
-   [:div.panel-footer]])
+(defn sql-panel [db ops active?]
+  (let [cm (atom nil)
+        exec-sql (fn[] ((ops :exec-sql)
+                        (if (empty? (.getSelection @cm))
+                          (.getValue @cm) (.getSelection @cm))))]
+    (fn[db ops]
+      (when active?
+        (doto js/Mousetrap
+          (. bindGlobal "ctrl+enter" exec-sql)))
+      [:div.panel.panel-default.full-height {:style {:padding "0px" :margin "0px" :height "100%"}}
+      [:div.panel-heading.compact
+       "SQL Editor "
+       [c/button-group {:bsSize "small"}
+        [c/button {:title "Execute" :on-click exec-sql}
+         [:i.fa.fa-play]]
+        [c/button [:i.fa.fa-save]]
+        [c/button [:i.fa.fa-file-o]]]]
+      [:div.panel-body {:style {:padding "0px" :overflow "hidden" :height "calc(100% - 56px)"}}
+       [code-mirror cm {:mode "text/x-sql"}]]
+      [:div.panel-footer]])))
+
+
+(defn db-console-ops [data-tabs active-tab]
+  (let [q-id (atom 1)]
+    {:preview-table
+     (fn[tbl]
+       (when-not (some #(= tbl (:id %)) @data-tabs)
+         (.log js/console "adding table " tbl)
+         (swap! data-tabs conj {:id tbl :raw-sql (str "select * from " tbl)}))
+       (reset! active-tab tbl))
+     :exec-sql (fn[sql]
+                 (let [id (str "Query #" (swap! q-id inc))]
+                   (.log js/console "executing sql" sql)
+                   (swap! data-tabs conj {:id id :raw-sql sql})
+                   (reset! active-tab id)))}))
 
 (defn db-console [db active?]
   (let [active-tab (atom nil)
         data-tabs (atom [])
-        ops {:preview-table
-             (fn[tbl]
-               (when-not (some #(= tbl (:id %)) @data-tabs)
-                 (.log js/console "adding table " tbl)
-                 (swap! data-tabs conj {:id tbl :raw-sql (str "select * from " tbl)}))
-               (reset! active-tab tbl))}]
+        ops (db-console-ops data-tabs active-tab)]
     (fn[db active?]
       [st/horizontal-splitter {:split-at 240}
        [db-objects db ops active?]
        [st/vertical-splitter {:split-at 200}
-        [sql-panel db]
+        [sql-panel db ops active?]
         [c/tabs {:activeKey @active-tab :on-select #(reset! active-tab %)
                  :class "small-tabs full-height"}
          (for [t @data-tabs]

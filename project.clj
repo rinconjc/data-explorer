@@ -35,12 +35,15 @@
                  [cljsjs/codemirror "5.7.0-1"]]
   :plugins [[lein-ring "0.8.11"]
             [lein-environ "1.0.1"]
-            [lein-asset-minifier "0.2.2"]]
+            [lein-asset-minifier "0.2.2"]
+            [lein-cljsasset "0.2.0"]]
   :resource-paths ["lib/*" "resources"]
   :source-paths ["src/clj" "src/cljc"]
   :minify-assets
   {:assets
    {"resources/public/css/site.min.css" "resources/public/css/site.css"}}
+  :cljsasset {:css ["cljsjs/codemirror/production/codemirror.min.css"]
+              :js ["cljsjs/codemirror/common/mode/sql.inc.js"]}
 
   :cljsbuild {:builds {:app {:source-paths ["src/cljs" "src/cljc"]
                              :compiler {:output-to     "resources/public/js/app.js"
