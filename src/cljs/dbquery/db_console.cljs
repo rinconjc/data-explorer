@@ -43,24 +43,24 @@
           (.bind "esc" #(reset! search? false))))
       [:div.full-height.panel.panel-default
        [:div.panel-heading.compact
-        [c/button-group
-         [c/button [:span.glyphicon.glyphicon-refresh
-                    {:title "Refresh Objects"
-                     :on-click #(retrieve-db-objects db tables error :refresh true)}]]
+        [c/button-group {:bsSize "small"}
+         [c/button {:on-click #(retrieve-db-objects db tables error :refresh true)}
+          [:i.fa.fa-refresh {:title "Refresh Objects"}]]
          [c/button {:on-click #((:preview-table ops) (@selected "name"))}
-          [:span.glyphicon.glyphicon-list-alt {:title "Preview Data"}]]
+          [:i.fa.fa-list-alt {:title "Preview Data"}]]
          [c/button
-          [:span.glyphicon.glyphicon-info-sign {:title "Show metadata"}]]]]
+          [:i.fa.fa-info {:title "Show metadata"}]]]]
        [:div.panel-body {:style {:padding "4px 4px"}}
         (if @search?
           [search-box search-fn])
         [:span @error]
         [:ul {:class "list-unstyled list" :style {:height "100%" :cursor "pointer"}}
-         (doall (for [tb (or (and @search? @filtered) @tables)]
-                  ^{:key (tb "name")}
+         (doall (for [{:strs[type name] :as tb} (or (and @search? @filtered) @tables)]
+                  ^{:key name}
                   [:li {:class (if (= tb @selected) "selected" "") :tabIndex 101
-                        :on-click #(reset! selected tb) :on-dblclick #((:preview-table ops) (tb "name"))}
-                   [:i.fa {:class (icons (tb "type"))}] (tb "name")]))]]])))
+                        :on-click #(reset! selected tb)
+                        :on-double-click #((:preview-table ops) name)}
+                   [:i.fa {:class (icons type)}] name]))]]])))
 
 (defn code-mirror [instance config]
   (r/create-class
@@ -104,7 +104,12 @@
      (fn[sql]
        (let [id (str "Query #" (swap! q-id inc))]
          (swap! data-tabs conj {:id id :raw-sql sql})
-         (reset! active-tab id)))}))
+         (reset! active-tab id)))
+     :delete-tab
+     (fn[t]
+       (swap! data-tabs (partial remove #(= t %)))
+       (if (= (:id t) @active-tab)
+         (reset! active-tab (:id (first @data-tabs)))))}))
 
 (defn db-console [db active?]
   (let [active-tab (atom nil)
@@ -115,17 +120,13 @@
        [db-objects db ops active?]
        [st/vertical-splitter {:split-at 200}
         [sql-panel db ops active?]
-        [c/tabs {:activeKey @active-tab :on-select #(reset! active-tab %)
+        [c/tabs {:activeKey @active-tab
+                 :on-select #(reset! active-tab %)
                  :class "small-tabs full-height"}
          (for [t @data-tabs :let [id (:id t)]]
            ^{:key id}
            [c/tab {:eventKey id
                    :title (r/as-element
                            [:span id
-                            [c/close-button
-                             (fn[_]
-                               (swap! data-tabs
-                                      (partial remove #(= t %)))
-                               (if (= id @active-tab)
-                                 (reset! active-tab (:id (first @data-tabs)))))]])}
+                            [c/close-button #((:delete-tab ops) t)]])}
             [query-table db t]])]]])))

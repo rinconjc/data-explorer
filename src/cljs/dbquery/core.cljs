@@ -49,7 +49,7 @@
           [c/menu-item {:on-select open-db} "Open ..."]]
          [c/nav-item {:href "#/"} "Import Data"]]]
        [:div {:id "modals"}]
-       [:div.container-fluid {:class "full-height"}
+       [:div.container-fluid {:style {:height "calc(100% - 90px)"}}
         (if-not (empty? @db-tabs)
           [c/tabs {:activeKey @active-tab :on-select #(reset! active-tab %)
                   :class "small-tabs full-height"}
