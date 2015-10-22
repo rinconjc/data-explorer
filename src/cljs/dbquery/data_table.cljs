@@ -12,7 +12,14 @@
     [c/button [:i.fa.fa-minus]]
     [c/button [:i.fa.fa-plus]]]])
 
-(defn data-table [data sort-fn refresh-fn]
+(defn scroll-bottom? [e]
+  (let [gap (#(-> (.-scrollHeight %)
+                  (- (.-scrollTop %))
+                  (- (.-clientHeight %))) (.-target e))]
+    (.log js/console "gap:" gap)
+    (< gap 2)))
+
+(defn data-table [data sort-fn refresh-fn next-page-fn]
   (let [sort-state (atom [])
         sort-icons (atom {})
         roll-sort (fn[i]
@@ -24,11 +31,11 @@
                                 "fa-sort-down" ["fa-sort" (swap! sort-state (partial remove #(= % (- j))))]) first)]
                       (sort-fn @sort-state)
                       (swap! sort-icons assoc i next-icon)))]
-    (fn [data sort-fn refresh-fn]
+    (fn [data sort-fn refresh-fn scroll-bottom-fn]
       [:div.table-responsive
        {:style {:overflow-y "scroll" :height "100%"}
-        ;;element.scrollHeight - element.scrollTop === element.clientHeight
-        :on-scroll #(.log js/console %)}
+        :on-scroll #(when (scroll-bottom? %)
+                      (next-page-fn))}
        [:table.table {:class "table-hover table-bordered summary"}
         [:thead
          [:tr [:th {:style {:width "1px" :padding-left "2px" :padding-right "2px"}}
@@ -53,20 +60,20 @@
                       (map-indexed
                        (fn[j v] ^{:key j}[:td v]) row)]) (@data "rows"))]
         [:tfoot
-         [:tr [:td {:col-span (count (@data "columns"))}
-               [c/button "More"]]]]]])))
+         [:tr [:td {:col-span (inc (count (@data "columns")))}
+               [c/button {:on-click next-page-fn} [:i.fa.fa-chevron-down]]]]]]])))
 
-(defn execute-query [ds query data-atom error-atom]
+(defn execute-query [ds query data-fn error-fn]
   (POST (str "/ds/" (ds "id") "/exec-sql")
         :params query :response-format :json :format :json
-        :handler #(reset! data-atom (% "data"))
-        :error-handler #(reset! error-atom %)))
+        :handler data-fn
+        :error-handler error-fn))
 
 (defn query-table [ds query]
   (let [data (atom {})
         error (atom nil)
         cur-query (atom query)
-        refresh-fn #(execute-query ds @cur-query data error)
+        refresh-fn (fn[](execute-query ds @cur-query #(reset! data (% "data")) #(reset! error %)))
         sort-data-fn
         (fn[sort-state]
           (let [order-by
@@ -76,9 +83,15 @@
                        (s/join ",")
                        (str " order by ")))]
             (reset! cur-query (update query :raw-sql #(-> % (s/replace #"(?im)\s+order\s+by\+.+$" "") (str order-by))))
-            (refresh-fn)))]
+            (refresh-fn)))
+        next-page-fn
+        (fn[]
+          (execute-query ds (assoc @cur-query :offset (count (@data "rows")))
+                         (fn[{{:strs[rows]} "data"}]
+                           (swap! data assoc "rows" (apply conj (@data "rows") rows)))
+                         #(reset! error %)))]
     (refresh-fn)
     (fn[ds query]
       (if (some? @error)
         [c/alert {:bsStyle "danger"} (or (:response @error) (get-in @error [:parse-error :original-text]))]
-        [data-table data sort-data-fn refresh-fn]))))
+        [data-table data sort-data-fn refresh-fn next-page-fn]))))

@@ -20,7 +20,8 @@
     :reagent-render (fn[f]
                       [:input.form-control.mousetrap
                        {:on-change #(f (-> % .-target .-value))
-                        :placeholder "search..." :size 35 :style {:width "100%"}}])}))
+                        :placeholder "search..." :size 35 :style {:width "100%"}
+                        :tabIndex 100}])}))
 
 (defn db-objects [db ops active?]
   (let [tables (atom [])
@@ -57,8 +58,8 @@
         [:ul {:class "list-unstyled list" :style {:height "100%" :cursor "pointer"}}
          (doall (for [tb (or (and @search? @filtered) @tables)]
                   ^{:key (tb "name")}
-                  [:li {:class (if (= tb @selected) "selected" "")
-                        :on-click #(reset! selected tb)}
+                  [:li {:class (if (= tb @selected) "selected" "") :tabIndex 101
+                        :on-click #(reset! selected tb) :on-dblclick #((:preview-table ops) (tb "name"))}
                    [:i.fa {:class (icons (tb "type"))}] (tb "name")]))]]])))
 
 (defn code-mirror [instance config]
@@ -86,7 +87,7 @@
           [:i.fa.fa-play]]
          [c/button [:i.fa.fa-save]]
          [c/button [:i.fa.fa-file-o]]]]
-       [:div.panel-body {:style {:padding "0px" :overflow "hidden" :height "calc(100% - 56px)"}}
+       [:div.panel-body {:style {:padding "0px" :overflow "scroll" :height "calc(100% - 56px)"}}
         [code-mirror cm {:mode "text/x-sql"}]]
        [:div.panel-footer]])))
 
