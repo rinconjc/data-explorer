@@ -19,3 +19,4 @@ resources/public/js/out/
 .cljs_node_repl
 /resources/public/css/assets.css
 /resources/public/js/assets.js
+.*

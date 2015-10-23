@@ -88,13 +88,12 @@
   )
 
 (defn handle-exec-sql [req ds-id]
-  (let [raw-sql (get-in req [:body :raw-sql])
-        ds (get-ds ds-id)]
-    (let [opts (into {} (for [[k v] (:params req) :when (#{:offset :limit} k)] [k (Integer. v)]))
-          r (execute ds raw-sql opts)]
-      (if (number? r)
-        {:body {:rowsAffected r}}
-        {:body {:data  r}}))))
+  (let [{:keys[raw-sql] :as opts} (:body req)
+        ds (get-ds ds-id)
+        r (execute ds raw-sql opts)]
+    (if (number? r)
+      {:body {:rowsAffected r}}
+      {:body {:data  r}})))
 
 (defn handle-exec-query-by-id [id ds-id]
   (if-let [q (first (k/select query (k/fields [:sql]) (k/where {:id id})))]
