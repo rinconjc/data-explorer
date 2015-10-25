@@ -41,3 +41,9 @@
                           (doto % .stopPropagation .preventDefault))
            :class "close"}
    [:span "×"]])
+
+(defn index-where [pred xs]
+  (cond
+    (empty? xs) nil
+    (pred (first xs)) 0
+    :else (inc (index-where pred (rest xs)))))
