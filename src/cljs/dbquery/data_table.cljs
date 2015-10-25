@@ -4,24 +4,54 @@
             [reagent.core :as r :refer [atom]]
             [ajax.core :refer [GET POST]]))
 
-(defn column-toolbar [show?]
+(deftype SortControl [sort-state sort-icons sorter-fn]
+  Object
+  (roll-sort [this i]
+    (let [j (inc i)
+          next-icon
+          (-> (case (@sort-icons i "fa-sort")
+                "fa-sort" ["fa-sort-up" (swap! sort-state conj j)]
+                "fa-sort-up" ["fa-sort-down" (swap! sort-state (partial replace {j (- j)}))]
+                "fa-sort-down" ["fa-sort" (swap! sort-state (partial remove #(= % (- j))))]) first)]
+      (swap! sort-icons assoc i next-icon)
+      (sorter-fn @sort-state)))
+
+  (set-sort [this i ord]
+    (let[j (inc i)
+         next-icon (str "fa-sort" (and ord (str "-" ord)))
+         k (c/index-where #(= j (abs %)) @sort-state)
+         nj (case ord "up" j "down" (- j))]
+      (when-not (= next-icon (@sort-icons i))
+        (swap! sort-icons assoc i next-icon)
+        (if (some? ord)
+          (swap! sort-state #(if k (update % k nj) (conj % nj)))
+          (swap! sort-state (partial remove #(= (abs %) j))))
+        (sorter-fn @sort-state)))))
+
+
+(defn column-toolbar [show? i sort-control]
   [:div {:style {:position "absolute" :float "right"
                  :display (if @show? "" "none")}}
    [c/button-group {:bsSize "xsmall"}
     [c/button [:i.fa.fa-filter]]
     [c/button [:i.fa.fa-minus]]
-    [c/button [:i.fa.fa-plus]]]])
+    [c/button [:i.fa.fa-plus]]
+    [c/button {:on-click #(.set-sort sort-control i "up")} [:i.fa.fa-sort-up]]
+    [c/button {:on-click #(.set-sort sort-control i "down")} [:i.fa.fa-sort-down]]
+    [c/button [:i.fa.fa-sort]]]])
 
 (defn scroll-bottom? [e]
-  (let [gap (#(-> (.-scrollHeight %)
-                  (- (.-scrollTop %))
-                  (- (.-clientHeight %))) (.-target e))]
-    (.log js/console "gap:" gap)
-    (< gap 2)))
+  (let [elem (.-target e)
+        scroll-top (.-scrollTop elem)
+        gap (#(-> (.-scrollHeight %)
+                  (- scroll-top)
+                  (- (.-clientHeight %))) elem)]
+    (and (> scroll-top 0) (< gap 2))))
 
 (defn data-table [data sort-fn refresh-fn next-page-fn]
   (let [sort-state (atom [])
         sort-icons (atom {})
+        sort-control (SortControl. sort-state sort-icons sort-fn)
         roll-sort (fn[i]
                     (let [j (inc i)
                           next-icon
@@ -52,7 +82,7 @@
                  [:a.btn-link {:on-click #(swap! show? not)} c]
                  [:a.btn-link {:on-click #(roll-sort i)}
                   [:i.fa.btn-sort {:class (@sort-icons i "fa-sort")}]]
-                 [column-toolbar show?]])) (@data "columns")))]]
+                 [column-toolbar show? i sort-control]])) (@data "columns")))]]
         [:tbody
          (map-indexed
           (fn [i row]
@@ -61,7 +91,8 @@
                        (fn[j v] ^{:key j}[:td v]) row)]) (@data "rows"))]
         [:tfoot
          [:tr [:td {:col-span (inc (count (@data "columns")))}
-               [c/button {:on-click next-page-fn} [:i.fa.fa-chevron-down]]]]]]])))
+               [c/button {:on-click next-page-fn}
+                [:i.fa.fa-chevron-down]]]]]]])))
 
 (defn execute-query [ds query data-fn error-fn]
   (POST (str "/ds/" (ds "id") "/exec-sql")
@@ -73,7 +104,7 @@
   (let [data (atom {})
         error (atom nil)
         cur-query (atom query)
-        refresh-fn (fn[](execute-query ds @cur-query #(reset! data (% "data")) #(reset! error %)))
+        refresh-fn (fn[](execute-query ds (assoc @cur-query :limit (max (count (@data "rows")) 40)) #(reset! data (% "data")) #(reset! error %)))
         sort-data-fn
         (fn[sort-state]
           (let [order-by
