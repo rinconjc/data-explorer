@@ -47,3 +47,9 @@
     (empty? xs) nil
     (pred (first xs)) 0
     :else (inc (index-where pred (rest xs)))))
+
+(defn progress-overlay []
+  [:div {:style {:position "absolute" :width "100%" :height "100%" :z-index 100
+                 :top 0 :left 0 :background "rgba(255,255,255,0.5)"
+                 :text-align "center"}}
+   [:i.fa.fa-spinner.fa-spin.fa-3x {:style {:margin-top "10%"}}]])

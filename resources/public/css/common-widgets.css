@@ -42,7 +42,8 @@
 }
 
 .summary th{
-    white-space:nowrap;    
+  white-space:nowrap;
+  cursor:pointer;
 }
 
 .tags .label .close {
