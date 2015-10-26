@@ -38,7 +38,7 @@
     (fn [db ops active?]
       (when active?
         (doto js/Mousetrap
-          (.bind "alt+d" #((:preview-table ops) (@selected "name")))
+          (.bind "alt+d" #(.preview ops (@selected "name")))
           (.bind "/" #(swap! search? not))
           (.bind "esc" #(reset! search? false))))
       [:div.full-height.panel.panel-default
@@ -46,7 +46,7 @@
         [c/button-group {:bsSize "small"}
          [c/button {:on-click #(retrieve-db-objects db tables error :refresh true)}
           [:i.fa.fa-refresh {:title "Refresh Objects"}]]
-         [c/button {:on-click #((:preview-table ops) (@selected "name"))}
+         [c/button {:on-click #(.preview ops (@selected "name"))}
           [:i.fa.fa-list-alt {:title "Preview Data"}]]
          [c/button
           [:i.fa.fa-info {:title "Show metadata"}]]]]
@@ -59,7 +59,7 @@
                   ^{:key name}
                   [:li {:class (if (= tb @selected) "selected" "") :tabIndex 101
                         :on-click #(reset! selected tb)
-                        :on-double-click #((:preview-table ops) name)}
+                        :on-double-click #(.preview ops name)}
                    [:i.fa {:class (icons type)}] name]))]]])))
 
 (defn code-mirror [instance config]
@@ -72,7 +72,7 @@
 
 (defn sql-panel [db ops active?]
   (let [cm (atom nil)
-        exec-sql (fn[] ((ops :exec-sql)
+        exec-sql (fn[] (.exec-sql ops
                         (if (empty? (.getSelection @cm))
                           (.getValue @cm) (.getSelection @cm))))]
     (fn[db ops]
@@ -92,29 +92,32 @@
        [:div.panel-footer]])))
 
 
-(defn db-console-ops [data-tabs active-tab]
-  (let [q-id (atom 1)]
-    {:preview-table
-     (fn[tbl]
-       (when-not (some #(= tbl (:id %)) @data-tabs)
-         (.log js/console "adding table " tbl)
-         (swap! data-tabs conj {:id tbl :raw-sql (str "select * from " tbl)}))
-       (reset! active-tab tbl))
-     :exec-sql
-     (fn[sql]
-       (let [id (str "Query #" (swap! q-id inc))]
-         (swap! data-tabs conj {:id id :raw-sql sql})
-         (reset! active-tab id)))
-     :delete-tab
-     (fn[t]
-       (swap! data-tabs (partial remove #(= t %)))
-       (if (= (:id t) @active-tab)
-         (reset! active-tab (:id (first @data-tabs)))))}))
+(deftype ConsoleControl [data-tabs active-tab q-id]
+  Object
+  (preview [_ tbl]
+    (when-not (some #(= tbl (:id %)) @data-tabs)
+      (.log js/console "adding table " tbl)
+      (swap! data-tabs conj {:id tbl :raw-sql (str "select * from " tbl)}))
+    (reset! active-tab tbl))
+
+  (exec-sql [_ sql]
+    (let [id (str "Query #" (swap! q-id inc))]
+      (swap! data-tabs conj {:id id :raw-sql sql})
+      (reset! active-tab id)))
+
+  (delete-tab [_ t]
+    (swap! data-tabs (partial remove #(= t %)))
+    (if (= (:id t) @active-tab)
+      (reset! active-tab (:id (first @data-tabs))))))
+
+(defn mk-console-control [data-tabs active-tab]
+  (let [q-id (atom 0)]
+    (ConsoleControl. data-tabs active-tab q-id)))
 
 (defn db-console [db active?]
   (let [active-tab (atom nil)
         data-tabs (atom [])
-        ops (db-console-ops data-tabs active-tab)]
+        ops (mk-console-control data-tabs active-tab)]
     (fn[db active?]
       [st/horizontal-splitter {:split-at 240}
        [db-objects db ops active?]
@@ -128,5 +131,5 @@
            [c/tab {:eventKey id
                    :title (r/as-element
                            [:span id
-                            [c/close-button #((:delete-tab ops) t)]])}
+                            [c/close-button #(.delete-tab ops t)]])}
             [query-table db t]])]]])))
