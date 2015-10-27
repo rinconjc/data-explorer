@@ -46,7 +46,10 @@
   (cond
     (empty? xs) nil
     (pred (first xs)) 0
-    :else (inc (index-where pred (rest xs)))))
+    :else (if-let [c (index-where pred (rest xs))](inc c))))
+
+(defn remove-nth [v i]
+  (vec (concat (subvec v 0 i) (subvec v (inc i)))))
 
 (defn progress-overlay []
   [:div {:style {:position "absolute" :width "100%" :height "100%" :z-index 100

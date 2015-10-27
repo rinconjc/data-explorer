@@ -113,20 +113,20 @@
   (info [_ tbl]
     (let [id (str tbl "*")]
       (when-not (some #(= id (:id %)) @data-tabs)
-        (swap! data-tabs conj {:id id })))))
+        (swap! data-tabs conj {:id id :table tbl})))))
 
 (defn mk-console-control [data-tabs active-tab]
   (let [q-id (atom 0)]
     (ConsoleControl. data-tabs active-tab q-id)))
 
 (defn retrieve-table-meta [db tbl data-fn error-fn]
-  (GET (str "/tables/" (db "id") "/" tbl) :response-format :json
+  (GET (str "/ds/" (db "id") "/tables/" tbl) :response-format :json
        :handler data-fn :error-handler error-fn))
 
 (defn table-meta [db tbl]
   (let [data (atom [])
         sort-fn #(.log js/console "sort not implemented")
-        refresh-fn (retrieve-table-meta db tbl #(reset! data (% "columns")) #(.log js/console %))]
+        refresh-fn (fn[] (retrieve-table-meta db tbl #(reset! data (% "columns")) #(.log js/console %)))]
     (refresh-fn)
     (fn[tbl]
      [data-table data sort-fn refresh-fn identity])))
@@ -149,4 +149,6 @@
                    :title (r/as-element
                            [:span id
                             [c/close-button #(.delete-tab ops t)]])}
-            [query-table db t]])]]])))
+            (if-let [tbl (:table t)]
+              [table-meta db tbl]
+              [query-table db t])])]]])))
