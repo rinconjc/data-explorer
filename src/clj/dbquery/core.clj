@@ -113,9 +113,7 @@
         (get-tables ds))
       (if (= "true" (get-in req [:params :refresh]))
         (sync-tables (get-ds ds-id) ds-id)
-        tables))
-    )
-  )
+        tables))))
 
 (defn handle-table-meta [{{refresh :refresh} :params} ds-id table]
   (if-let [table-id (-> (k/select ds_table (k/fields ::* :id)
@@ -124,10 +122,7 @@
        (let [cols (table-cols (get-ds ds-id) table)]
          (sync-table-cols table-id cols)
          cols)
-       (k/select ds_column (k/where {:table_id table-id}))
-       )}
-    )
-  )
+       (k/select ds_column (k/where {:table_id table-id})))}))
 
 (defn handle-data-import [ds-id {{{file :file separator :separator has-header :hasHeader} :inputFile dest :dest} :body}]
   (let [ds (get-ds ds-id)
@@ -137,17 +132,13 @@
         filePath (str (System/getProperty "java.io.tmpdir") "/" file)
         data (read-csv (java.io.File. filePath) (.charAt separator 0) has-header)
         result (load-data ds table data (dest :mappings))]
-    {:body result}
-    )
-  )
+    {:body result}))
 
 (defn with-body [b]
   (cond
     (or (instance? Number b) (instance? Boolean b)) {:body {:result b}}
     (nil? b) {:status 404}
-    true {:body b}
-    )
-  )
+    true {:body b}))
 ;; resources
 
 (defresource data-sources-list common-opts
