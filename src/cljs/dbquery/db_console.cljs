@@ -72,9 +72,9 @@
 
 (defn sql-panel [db ops active?]
   (let [cm (atom nil)
-        exec-sql (fn[] (.exec-sql ops
-                        (if (empty? (.getSelection @cm))
-                          (.getValue @cm) (.getSelection @cm))))]
+        exec-sql (fn[]
+                   (.exec-sql ops (if (empty? (.getSelection @cm))
+                                    (.getValue @cm) (.getSelection @cm))))]
     (fn[db ops]
       (when active?
         (doto js/Mousetrap
