@@ -24,8 +24,8 @@
       (when-not (= next-icon (@sort-icons i))
         (swap! sort-icons assoc i next-icon)
         (if (some? ord)
-          (swap! sort-state #(if k (update % k nj) (conj % nj)))
-          (swap! sort-state (partial remove #(= (Math/abs %) j))))
+          (swap! sort-state #(if k (update % k (fn[_] nj)) (conj % nj)))
+          (swap! sort-state c/remove-nth k))
         (sorter-fn @sort-state)))))
 
 
