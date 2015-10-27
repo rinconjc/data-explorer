@@ -1,7 +1,7 @@
 (ns dbquery.db-console
   (:require [dbquery.commons :as c]
             [widgets.splitter :as st]
-            [dbquery.data-table :refer [query-table]]
+            [dbquery.data-table :refer [query-table data-table]]
             [reagent.core :as r :refer [atom]]
             [clojure.string :as s]
             [cljsjs.codemirror]
@@ -48,7 +48,7 @@
           [:i.fa.fa-refresh {:title "Refresh Objects"}]]
          [c/button {:on-click #(.preview ops (@selected "name"))}
           [:i.fa.fa-list-alt {:title "Preview Data"}]]
-         [c/button
+         [c/button {:on-click #(.info ops (@selected "name"))}
           [:i.fa.fa-info {:title "Show metadata"}]]]]
        [:div.panel-body {:style {:padding "4px 4px"}}
         (if @search?
@@ -78,7 +78,7 @@
     (fn[db ops]
       (when active?
         (doto js/Mousetrap
-          (. bindGlobal "ctrl+enter" exec-sql)))
+          (.bindGlobal "ctrl+enter" exec-sql)))
       [:div.panel.panel-default.full-height {:style {:padding "0px" :margin "0px" :height "100%"}}
        [:div.panel-heading.compact
         "SQL Editor "
@@ -108,11 +108,28 @@
   (delete-tab [_ t]
     (swap! data-tabs (partial remove #(= t %)))
     (if (= (:id t) @active-tab)
-      (reset! active-tab (:id (first @data-tabs))))))
+      (reset! active-tab (:id (first @data-tabs)))))
+
+  (info [_ tbl]
+    (let [id (str tbl "*")]
+      (when-not (some #(= id (:id %)) @data-tabs)
+        (swap! data-tabs conj {:id id })))))
 
 (defn mk-console-control [data-tabs active-tab]
   (let [q-id (atom 0)]
     (ConsoleControl. data-tabs active-tab q-id)))
+
+(defn retrieve-table-meta [db tbl data-fn error-fn]
+  (GET (str "/tables/" (db "id") "/" tbl) :response-format :json
+       :handler data-fn :error-handler error-fn))
+
+(defn table-meta [db tbl]
+  (let [data (atom [])
+        sort-fn #(.log js/console "sort not implemented")
+        refresh-fn (retrieve-table-meta db tbl #(reset! data (% "columns")) #(.log js/console %))]
+    (refresh-fn)
+    (fn[tbl]
+     [data-table data sort-fn refresh-fn identity])))
 
 (defn db-console [db active?]
   (let [active-tab (atom nil)
