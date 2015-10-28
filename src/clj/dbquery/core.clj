@@ -122,7 +122,7 @@
        (let [cols (table-cols (get-ds ds-id) table)]
          (sync-table-cols table-id cols)
          cols)
-       (k/select ds_column (k/where {:table_id table-id})))}))
+       (k/select ds_column (k/where {:table_id table-id}) (k/order :id)))}))
 
 (defn handle-data-import [ds-id {{{file :file separator :separator has-header :hasHeader} :inputFile dest :dest} :body}]
   (let [ds (get-ds ds-id)

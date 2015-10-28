@@ -11,21 +11,18 @@
             [crypto.password.bcrypt :as password]
             [clojure.java.jdbc :as j]
             [dbquery.databases :as db]
-            )
-  )
+            ))
 
 
 (defn encrypt [str]
   (-> (doto (BasicTextEncryptor.)
         (.setPassword (conf :secret-key)))
-      (.encrypt str))
-  )
+      (.encrypt str)))
 
 (defn decrypt [str]
   (-> (doto (BasicTextEncryptor.)
         (.setPassword (conf :secret-key)))
-      (.decrypt str))
-  )
+      (.decrypt str)))
 ;;(password/encrypt "admin")
 
 (def ds (delay (doto (JdbcDataSource.)
@@ -39,8 +36,7 @@
      (log/info "starting db upgrade:" version env)
      (-> (DbUpgrader. (force ds) env)
          (.syncToVersion version false false))
-     (log/info "db upgrade complete")
-     ))
+     (log/info "db upgrade complete")))
   ([env] (sync-db 7 env)))
 
 (defdb appdb (h2 db-conf))
@@ -56,42 +52,35 @@
              (assoc ds :password (encrypt pass))))
   (transform (fn [{pass :password :as ds}]
                (if (some? pass) (assoc ds :password (decrypt pass))
-                   ds)))
-  )
+                   ds))))
 
 (defentity app_user
   (entity-fields :id :nick :full_name :active)
-  (many-to-many data_source :user_data_source)
-  )
+  (many-to-many data_source :user_data_source))
 
 (defentity query
   (entity-fields :id :name :description)
   (belongs-to app_user)
-  (many-to-many data_source :data_source_query)
-  )
+  (many-to-many data_source :data_source_query))
 
 (defentity ds_table
   (entity-fields :id :name :type)
-  (belongs-to data_source)
-  )
+  (belongs-to data_source))
 
 (defentity ds_column
   (entity-fields :id :name :data_type :type_name :size :digits :nullable
                  :is_pk :is_fk :fk_table :fk_column)
-  (belongs-to ds_table {:fk :table_id})
-  )
+  (belongs-to ds_table {:fk :table_id}))
 
 (defn login [user pass]
   (if-let [found-user (first (select app_user (fields :password) (where {:nick user})))]
     (if (password/check pass (:password found-user))
-      (dissoc found-user :password)))
-  )
+      (dissoc found-user :password))))
 
 (defn user-data-sources [user-id]
   (exec-raw ["SELECT d.id, d.name FROM DATA_SOURCE d
 WHERE APP_USER_ID = ? OR EXISTS(SELECT 1 FROM USER_DATA_SOURCE ud
-WHERE ud.DATA_SOURCE_ID=d.ID AND ud.APP_USER_ID=?)" [user-id user-id]] :results)
-  )
+WHERE ud.DATA_SOURCE_ID=d.ID AND ud.APP_USER_ID=?)" [user-id user-id]] :results))
 
 (defn get-query [id]
   (with-open [con (.getConnection (force ds))]
@@ -100,9 +89,7 @@ WHERE ud.DATA_SOURCE_ID=d.ID AND ud.APP_USER_ID=?)" [user-id user-id]] :results)
       (-> ps
           .executeQuery
           db/read-as-map
-          first))
-    )
-  )
+          first))))
 
 (defn ds-queries [db-id]
   (db/execute {:datasource (force ds)} "select q.* from query q
@@ -117,14 +104,12 @@ and q.query_id = ?" {:rs-reader db/read-as-map :args [qid]}))
 (defn assoc-query-datasource [ds-id q-id]
   (db/execute {:datasource (force ds)}
               "insert into data_source_query(data_source_id, query_id)
- values(?,?)" {:args [ds-id q-id]} )
-  )
+ values(?,?)" {:args [ds-id q-id]} ))
 
 (defn dissoc-query-datasource [ds-id q-id]
   (db/execute {:datasource (force ds)}
               "delete data_source_query where data_source_id=?
-and query_id=?" {:args [ds-id q-id]} )
-  )
+and query_id=?" {:args [ds-id q-id]} ))
 
 
 (defn sync-table-cols [table-id cols]
@@ -134,8 +119,7 @@ and query_id=?" {:args [ds-id q-id]} )
           (values (for [c cols]
                     (-> c
                         (dissoc :table_name)
-                        (assoc :table_id table-id)
-                        )))))
+                        (assoc :table_id table-id))))))
 
 (defn sync-table-meta [ds-id table-meta]
   (log/info "syncing table metadata:" ds-id (prn-str table-meta))

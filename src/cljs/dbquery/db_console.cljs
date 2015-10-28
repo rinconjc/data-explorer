@@ -1,13 +1,36 @@
 (ns dbquery.db-console
   (:require [dbquery.commons :as c]
             [widgets.splitter :as st]
-            [dbquery.data-table :refer [query-table data-table]]
+            [dbquery.data-table :refer [query-table data-table execute-query error-text]]
             [reagent.core :as r :refer [atom]]
             [clojure.string :as s]
             [cljsjs.codemirror]
             [cljsjs.mousetrap]
             [ajax.core :refer [GET POST]]))
 
+(deftype ConsoleControl [data-tabs active-tab q-id]
+  Object
+  (preview [_ tbl]
+    (when-not (some #(= tbl (:id %)) @data-tabs)
+      (.log js/console "adding table " tbl)
+      (swap! data-tabs conj {:id tbl :raw-sql (str "select * from " tbl)}))
+    (reset! active-tab tbl))
+
+  (exec-sql [_ sql & opts]
+    (let [id (str "Query #" (swap! q-id inc))]
+      (swap! data-tabs conj (merge opts {:id id :raw-sql sql}))
+      (reset! active-tab id)))
+
+  (delete-tab [_ t]
+    (swap! data-tabs (partial remove #(= t %)))
+    (if (= (:id t) @active-tab)
+      (reset! active-tab (:id (first @data-tabs)))))
+
+  (info [_ tbl]
+    (let [id (str tbl "*")]
+      (when-not (some #(= id (:id %)) @data-tabs)
+        (swap! data-tabs conj {:id id :table tbl}))
+      (reset! active-tab id))))
 
 (defn retrieve-db-objects [db resp-atom error-atom & {:keys [refresh]}]
   (GET (str "/ds/" (db "id") "/tables?refresh=" refresh) :response-format :json
@@ -72,9 +95,15 @@
 
 (defn sql-panel [db ops active?]
   (let [cm (atom nil)
-        exec-sql (fn[]
-                   (.exec-sql ops (if (empty? (.getSelection @cm))
-                                    (.getValue @cm) (.getSelection @cm))))]
+        status (atom nil)
+        exec-sql
+        (fn[]
+          (let [sql (if (empty? (.getSelection @cm))
+                      (.getValue @cm) (.getSelection @cm))]
+            (execute-query db sql #(if-let [data (% "data")]
+                                     (.exec-sql sql {:data data})
+                                     (reset! status (str "rows affected :" (% "rowsAffected"))))
+                           #(reset! status (error-text %)))))]
     (fn[db ops]
       (when active?
         (doto js/Mousetrap
@@ -89,32 +118,7 @@
          [c/button [:i.fa.fa-file-o]]]]
        [:div.panel-body {:style {:padding "0px" :overflow "scroll" :height "calc(100% - 56px)"}}
         [code-mirror cm {:mode "text/x-sql"}]]
-       [:div.panel-footer]])))
-
-
-(deftype ConsoleControl [data-tabs active-tab q-id]
-  Object
-  (preview [_ tbl]
-    (when-not (some #(= tbl (:id %)) @data-tabs)
-      (.log js/console "adding table " tbl)
-      (swap! data-tabs conj {:id tbl :raw-sql (str "select * from " tbl)}))
-    (reset! active-tab tbl))
-
-  (exec-sql [_ sql]
-    (let [id (str "Query #" (swap! q-id inc))]
-      (swap! data-tabs conj {:id id :raw-sql sql})
-      (reset! active-tab id)))
-
-  (delete-tab [_ t]
-    (swap! data-tabs (partial remove #(= t %)))
-    (if (= (:id t) @active-tab)
-      (reset! active-tab (:id (first @data-tabs)))))
-
-  (info [_ tbl]
-    (let [id (str tbl "*")]
-      (when-not (some #(= id (:id %)) @data-tabs)
-        (swap! data-tabs conj {:id id :table tbl}))
-      (reset! active-tab id))))
+       [:div.panel-footer @status]])))
 
 (defn mk-console-control [data-tabs active-tab]
   (let [q-id (atom 0)]
@@ -132,7 +136,7 @@
                                                              "columns" ["name" "type_name" "size" "digits" "nullable" "is_pk" "is_fk" "fk_table" "fk_column"]}) #(.log js/console %)))]
     (refresh-fn)
     (fn[db tbl]
-     [data-table data sort-fn refresh-fn identity])))
+      [data-table data sort-fn refresh-fn identity])))
 
 (defn db-console [db active?]
   (let [active-tab (atom nil)
@@ -150,7 +154,7 @@
            ^{:key id}
            [c/tab {:eventKey id
                    :title (r/as-element
-                           [:span id
+                           [:span {:title (:title t)} id
                             [c/close-button #(.delete-tab ops t)]])}
             (if-let [tbl (:table t)]
               [table-meta db tbl]

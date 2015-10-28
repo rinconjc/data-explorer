@@ -4,6 +4,9 @@
             [reagent.core :as r :refer [atom]]
             [ajax.core :refer [GET POST]]))
 
+(defn error-text [e]
+  (or (:response e) (get-in e [:parse-error :original-text])))
+
 (deftype SortControl [sort-state sort-icons sorter-fn]
   Object
   (roll-sort [this i]
@@ -101,13 +104,14 @@
         :error-handler error-fn))
 
 (defn query-table [ds query]
-  (let [data (atom {})
+  (let [data (atom (:data query))
         error (atom nil)
         cur-query (atom query)
-        refresh-fn (fn[]
-                     (swap! data assoc :loading true)
-                     (execute-query ds (assoc @cur-query :limit (max (count (@data "rows")) 40))
-                                    #(reset! data (% "data")) #(reset! error %)))
+        refresh-fn
+        (fn[]
+          (swap! data assoc :loading true)
+          (execute-query ds (assoc @cur-query :limit (max (count (@data "rows")) 40))
+                         #(reset! data (% "data")) #(reset! error %)))
         sort-data-fn
         (fn[sort-state]
           (let [order-by
@@ -126,9 +130,11 @@
                            (fn[{{:strs[rows]} "data"}]
                              (swap! data assoc "rows" (apply conj (@data "rows") rows)
                                     :loading false))
-                           #(reset! error %))))]
-    (refresh-fn)
+                           #(reset! error (error-text %)))))]
+    (if-not @data
+      (refresh-fn))
+
     (fn[ds query]
       (if (some? @error)
-        [c/alert {:bsStyle "danger"} (or (:response @error) (get-in @error [:parse-error :original-text]))]
+        [c/alert {:bsStyle "danger"} error]
         [data-table data sort-data-fn refresh-fn next-page-fn]))))
