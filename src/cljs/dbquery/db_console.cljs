@@ -113,7 +113,8 @@
   (info [_ tbl]
     (let [id (str tbl "*")]
       (when-not (some #(= id (:id %)) @data-tabs)
-        (swap! data-tabs conj {:id id :table tbl})))))
+        (swap! data-tabs conj {:id id :table tbl}))
+      (reset! active-tab id))))
 
 (defn mk-console-control [data-tabs active-tab]
   (let [q-id (atom 0)]
@@ -124,11 +125,13 @@
        :handler data-fn :error-handler error-fn))
 
 (defn table-meta [db tbl]
-  (let [data (atom [])
+  (let [data (atom {})
         sort-fn #(.log js/console "sort not implemented")
-        refresh-fn (fn[] (retrieve-table-meta db tbl #(reset! data (% "columns")) #(.log js/console %)))]
+        refresh-fn (fn[] (retrieve-table-meta db tbl
+                                              #(reset! data {"rows" (% "columns")
+                                                             "columns" ["name" "type_name" "size" "digits" "nullable" "is_pk" "is_fk" "fk_table" "fk_column"]}) #(.log js/console %)))]
     (refresh-fn)
-    (fn[tbl]
+    (fn[db tbl]
      [data-table data sort-fn refresh-fn identity])))
 
 (defn db-console [db active?]

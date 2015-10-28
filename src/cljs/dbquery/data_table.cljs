@@ -48,6 +48,14 @@
                   (- (.-clientHeight %))) elem)]
     (and (> scroll-top 0) (< gap 2))))
 
+(defn table-row [data row i]
+  (if (map? row)
+    [:tr [:td (inc i)]
+     (for [c (@data "columns")] ^{:key c}[:td (row c)])]
+    [:tr [:td (inc i)]
+     (map-indexed
+      (fn[j v] ^{:key j}[:td v]) row)]))
+
 (defn data-table [data sort-fn refresh-fn next-page-fn]
   (let [sort-state (atom [])
         sort-icons (atom {})
@@ -78,9 +86,7 @@
          [:tbody
           (map-indexed
            (fn [i row]
-             ^{:key i}[:tr [:td (inc i)]
-                       (map-indexed
-                        (fn[j v] ^{:key j}[:td v]) row)]) (@data "rows"))]
+             ^{:key i} [table-row data row i]) (@data "rows"))]
          [:tfoot
           [:tr [:td {:col-span (inc (count (@data "columns")))}
                 [c/button {:on-click next-page-fn}
