@@ -8,7 +8,7 @@
             [cljsjs.mousetrap]
             [ajax.core :refer [GET POST]]))
 
-(deftype ConsoleControl [data-tabs active-tab q-id]
+(deftype ConsoleControl [data-tabs active-tab q-id out-text]
   Object
   (preview [_ tbl]
     (when-not (some #(= tbl (:id %)) @data-tabs)
@@ -16,9 +16,9 @@
       (swap! data-tabs conj {:id tbl :raw-sql (str "select * from " tbl)}))
     (reset! active-tab tbl))
 
-  (exec-sql [_ sql & opts]
+  (exec-sql [_ sql data]
     (let [id (str "Query #" (swap! q-id inc))]
-      (swap! data-tabs conj (merge opts {:id id :raw-sql sql}))
+      (swap! data-tabs conj {:id id :raw-sql sql :data data})
       (reset! active-tab id)))
 
   (delete-tab [_ t]
@@ -30,7 +30,19 @@
     (let [id (str tbl "*")]
       (when-not (some #(= id (:id %)) @data-tabs)
         (swap! data-tabs conj {:id id :table tbl}))
+      (reset! active-tab id)))
+
+  (output [_ text]
+    (let [id "output"]
+      (reset! out-text text)
+      (when-not (some #(= id (:id %)) @data-tabs)
+        (swap! data-tabs #(vec (cons {:id id :text @out-text} %))))
       (reset! active-tab id))))
+
+(defn mk-console-control [data-tabs active-tab]
+  (let [q-id (atom 0)
+        out-text (atom nil)]
+    (ConsoleControl. data-tabs active-tab q-id out-text)))
 
 (defn retrieve-db-objects [db resp-atom error-atom & {:keys [refresh]}]
   (GET (str "/ds/" (db "id") "/tables?refresh=" refresh) :response-format :json
@@ -100,10 +112,11 @@
         (fn[]
           (let [sql (if (empty? (.getSelection @cm))
                       (.getValue @cm) (.getSelection @cm))]
-            (execute-query db sql #(if-let [data (% "data")]
-                                     (.exec-sql sql {:data data})
-                                     (reset! status (str "rows affected :" (% "rowsAffected"))))
-                           #(reset! status (error-text %)))))]
+            (execute-query db {:raw-sql sql}
+                           #(if-let [data (% "data")]
+                              (.exec-sql ops sql data)
+                              (.output ops (str "rows affected :" (% "rowsAffected"))))
+                           #(.output ops (error-text %)))))]
     (fn[db ops]
       (when active?
         (doto js/Mousetrap
@@ -116,13 +129,8 @@
           [:i.fa.fa-play]]
          [c/button [:i.fa.fa-save]]
          [c/button [:i.fa.fa-file-o]]]]
-       [:div.panel-body {:style {:padding "0px" :overflow "scroll" :height "calc(100% - 56px)"}}
-        [code-mirror cm {:mode "text/x-sql"}]]
-       [:div.panel-footer @status]])))
-
-(defn mk-console-control [data-tabs active-tab]
-  (let [q-id (atom 0)]
-    (ConsoleControl. data-tabs active-tab q-id)))
+       [:div.panel-body {:style {:padding "0px" :overflow "scroll" :height "calc(100% - 46px)"}}
+        [code-mirror cm {:mode "text/x-sql"}]]])))
 
 (defn retrieve-table-meta [db tbl data-fn error-fn]
   (GET (str "/ds/" (db "id") "/tables/" tbl) :response-format :json
@@ -137,6 +145,9 @@
     (refresh-fn)
     (fn[db tbl]
       [data-table data sort-fn refresh-fn identity])))
+
+(defn sql-output [v]
+  [:div (:text v)])
 
 (defn db-console [db active?]
   (let [active-tab (atom nil)
@@ -156,6 +167,7 @@
                    :title (r/as-element
                            [:span {:title (:title t)} id
                             [c/close-button #(.delete-tab ops t)]])}
-            (if-let [tbl (:table t)]
-              [table-meta db tbl]
-              [query-table db t])])]]])))
+            (cond
+              (:raw-sql t) [query-table db t]
+              (:table t) [table-meta db (:table t)]
+              :else [sql-output t])])]]])))
