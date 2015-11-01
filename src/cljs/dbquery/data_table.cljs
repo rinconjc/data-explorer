@@ -31,17 +31,77 @@
           (swap! sort-state c/remove-nth k))
         (sorter-fn @sort-state)))))
 
+;; (deftype SqlQuery [{:keys [cols tables conditions order group] }]
+;;   Object
+;;   (sql [this]
+;;     (str "SELECT " (s/join "," cols) " FROM " (first tables)
+;;          " " (map #(if (vector? %) (str "," (s/join " " %))
+;;                        (str (:join %) " JOIN " (:)))(rest tables))))
+;;   )
+
+(deftype QueryController [ds query data error]
+  Object
+  (execute [_ q data-fn error-fn]
+    (POST (str "/ds/" (ds "id") "/exec-sql")
+          :params q :response-format :json :format :json
+          :handler data-fn
+          :error-handler error-fn))
+
+  (refresh [this]
+    (swap! data assoc :loading true)
+    (.execute this (assoc @query :limit (max (count (@data "rows")) 40))
+              #(reset! data (% "data")) #(reset! error %)))
+
+  (sort [this sort-state]
+    (let [order-by
+          (if-not (empty? sort-state)
+            (->> sort-state
+                 (map #(if (neg? %) (str (- %) " desc") %))
+                 (s/join ",")
+                 (str " order by ")))]
+      (reset! query (update query :raw-sql #(-> % (s/replace #"(?im)\s+order\s+by\+.+$" "") (str order-by))))
+      (.refresh this)))
+
+  (next-page [this]
+    (when-not (:loading @data)
+      (swap! data assoc :loading true)
+      (.execute (assoc @query :offset (count (@data "rows")))
+                     (fn[{{:strs[rows]} "data"}]
+                       (swap! data assoc "rows" (apply conj (@data "rows") rows)
+                              :loading false))
+                     #(reset! error (error-text %))))))
+
+(defn filter-box [on?]
+  (fn[on?]
+    [:div {:style {:z-index 100}}
+     [:form.form-inline
+      [c/input {:type "select" :id "operator"}
+       [:option {:value "="} "="]
+       [:option {:value "!="} "!="]
+       [:option {:value "like"} "like"]
+       [:option {:value "between"} "between"]
+       [:option {:value "<"} "<"]
+       [:option {:value "<="} "<="]
+       [:option {:value ">"} ">"]
+       [:option {:value ">="} ">="]]
+      [c/input {:type "text" :id "value"}]
+      [c/button {:bs-style "default" :on-click #(.log js/console "filter:")}
+       "Go"]]]))
 
 (defn column-toolbar [show? i sort-control]
-  [:div {:style {:position "absolute" :float "right"
-                 :display (if @show? "" "none")}}
-   [c/button-group {:bsSize "xsmall"}
-    [c/button [:i.fa.fa-filter]]
-    [c/button [:i.fa.fa-minus]]
-    [c/button [:i.fa.fa-plus]]
-    [c/button {:on-click #(.set-sort sort-control i "up") :ttile "Sort Asc"} [:i.fa.fa-sort-up]]
-    [c/button {:on-click #(.set-sort sort-control i "down") :title "Sort Desc"} [:i.fa.fa-sort-down]]
-    [c/button {:on-click #(.set-sort sort-control i nil) :title "No Sort"} [:i.fa.fa-sort]]]])
+  (let[filter-on? (atom false)]
+    (fn[show? i sort-control]
+      (if @show?
+        [:div.my-popover
+         [c/button-group {:bsSize "xsmall"}
+          [c/button {:on-click #(swap! filter-on? not)} [:i.fa.fa-filter]]
+          [c/button [:i.fa.fa-minus]]
+          [c/button [:i.fa.fa-plus]]
+          [c/button {:on-click #(.set-sort sort-control i "up") :ttile "Sort Asc"} [:i.fa.fa-sort-up]]
+          [c/button {:on-click #(.set-sort sort-control i "down") :title "Sort Desc"} [:i.fa.fa-sort-down]]
+          [c/button {:on-click #(.set-sort sort-control i nil) :title "No Sort"} [:i.fa.fa-sort]]]
+         (if @filter-on?
+           [filter-box filter-on?])]))))
 
 (defn scroll-bottom? [e]
   (let [elem (.-target e)

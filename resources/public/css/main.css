@@ -82,3 +82,11 @@ body > div {
 .table > tbody > tr > td {
   line-height:0.6 !important;
 }
+
+.my-popover{
+  position:absolute;
+  float:right;
+  -webkit-box-shadow: 0 5px 10px rgba(0,0,0,.2);
+  border: 1px solid rgba(0,0,0,.2);
+  box-shadow: 0 5px 10px rgba(0,0,0,.2);
+  z-index:}1060;
