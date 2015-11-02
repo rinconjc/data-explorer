@@ -181,11 +181,34 @@
       (doall (for [tbl @tables :let [tbl-name (:name tbl)]]
                (assoc tbl :columns (merge-col-keys (@cols tbl-name)
                                                    (deref (pks tbl-name))
-                                                   (deref (fks tbl-name))))))
-      ))
-  )
+                                                   (deref (fks tbl-name)))))))))
 
-(defn exec-query [ds {:keys [tables fields predicates offset limit] :or {offset 0 limit 20}}]
+(defn to-sql
+  "converts a hash-map representation of a query into a SQL query
+  :tables maybe a keyword, a tuple to represent table and alias,
+  a hash-map {:join :left|:right :to 'joined table' :from 'joining table'
+  :on :infer|'conditions'}, a string for subqueries"
+  [{:keys [tables fields predicates offset limit order groups]
+    :or {offset 0 limit 40}}]
+  (let [where (if-not (empty? predicates)
+                (str " where " (s/join " AND " predicates)))
+        from (->> tables
+                  (map #(cond
+                          )))
+        order-by (if-not (empty? order)
+                   (str " order by " (->> order
+                                          (map #(cond
+                                                  (string? %) %
+                                                  (neg? %) (str (- %) " desc")
+                                                  :else %))
+                                          (s/join ",")
+                                          (str " order by "))))
+        group-by (if-not (empty? groups) (s/join "," groups))
+        sql (str "select " (s/join "," fields) " from " (s/join "," tables)
+                 where group-by order-by)]))
+
+(defn exec-query [ds {:keys [tables fields predicates offset limit order group]
+                      :or {offset 0 limit 40}}]
   (with-open [con (.getConnection (:datasource ds))]
     (let [stmt (if (> offset 0)
                  (.createStatement con ResultSet/TYPE_SCROLL_INSENSITIVE ResultSet/CONCUR_READ_ONLY)
@@ -193,8 +216,7 @@
           where (if (empty? predicates) "" (str " where " (s/join " AND " predicates)))
           sql (str "select " (s/join "," fields) " from " (s/join "," tables) where)
           rs (.executeQuery stmt sql)]
-      (read-rs rs {:limit limit :offset offset})
-      )))
+      (read-rs rs {:limit limit :offset offset}))))
 
 (defn create-table [ds name cols pk]
   (let [col-defs (for [{name :column_name {type :type_name} :type size :size} cols
@@ -222,8 +244,8 @@
       (fn [ps row] (let [val (nth row pos)]
                      (try
                        (if (s/blank? val)
-                        (doto ps (.setNull (inc i) type))
-                        (doto ps (.setObject (inc i) (val-fn val) type)))
+                         (doto ps (.setNull (inc i) type))
+                         (doto ps (.setObject (inc i) (val-fn val) type)))
                        (catch Exception e
                          (log/error e "failed converting col " pos " in " row)
                          (throw e)))
