@@ -1,4 +1,5 @@
 (ns dbquery.core
+  (:gen-class)
   (:import [java.util Date]
            [java.io FileReader]
            )
