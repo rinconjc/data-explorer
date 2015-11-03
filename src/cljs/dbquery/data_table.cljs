@@ -48,11 +48,15 @@
             (->> @order
                  (map #(if (neg? %) (str (- %) " desc") %))
                  (s/join ",")
-                 (str " order by ")))]
+                 (str " order by ")))
+          to-str (fn[prefix? t]
+                      (cond
+                        (string? t) (str (if prefix? ",") t)
+                        (map? t) (let[{:keys[join to on] t}]
+                                   (str join " JOIN " to " on " on))))]
 
-      (str "SELECT " (s/join "," cols) " FROM " (first tables)
-           " " (map #(if (vector? %) (str "," (s/join " " %))
-                         (str (:join %) " JOIN " ))(rest tables))))))
+      (str "SELECT " (s/join "," cols) " FROM " (-> tables first to-str)
+           " " (->> tables rest (map to-str) (s/join " ") )))))
 
 (deftype QueryController [ds query data error]
   Object
