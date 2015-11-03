@@ -31,13 +31,28 @@
           (swap! sort-state c/remove-nth k))
         (sorter-fn @sort-state)))))
 
-;; (deftype SqlQuery [{:keys [cols tables conditions order group] }]
-;;   Object
-;;   (sql [this]
-;;     (str "SELECT " (s/join "," cols) " FROM " (first tables)
-;;          " " (map #(if (vector? %) (str "," (s/join " " %))
-;;                        (str (:join %) " JOIN " (:)))(rest tables))))
-;;   )
+(deftype SqlQuery [cols tables filters order group]
+  Object
+  (filter! [_ col filter]
+    (swap! filters assoc col filter))
+
+  (filter [_ col]
+    (@filters col))
+
+  (order-state! [_ state]
+    (reset! order state))
+
+  (sql [_]
+    (let [order-by
+          (if-not (empty? @order)
+            (->> @order
+                 (map #(if (neg? %) (str (- %) " desc") %))
+                 (s/join ",")
+                 (str " order by ")))]
+
+      (str "SELECT " (s/join "," cols) " FROM " (first tables)
+           " " (map #(if (vector? %) (str "," (s/join " " %))
+                         (str (:join %) " JOIN " ))(rest tables))))))
 
 (deftype QueryController [ds query data error]
   Object
@@ -66,10 +81,10 @@
     (when-not (:loading @data)
       (swap! data assoc :loading true)
       (.execute (assoc @query :offset (count (@data "rows")))
-                     (fn[{{:strs[rows]} "data"}]
-                       (swap! data assoc "rows" (apply conj (@data "rows") rows)
-                              :loading false))
-                     #(reset! error (error-text %))))))
+                (fn[{{:strs[rows]} "data"}]
+                  (swap! data assoc "rows" (apply conj (@data "rows") rows)
+                         :loading false))
+                #(reset! error (error-text %))))))
 
 (defn filter-box [on?]
   (fn[on?]
