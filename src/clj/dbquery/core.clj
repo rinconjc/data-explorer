@@ -29,20 +29,17 @@
 (defn with-cache [cref item value-fn]
   (cache/lookup (if (cache/has? @cref item)
                   (swap! cref #(cache/hit % item))
-                  (swap! cref #(cache/miss % item (value-fn item)))
-                  ) item)
-  )
+                  (swap! cref #(cache/miss % item (value-fn item))))
+                item))
 
 (defn get-ds [ds-id]
   (with-cache ds-cache ds-id #(-> (k/select data_source (k/fields [:password]) (k/where {:id %}))
                                   first
-                                  safe-mk-ds))
-  )
+                                  safe-mk-ds)))
 
 (defn expire-cache [cache-ref entry-id]
   (log/info "expiring cache entry:" entry-id)
-  (swap! cache-ref #(cache/evict % entry-id))
-  )
+  (swap! cache-ref #(cache/evict % entry-id)))
 
 (def common-opts {:available-media-types ["application/json"]})
 
@@ -52,8 +49,7 @@
       (handler req)
       (catch Exception e
         (log/error e "Exception handling request")
-        {:status 500 :body (.getMessage e)})
-      )))
+        {:status 500 :body (.getMessage e)}))))
 ;; ds checker middleware
 
 ;; handlers
@@ -61,8 +57,7 @@
   (let [ds (get-ds ds-id)
         params (:body req)
         res (exec-query ds params)]
-    {:body res})
-  )
+    {:body res}))
 
 (defn handle-login [req]
   (let [{user-name :userName pass :password} (:body req)
@@ -77,16 +72,13 @@
   (let [csv (csv/read-csv (FileReader. file) :separator separator)
         first (first csv)]
     {:header (if has-header first (for [i (range  (count first))] (str "Col" i)))
-     :rows (if has-header (rest csv) csv)}
-    )
-  )
+     :rows (if has-header (rest csv) csv)}))
 
 (defn handle-file-upload [{{file :file separator :separator has-header :hasHeader} :params}]
   ;; extract
   (log/info "separator:" separator)
   (let [{header :header rows :rows} (read-csv (file :tempfile) (.charAt separator 0) (Boolean/parseBoolean has-header))]
-    {:body {:header header :rows (take 4 rows) :file (.getName (file :tempfile))}})
-  )
+    {:body {:header header :rows (take 4 rows) :file (.getName (file :tempfile))}}))
 
 (defn handle-exec-sql [req ds-id]
   (let [{:keys[raw-sql] :as opts} (:body req)
@@ -101,8 +93,7 @@
     (let [r (execute (get-ds ds-id) (:sql q))]
       (if (number? r)
         {:body {:rowsAffected r}}
-        {:body r})
-      )
+        {:body r}))
     {:status 404 :body "no such query exists!"}))
 
 (defn handle-list-tables [req ds-id]
@@ -194,8 +185,7 @@
 
 (defroutes static
   (route/resources "/")
-  (GET "/ping" [] (fn [req] (format "replied at %s" (Date.))))
-  )
+  (GET "/ping" [] (fn [req] (format "replied at %s" (Date.)))))
 
 (defroutes app
   (GET "/" [] (slurp (io/resource "public/index.html")))
