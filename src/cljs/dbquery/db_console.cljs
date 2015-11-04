@@ -1,7 +1,7 @@
 (ns dbquery.db-console
   (:require [dbquery.commons :as c]
             [widgets.splitter :as st]
-            [dbquery.data-table :refer [query-table data-table execute-query error-text]]
+            [dbquery.data-table :as dt]
             [reagent.core :as r :refer [atom]]
             [clojure.string :as s]
             [cljsjs.codemirror]
@@ -13,12 +13,12 @@
   (preview [_ tbl]
     (when-not (some #(= tbl (:id %)) @data-tabs)
       (.log js/console "adding table " tbl)
-      (swap! data-tabs conj {:id tbl :raw-sql (str "select * from " tbl)}))
+      (swap! data-tabs conj {:id tbl :query (dt/query-from-table tbl)}))
     (reset! active-tab tbl))
 
   (exec-sql [_ sql data]
     (let [id (str "Query #" (swap! q-id inc))]
-      (swap! data-tabs conj {:id id :raw-sql sql :data data})
+      (swap! data-tabs conj {:id id :query (dt/query-from-sql sql) :data data})
       (reset! active-tab id)))
 
   (delete-tab [_ t]
@@ -112,11 +112,11 @@
         (fn[]
           (let [sql (if (empty? (.getSelection @cm))
                       (.getValue @cm) (.getSelection @cm))]
-            (execute-query db {:raw-sql sql}
+            (dt/execute-query db {:raw-sql sql}
                            #(if-let [data (% "data")]
                               (.exec-sql ops sql data)
                               (.output ops (str "rows affected :" (% "rowsAffected"))))
-                           #(.output ops (error-text %)))))]
+                           #(.output ops (dt/error-text %)))))]
     (fn[db ops]
       (when active?
         (doto js/Mousetrap
@@ -138,13 +138,18 @@
 
 (defn table-meta [db tbl]
   (let [data (atom {})
-        sort-fn #(.log js/console "sort not implemented")
-        refresh-fn (fn[] (retrieve-table-meta db tbl
-                                              #(reset! data {"rows" (% "columns")
-                                                             "columns" ["name" "type_name" "size" "digits" "nullable" "is_pk" "is_fk" "fk_table" "fk_column"]}) #(.log js/console %)))]
-    (refresh-fn)
+        controller (reify Object
+                     (refresh [this]
+                       (retrieve-table-meta db tbl
+                                            #(reset! data {"rows" (% "columns")
+                                                           "columns" ["name" "type_name" "size" "digits" "nullable" "is_pk" "is_fk" "fk_table" "fk_column"]}) #(.log js/console %)))
+                     (sort [_ _]
+                       (.log js/console "sort not implemented"))
+                     (next-page [this]
+                       (.log js/console "next-page not implemented")))]
+    (.refresh controller)
     (fn[db tbl]
-      [data-table data sort-fn refresh-fn identity])))
+      [dt/data-table data controller])))
 
 (defn sql-output [v]
   [:div (:text v)])
@@ -168,6 +173,6 @@
                            [:span {:title (:title t)} id
                             [c/close-button #(.delete-tab ops t)]])}
             (cond
-              (:raw-sql t) [query-table db t]
+              (:query t) [dt/query-table db (:query t) (:data t)]
               (:table t) [table-meta db (:table t)]
               :else [sql-output t])])]]])))
