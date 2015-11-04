@@ -31,15 +31,15 @@
           (swap! sort-state c/remove-nth k))
         (sorter-fn @sort-state)))))
 
-(deftype SqlQuery [cols tables filters order group]
+(deftype SqlQuery [cols tables conditions order group]
   Object
-  (filter! [_ col filter]
-    (swap! filters assoc col filter))
+  (condition! [_ col condition]
+    (swap! conditions assoc col condition))
 
-  (filter [_ col]
-    (@filters col))
+  (condition [_ col]
+    (@conditions col))
 
-  (order-state! [_ state]
+  (order! [_ state]
     (reset! order state))
 
   (sql [_]
@@ -49,16 +49,26 @@
                  (map #(if (neg? %) (str (- %) " desc") %))
                  (s/join ",")
                  (str " order by ")))
-          to-str (fn[prefix? t]
-                      (cond
-                        (string? t) (str (if prefix? ",") t)
-                        (map? t) (let[{:keys[join to on] t}]
-                                   (str join " JOIN " to " on " on))))]
+          to-str (fn[t prefix?]
+                   (cond
+                     (string? t) (str (if prefix? ",") t)
+                     (map? t) (let[{:keys[join to on]} t]
+                                (str join " JOIN " to " on " on))))
+          where (if-not (empty? @conditions)
+                  (str " WHERE " (s/join " and " (for [[col {:keys [op value]}] @conditions]
+                                                   (str col op "'" value "'")))))]
 
-      (str "SELECT " (s/join "," cols) " FROM " (-> tables first to-str)
-           " " (->> tables rest (map to-str) (s/join " ") )))))
+      (str "SELECT " (s/join "," @cols) " FROM " (-> @tables first (to-str false))
+           " " (->> @tables rest (map #(to-str % true)) (s/join " ") )
+           where " " order-by))))
 
-(deftype QueryController [ds query data error]
+(defn query-from-sql [raw-sql]
+  (SqlQuery. (atom ["*"]) (atom [(str "(" raw-sql ")")]) (atom {}) (atom []) (atom [])))
+
+(defn query-from-table [table]
+  (SqlQuery. (atom ["*"]) (atom [table]) (atom {}) (atom []) (atom [])))
+
+(deftype DataController [ds query data error]
   Object
   (execute [_ q data-fn error-fn]
     (POST (str "/ds/" (ds "id") "/exec-sql")
@@ -68,48 +78,48 @@
 
   (refresh [this]
     (swap! data assoc :loading true)
-    (.execute this (assoc @query :limit (max (count (@data "rows")) 40))
+    (.execute this {:raw-sql (.sql query) :limit (max (count (@data "rows")) 40)}
               #(reset! data (% "data")) #(reset! error %)))
 
   (sort [this sort-state]
-    (let [order-by
-          (if-not (empty? sort-state)
-            (->> sort-state
-                 (map #(if (neg? %) (str (- %) " desc") %))
-                 (s/join ",")
-                 (str " order by ")))]
-      (reset! query (update query :raw-sql #(-> % (s/replace #"(?im)\s+order\s+by\+.+$" "") (str order-by))))
-      (.refresh this)))
+    (.order! query sort-state)
+    (.refresh this))
 
   (next-page [this]
     (when-not (:loading @data)
       (swap! data assoc :loading true)
-      (.execute (assoc @query :offset (count (@data "rows")))
+      (.execute this {:raw-sql (.sql query) :offset (count (@data "rows"))}
                 (fn[{{:strs[rows]} "data"}]
                   (swap! data assoc "rows" (apply conj (@data "rows") rows)
                          :loading false))
-                #(reset! error (error-text %))))))
+                #(reset! error (error-text %)))))
 
-(defn filter-box [on?]
-  (fn[on?]
-    [:div {:style {:z-index 100}}
-     [:form.form-inline
-      [c/input {:type "select" :id "operator"}
-       [:option {:value "="} "="]
-       [:option {:value "!="} "!="]
-       [:option {:value "like"} "like"]
-       [:option {:value "between"} "between"]
-       [:option {:value "<"} "<"]
-       [:option {:value "<="} "<="]
-       [:option {:value ">"} ">"]
-       [:option {:value ">="} ">="]]
-      [c/input {:type "text" :id "value"}]
-      [c/button {:bs-style "default" :on-click #(.log js/console "filter:")}
-       "Go"]]]))
+  (filter [this col condition]
+    (.condition! query col condition)
+    (.refresh this)))
 
-(defn column-toolbar [show? i sort-control]
+(defn filter-box [col controller]
+  (let[condition (atom (-> controller .-query (.condition col) (or {})))]
+    (fn[col controller]
+      [:div {:style {:z-index 100}}
+       [:form.form-inline
+        [c/input (c/bind-value condition :op :type "select" :id "operator")
+         [:option {:value "" :disabled true} ""]
+         [:option {:value "="} "="]
+         [:option {:value "!="} "!="]
+         [:option {:value "like"} "like"]
+         [:option {:value "between"} "between"]
+         [:option {:value "<"} "<"]
+         [:option {:value "<="} "<="]
+         [:option {:value ">"} ">"]
+         [:option {:value ">="} ">="]]
+        [c/input (c/bind-value condition :value :type "text" :id "value")]
+        [c/button {:bs-style "default" :on-click #(.filter controller col @condition)}
+         "Go"]]])))
+
+(defn column-toolbar [show? i col sort-control controller]
   (let[filter-on? (atom false)]
-    (fn[show? i sort-control]
+    (fn[show? i col sort-control controller]
       (if @show?
         [:div.my-popover
          [c/button-group {:bsSize "xsmall"}
@@ -120,7 +130,7 @@
           [c/button {:on-click #(.set-sort sort-control i "down") :title "Sort Desc"} [:i.fa.fa-sort-down]]
           [c/button {:on-click #(.set-sort sort-control i nil) :title "No Sort"} [:i.fa.fa-sort]]]
          (if @filter-on?
-           [filter-box filter-on?])]))))
+           [filter-box col controller])]))))
 
 (defn scroll-bottom? [e]
   (let [elem (.-target e)
@@ -138,22 +148,22 @@
      (map-indexed
       (fn[j v] ^{:key j}[:td v]) row)]))
 
-(defn data-table [data sort-fn refresh-fn next-page-fn]
+(defn data-table [data controller]
   (let [sort-state (atom [])
         sort-icons (atom {})
-        sort-control (SortControl. sort-state sort-icons sort-fn)]
-    (fn [data sort-fn refresh-fn scroll-bottom-fn]
+        sort-control (SortControl. sort-state sort-icons #(.sort controller %))]
+    (fn [data controller]
       [:div.full-height {:style {:position "relative"}}
        [:div.table-responsive
         {:style {:overflow-y "scroll" :height "100%" :position "relative"}
          :on-scroll #(when (scroll-bottom? %)
-                       (next-page-fn))}
+                       (.next-page controller))}
         [:table.table.table-hover.table-bordered.summary
          [:thead
           [:tr [:th {:style {:width "1px" :padding-left "2px" :padding-right "2px"}}
                 [c/split-button {:style {:display "flex"}
                                  :title (r/as-element [:i.fa.fa-refresh])
-                                 :on-click refresh-fn :bsSize "xsmall"}
+                                 :on-click #(.refresh controller) :bsSize "xsmall"}
                  [c/menu-item {:eventKey 1} "Join with ..."]]]
            (doall
             (map-indexed
@@ -164,14 +174,14 @@
                   [:a.btn-link {:on-click #(swap! show? not)} c]
                   [:a.btn-link {:on-click #(.roll-sort sort-control i)}
                    [:i.fa.btn-sort {:class (@sort-icons i "fa-sort")}]]
-                  [column-toolbar show? i sort-control]])) (@data "columns")))]]
+                  [column-toolbar show? i c sort-control controller]])) (@data "columns")))]]
          [:tbody
           (map-indexed
            (fn [i row]
              ^{:key i} [table-row data row i]) (@data "rows"))]
          [:tfoot
           [:tr [:td {:col-span (inc (count (@data "columns")))}
-                [c/button {:on-click next-page-fn}
+                [c/button {:on-click #(.next-page controller)}
                  [:i.fa.fa-chevron-down]]]]]]]
        (if (:loading @data)
          [c/progress-overlay])])))
@@ -182,38 +192,14 @@
         :handler data-fn
         :error-handler error-fn))
 
-(defn query-table [ds query]
-  (let [data (atom (:data query))
+(defn query-table [ds query initial]
+  (let [data (atom initial)
         error (atom nil)
-        cur-query (atom query)
-        refresh-fn
-        (fn[]
-          (swap! data assoc :loading true)
-          (execute-query ds (assoc @cur-query :limit (max (count (@data "rows")) 40))
-                         #(reset! data (% "data")) #(reset! error %)))
-        sort-data-fn
-        (fn[sort-state]
-          (let [order-by
-                (if-not (empty? sort-state)
-                  (->> sort-state
-                       (map #(if (neg? %) (str (- %) " desc") %))
-                       (s/join ",")
-                       (str " order by ")))]
-            (reset! cur-query (update query :raw-sql #(-> % (s/replace #"(?im)\s+order\s+by\+.+$" "") (str order-by))))
-            (refresh-fn)))
-        next-page-fn
-        (fn[]
-          (when-not (:loading @data)
-            (swap! data assoc :loading true)
-            (execute-query ds (assoc @cur-query :offset (count (@data "rows")))
-                           (fn[{{:strs[rows]} "data"}]
-                             (swap! data assoc "rows" (apply conj (@data "rows") rows)
-                                    :loading false))
-                           #(reset! error (error-text %)))))]
+        controller (DataController. ds query data error)]
     (if-not @data
-      (refresh-fn))
+      (.refresh controller))
 
-    (fn[ds query]
+    (fn[ds query initial]
       (if (some? @error)
-        [c/alert {:bsStyle "danger"} error]
-        [data-table data sort-data-fn refresh-fn next-page-fn]))))
+        [c/alert {:bsStyle "danger"} @error]
+        [data-table data controller]))))
