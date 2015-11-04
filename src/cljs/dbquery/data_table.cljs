@@ -34,7 +34,9 @@
 (deftype SqlQuery [cols tables conditions order group]
   Object
   (condition! [_ col condition]
-    (swap! conditions assoc col condition))
+    (if (empty? (:op condition))
+      (swap! conditions dissoc col)
+      (swap! conditions assoc col condition)))
 
   (condition [_ col]
     (@conditions col))
@@ -56,7 +58,7 @@
                                 (str join " JOIN " to " on " on))))
           where (if-not (empty? @conditions)
                   (str " WHERE " (s/join " and " (for [[col {:keys [op value]}] @conditions]
-                                                   (str col op "'" value "'")))))]
+                                                   (str col " " op " '" value "'")))))]
 
       (str "SELECT " (s/join "," @cols) " FROM " (-> @tables first (to-str false))
            " " (->> @tables rest (map #(to-str % true)) (s/join " ") )
@@ -79,7 +81,7 @@
   (refresh [this]
     (swap! data assoc :loading true)
     (.execute this {:raw-sql (.sql query) :limit (max (count (@data "rows")) 40)}
-              #(reset! data (% "data")) #(reset! error %)))
+              #(reset! data (% "data")) #(reset! error (error-text %))))
 
   (sort [this sort-state]
     (.order! query sort-state)
@@ -104,7 +106,7 @@
       [:div {:style {:z-index 100}}
        [:form.form-inline
         [c/input (c/bind-value condition :op :type "select" :id "operator")
-         [:option {:value "" :disabled true} ""]
+         [:option {:value ""} "none"]
          [:option {:value "="} "="]
          [:option {:value "!="} "!="]
          [:option {:value "like"} "like"]
@@ -115,7 +117,7 @@
          [:option {:value ">="} ">="]]
         [c/input (c/bind-value condition :value :type "text" :id "value")]
         [c/button {:bs-style "default" :on-click #(.filter controller col @condition)}
-         "Go"]]])))
+         "OK"]]])))
 
 (defn column-toolbar [show? i col sort-control controller]
   (let[filter-on? (atom false)]
