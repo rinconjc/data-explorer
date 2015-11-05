@@ -32,14 +32,18 @@
                   (swap! cref #(cache/miss % item (value-fn item))))
                 item))
 
-(defn get-ds [ds-id]
-  (with-cache ds-cache ds-id #(-> (k/select data_source (k/fields [:password]) (k/where {:id %}))
-                                  first
-                                  safe-mk-ds)))
-
 (defn expire-cache [cache-ref entry-id]
   (log/info "expiring cache entry:" entry-id)
   (swap! cache-ref #(cache/evict % entry-id)))
+
+(defn get-ds [ds-id]
+  (let [ds (with-cache ds-cache ds-id
+             #(-> (k/select data_source (k/fields [:password]) (k/where {:id %}))
+                  first
+                  safe-mk-ds))]
+    (if-not (:datasource ds)
+      (expire-cache ds-cache ds-id))
+    ds))
 
 (def common-opts {:available-media-types ["application/json"]})
 
@@ -111,10 +115,10 @@
   (if-let [table-id (-> (k/select ds_table (k/fields ::* :id)
                                   (k/where {:name table})) first :id)]
     {:columns (if refresh
-       (let [cols (table-cols (get-ds ds-id) table)]
-         (sync-table-cols table-id cols)
-         cols)
-       (k/select ds_column (k/where {:table_id table-id}) (k/order :id)))}))
+                (let [cols (table-cols (get-ds ds-id) table)]
+                  (sync-table-cols table-id cols)
+                  cols)
+                (k/select ds_column (k/where {:table_id table-id}) (k/order :id)))}))
 
 (defn handle-data-import [ds-id {{{file :file separator :separator has-header :hasHeader} :inputFile dest :dest} :body}]
   (let [ds (get-ds ds-id)
