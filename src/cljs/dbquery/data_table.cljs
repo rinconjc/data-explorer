@@ -2,7 +2,8 @@
   (:require [dbquery.commons :as c]
             [clojure.string :as s]
             [reagent.core :as r :refer [atom]]
-            [ajax.core :refer [GET POST]]))
+            [ajax.core :refer [GET POST]]
+            [dbquery.sql-utils :as sql]))
 
 (defn error-text [e]
   (or (:response e) (get-in e [:parse-error :original-text])))
@@ -37,32 +38,16 @@
     (if (empty? (:op condition))
       (swap! conditions dissoc col)
       (swap! conditions assoc col condition)))
-
   (condition [_ col]
     (@conditions col))
-
   (order! [_ state]
     (reset! order state))
-
   (sql [_]
-    (let [order-by
-          (if-not (empty? @order)
-            (->> @order
-                 (map #(if (neg? %) (str (- %) " desc") %))
-                 (s/join ",")
-                 (str " order by ")))
-          to-str (fn[t prefix?]
-                   (cond
-                     (string? t) (str (if prefix? ",") t)
-                     (map? t) (let[{:keys[join to on]} t]
-                                (str join " JOIN " to " on " on))))
-          where (if-not (empty? @conditions)
-                  (str " WHERE " (s/join " and " (for [[col {:keys [op value]}] @conditions]
-                                                   (str col " " op " '" value "'")))))]
-
-      (str "SELECT " (s/join "," @cols) " FROM " (-> @tables first (to-str false))
-           " " (->> @tables rest (map #(to-str % true)) (s/join " ") )
-           where " " order-by))))
+    (sql/sql-select @cols @tables @conditions @order @group))
+  (sql-distinct [this col]
+    (sql/sql-select [(str "distinct " col)] @tables @conditions [] []))
+  (sql-count [_]
+    (sql/sql-select ["count(*)"] @tables @conditions)))
 
 (defn query-from-sql [raw-sql]
   (SqlQuery. (atom ["*"]) (atom [(str "(" raw-sql ")")]) (atom {}) (atom []) (atom [])))
