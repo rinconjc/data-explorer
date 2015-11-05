@@ -47,7 +47,7 @@
   (sql-distinct [this col]
     (sql/sql-select [(str "distinct " col)] @tables @conditions [] []))
   (sql-count [_]
-    (sql/sql-select ["count(*)"] @tables @conditions)))
+    (sql/sql-select ["count(*)"] @tables @conditions [] [])))
 
 (defn query-from-sql [raw-sql]
   (SqlQuery. (atom ["*"]) (atom [(str "(" raw-sql ")")]) (atom {}) (atom []) (atom [])))
@@ -83,7 +83,9 @@
 
   (filter [this col condition]
     (.condition! query col condition)
-    (.refresh this)))
+    (.refresh this))
+  (column-values [this col data-fn error-fn]
+    (.execute this (.sql-distinct query col data-fn error-fn))))
 
 (defn filter-box [col controller]
   (let[condition (atom (-> controller .-query (.condition col) (or {})))]
@@ -105,19 +107,21 @@
          "OK"]]])))
 
 (defn column-toolbar [show? i col sort-control controller]
-  (let[filter-on? (atom false)]
+  (let[active-box (atom nil)]
     (fn[show? i col sort-control controller]
       (if @show?
         [:div.my-popover
          [c/button-group {:bsSize "xsmall"}
-          [c/button {:on-click #(swap! filter-on? not)} [:i.fa.fa-filter]]
+          [c/button {:on-click #(swap! active-box case :filter nil :filter)} [:i.fa.fa-filter]]
+          [c/button {:on-click #(swap! active-box case :distinct nil :distinct) :title "Distinct Values"} [:i.fa.fa-list-alt]]
           [c/button [:i.fa.fa-minus]]
           [c/button [:i.fa.fa-plus]]
-          [c/button {:on-click #(.set-sort sort-control i "up") :ttile "Sort Asc"} [:i.fa.fa-sort-up]]
+          [c/button {:on-click #(.set-sort sort-control i "up") :title "Sort Asc"} [:i.fa.fa-sort-up]]
           [c/button {:on-click #(.set-sort sort-control i "down") :title "Sort Desc"} [:i.fa.fa-sort-down]]
           [c/button {:on-click #(.set-sort sort-control i nil) :title "No Sort"} [:i.fa.fa-sort]]]
-         (if @filter-on?
-           [filter-box col controller])]))))
+         (case @active-box
+           :filter [filter-box col controller]
+           :distinct [dist-values col controller])]))))
 
 (defn scroll-bottom? [e]
   (let [elem (.-target e)
