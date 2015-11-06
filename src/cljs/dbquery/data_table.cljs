@@ -44,7 +44,7 @@
     (reset! order state))
   (sql [_]
     (sql/sql-select @cols @tables @conditions @order @group))
-  (sql-distinct [this col]
+  (sql-distinct [_ col]
     (sql/sql-select [(str "distinct " col)] @tables @conditions [] []))
   (sql-count [_]
     (sql/sql-select ["count(*)"] @tables @conditions [] [])))
@@ -85,12 +85,12 @@
     (.condition! query col condition)
     (.refresh this))
   (column-values [this col data-fn error-fn]
-    (.execute this (.sql-distinct query col data-fn error-fn))))
+    (.execute this {:raw-sql (.sql-distinct query col)} data-fn error-fn)))
 
 (defn filter-box [col controller]
   (let[condition (atom (-> controller .-query (.condition col) (or {})))]
     (fn[col controller]
-      [:div {:style {:z-index 100}}
+      [:div
        [:form.form-inline
         [c/input (c/bind-value condition :op :type "select" :id "operator")
          [:option {:value ""} "none"]
@@ -106,14 +106,24 @@
         [c/button {:bs-style "default" :on-click #(.filter controller col @condition)}
          "OK"]]])))
 
+(defn dist-values [col controller]
+  (let[values (atom [])]
+    (.column-values controller col #(reset! values (->> (get-in % ["data" "rows"]) (map first))) identity)
+    (fn[col controller]
+     [:div
+      [:ul.list-unstyled
+       (for [v @values] [:li v])]])))
+
 (defn column-toolbar [show? i col sort-control controller]
   (let[active-box (atom nil)]
     (fn[show? i col sort-control controller]
       (if @show?
         [:div.my-popover
          [c/button-group {:bsSize "xsmall"}
-          [c/button {:on-click #(swap! active-box case :filter nil :filter)} [:i.fa.fa-filter]]
-          [c/button {:on-click #(swap! active-box case :distinct nil :distinct) :title "Distinct Values"} [:i.fa.fa-list-alt]]
+          [c/button {:on-click (fn[](swap! active-box #(case % :filter nil :filter)))}
+           [:i.fa.fa-filter]]
+          [c/button {:on-click (fn[](swap! active-box #(case % :distinct nil :distinct))) :title "Distinct Values"}
+           [:i.fa.fa-list-alt]]
           [c/button [:i.fa.fa-minus]]
           [c/button [:i.fa.fa-plus]]
           [c/button {:on-click #(.set-sort sort-control i "up") :title "Sort Asc"} [:i.fa.fa-sort-up]]
@@ -121,7 +131,8 @@
           [c/button {:on-click #(.set-sort sort-control i nil) :title "No Sort"} [:i.fa.fa-sort]]]
          (case @active-box
            :filter [filter-box col controller]
-           :distinct [dist-values col controller])]))))
+           :distinct [dist-values col controller]
+           [:span])]))))
 
 (defn scroll-bottom? [e]
   (let [elem (.-target e)
