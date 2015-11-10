@@ -56,3 +56,6 @@
                  :top 0 :left 0 :background "rgba(255,255,255,0.5)"
                  :text-align "center"}}
    [:i.fa.fa-spinner.fa-spin.fa-3x {:style {:margin-top "10%"}}]])
+
+(defn error-text [e]
+  (or (:response e) (get-in e [:parse-error :original-text])))

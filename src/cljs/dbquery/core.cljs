@@ -32,21 +32,18 @@
 (defn home-page []
   (let [db-tabs (atom [])
         active-tab (atom "")
-        open-db (fn[e]
-                  (open-modal
-                   [dba/select-db-dialog
-                    (fn [db] (when (some? db)
-                               (swap! db-tabs #(conj % db))
-                               (reset! active-tab (db "id"))))]))]
-    (js/Mousetrap.bind "alt+o", open-db)
+        open-db (fn [db] (when (some? db)
+                           (swap! db-tabs #(conj % db))
+                           (reset! active-tab (db "id"))))]
+    (js/Mousetrap.bind "alt+o", #(open-modal [dba/select-db-dialog open-db]))
     (fn[]
       [:div {:style {:height "100%"}}
        [c/navbar {:brand "DataExplorer" :fluid true}
         [c/nav
          [c/nav-item {:href "#/"} "Home"]
          [c/nav-dropdown {:title "Databases" :id "db-dropdown"}
-          [c/menu-item {:on-select show-modal} "Add ..." ]
-          [c/menu-item {:on-select open-db} "Open ..."]]
+          [c/menu-item {:on-select #(open-modal [dba/database-window (atom {}) open-db])} "Add ..." ]
+          [c/menu-item {:on-select #(open-modal [dba/select-db-dialog open-db])} "Open ..."]]
          [c/nav-item {:href "#/"} "Import Data"]]]
        [:div {:id "modals"}]
        [:div.container-fluid {:style {:height "calc(100% - 90px)"}}
