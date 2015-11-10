@@ -116,7 +116,7 @@
                            #(if-let [data (% "data")]
                               (.exec-sql ops sql data)
                               (.output ops (str "rows affected :" (% "rowsAffected"))))
-                           #(.output ops (dt/error-text %)))))]
+                           #(.output ops (c/error-text %)))))]
     (fn[db ops]
       (when active?
         (doto js/Mousetrap

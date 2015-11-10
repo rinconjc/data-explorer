@@ -5,9 +5,6 @@
             [ajax.core :refer [GET POST]]
             [dbquery.sql-utils :as sql]))
 
-(defn error-text [e]
-  (or (:response e) (get-in e [:parse-error :original-text])))
-
 (deftype SortControl [sort-state sort-icons sorter-fn]
   Object
   (roll-sort [this i]
@@ -66,7 +63,7 @@
   (refresh [this]
     (swap! data assoc :loading true)
     (.execute this {:raw-sql (.sql query) :limit (max (count (@data "rows")) 40)}
-              #(reset! data (% "data")) #(reset! error (error-text %))))
+              #(reset! data (% "data")) #(reset! error (c/error-text %))))
 
   (sort [this sort-state]
     (.order! query sort-state)
@@ -79,7 +76,7 @@
                 (fn[{{:strs[rows]} "data"}]
                   (swap! data assoc "rows" (apply conj (@data "rows") rows)
                          :loading false))
-                #(reset! error (error-text %)))))
+                #(reset! error (c/error-text %)))))
 
   (filter [this col condition]
     (.condition! query col condition)
