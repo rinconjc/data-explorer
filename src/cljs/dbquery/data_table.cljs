@@ -87,29 +87,31 @@
 (defn filter-box [col controller]
   (let[condition (atom (-> controller .-query (.condition col) (or {})))]
     (fn[col controller]
-      [:div
-       [:form.form-inline
-        [c/input (c/bind-value condition :op :type "select" :id "operator")
-         [:option {:value ""} "none"]
-         [:option {:value "="} "="]
-         [:option {:value "!="} "!="]
-         [:option {:value "like"} "like"]
-         [:option {:value "between"} "between"]
-         [:option {:value "<"} "<"]
-         [:option {:value "<="} "<="]
-         [:option {:value ">"} ">"]
-         [:option {:value ">="} ">="]]
-        [c/input (c/bind-value condition :value :type "text" :id "value")]
-        [c/button {:bs-style "default" :on-click #(.filter controller col @condition)}
-         "OK"]]])))
+      [:form.form-inline {:style {:padding "4px"}}
+       [c/input (c/bind-value condition :op :type "select" :id "operator")
+        [:option {:value ""} "none"]
+        [:option {:value "="} "="]
+        [:option {:value "!="} "!="]
+        [:option {:value "like"} "like"]
+        [:option {:value "between"} "between"]
+        [:option {:value "<"} "<"]
+        [:option {:value "<="} "<="]
+        [:option {:value ">"} ">"]
+        [:option {:value ">="} ">="]]
+       [c/input (c/bind-value condition :value :type "text" :id "value")]
+       [c/button {:bs-style "default" :on-click #(.filter controller col @condition)}
+        "OK"]])))
 
 (defn dist-values [col controller]
   (let[values (atom [])]
     (.column-values controller col #(reset! values (->> (get-in % ["data" "rows"]) (map first))) identity)
     (fn[col controller]
-     [:div
-      [:ul.list-unstyled
-       (for [v @values] [:li v])]])))
+      [:div {:style {:padding "5px"}}
+       [:ul.list-unstyled.list {:cursor "pointer"}
+        (map-indexed
+         (fn[i v] ^{:key i}
+           [:li {:on-click #(.filter controller col {:op "=" :value v})}
+            v]) @values)]])))
 
 (defn column-toolbar [show? i col sort-control controller]
   (let[active-box (atom nil)]
@@ -129,7 +131,7 @@
          (case @active-box
            :filter [filter-box col controller]
            :distinct [dist-values col controller]
-           [:span])]))))
+           "")]))))
 
 (defn scroll-bottom? [e]
   (let [elem (.-target e)

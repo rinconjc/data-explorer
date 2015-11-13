@@ -91,4 +91,5 @@ body > div {
   box-shadow: 0 5px 10px rgba(0,0,0,.2);
   z-index: 1060;
   background-color:#fff;
+  font-weight:normal;
 }
