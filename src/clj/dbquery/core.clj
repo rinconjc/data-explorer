@@ -159,14 +159,15 @@
   ;;              (if (= user-id (:app_user_id ds))
   ;;                {:the-ds ds}))
   :handle-ok #(:the-ds %)
+  :new? #(:the-ds %)
   :delete! (fn [_]
              (k/delete data_source (k/where {:id id}))
              (expire-cache ds-cache id))
   :put! (fn [{{ds-data :body} :request}]
+          (mk-ds ds-data)
           (k/update data_source (k/set-fields ds-data) (k/where {:id id}))
           (expire-cache ds-cache id)
-          )
-  )
+          nil))
 
 (defresource queries-list common-opts
   :allowed-methods [:get :post]

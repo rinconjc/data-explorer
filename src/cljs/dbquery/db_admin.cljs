@@ -1,7 +1,7 @@
 (ns dbquery.db-admin
   (:require [dbquery.commons :as c]
             [reagent.core :as r :refer [atom]]
-            [ajax.core :refer [GET POST]]))
+            [ajax.core :refer [GET POST PUT]]))
 
 (defn database-window [db-spec when-done]
   (let[show? (atom true)
@@ -20,7 +20,7 @@
                                  :placeholder "Unique name"
                                  :label-class-name "col-sm-4"
                                  :wrapper-class-name "col-sm-6")]
-          [c/input (c/bind-value db-spec :dbms :type "select":id :dbms
+          [c/input (c/bind-value db-spec :dbms :type "select"
                                  :label "Database Type"
                                  :placeholder "Select database type"
                                  :label-class-name "col-sm-4"
@@ -49,19 +49,23 @@
        [c/modal-footer
         [c/button {:bsStyle "primary"
                    :on-click (fn [e]
-                               (POST "/data-sources" :params @db-spec :format :json
-                                     :response-format :json :handler #(do (when-done)
-                                                                          (reset! show? false))
-                                     :error-handler #(reset! error (c/error-text %))))}
+                               (let [params [:params @db-spec :format :json
+                                             :response-format :json
+                                             :handler #(do (when-done)
+                                                           (reset! show? false))
+                                             :error-handler #(.log js/console (str "error:" (c/error-text %)))]]
+                                 (if (:id @db-spec)
+                                   (apply PUT (str "/data-sources/" (:id @db-spec)) params)
+                                   (apply POST "/data-sources" params ))))}
          "Connect"]]])))
 
 (defn select-db-dialog [return-fn]
   (let [show? (atom true)
         db-id (atom nil)
         dbs (atom [])
-        handle-ok (fn [_]
+        handle-ok (fn [action]
                     (reset! show? false)
-                    (return-fn (@dbs @db-id)))]
+                    (return-fn action (@dbs @db-id)))]
     (GET "/data-sources" :response-format :json
          :handler #(reset! dbs %)
          :error-handler #(js/console.log "failed retrieving dbs..." %))
@@ -79,4 +83,6 @@
              ^{:key i}[:option {:value i} (db "name")])]]]]
        [c/modal-footer
         [c/button {:bsStyle "primary"
-                   :on-click handle-ok} "OK"]]])))
+                   :on-click #(handle-ok :connect)} "Connect"]
+        [c/button {:bsStyle "primary"
+                   :on-click #(handle-ok :configure)} "Configure"]]])))
