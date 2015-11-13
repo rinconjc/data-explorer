@@ -24,26 +24,34 @@
 ;; -------------------------
 ;; Views
 
-(defn show-modal [e]
-  (let [show? (r/atom true)
-        data (r/atom {:name "db name" :dbms "H2"})]
-    (open-modal [dba/database-window show? data])))
+(defn edit-db-details [db-id done-fn]
+  (let [db-info (atom {})]
+    (if db-id
+      (GET (str "/data-sources/" db-id) :response-format :json :keywords? true :format :json
+           :handler #(reset! db-info %) :error-handler #(.log js/console (c/error-text %))))
+    (open-modal [dba/database-window db-info done-fn])))
 
 (defn home-page []
   (let [db-tabs (atom [])
         active-tab (atom "")
         open-db (fn [db] (when (some? db)
                            (swap! db-tabs #(conj % db))
-                           (reset! active-tab (db "id"))))]
-    (js/Mousetrap.bind "alt+o", #(open-modal [dba/select-db-dialog open-db]))
+                           (reset! active-tab (db "id"))))
+        select-db (fn[](open-modal [dba/select-db-dialog
+                                    (fn[action db](case action :connect (open-db db)
+                                           (.setTimeout js/window
+                                                        #(edit-db-details (db "id") open-db))))]))]
+    (js/Mousetrap.bind "alt+o", select-db)
     (fn[]
       [:div {:style {:height "100%"}}
        [c/navbar {:brand "DataExplorer" :fluid true}
         [c/nav
          [c/nav-item {:href "#/"} "Home"]
          [c/nav-dropdown {:title "Databases" :id "db-dropdown"}
-          [c/menu-item {:on-select #(open-modal [dba/database-window (atom {}) open-db])} "Add ..." ]
-          [c/menu-item {:on-select #(open-modal [dba/select-db-dialog open-db])} "Open ..."]]
+          [c/menu-item {:on-select #(edit-db-details nil open-db)}
+           "Add ..." ]
+          [c/menu-item {:on-select select-db}
+           "Open ..."]]
          [c/nav-item {:href "#/"} "Import Data"]]]
        [:div {:id "modals"}]
        [:div.container-fluid {:style {:height "calc(100% - 90px)"}}

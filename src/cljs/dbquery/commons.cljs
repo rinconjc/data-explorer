@@ -26,13 +26,10 @@
 (def popover (r/adapt-react-class js/ReactBootstrap.Popover))
 (def overlay-trigger (r/adapt-react-class js/ReactBootstrap.OverlayTrigger))
 
-
-
 (defn bind-value [an-atom id & attrs]
-  (apply hash-map  (list* :value (@an-atom id)
+  (apply hash-map (list* :value (@an-atom id)
                           :on-change (fn [e]
-                                       (swap! an-atom #(assoc % id (-> e .-target .-value)))) attrs)))
-
+                                       (swap! an-atom assoc id (-> e .-target .-value))) attrs)))
 (defn remove-x [xs x]
   (remove #(= x %) xs))
 
