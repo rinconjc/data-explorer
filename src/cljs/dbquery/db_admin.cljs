@@ -27,7 +27,8 @@
                                  :wrapper-class-name "col-sm-6")
            [:option {:disabled ""} ""]
            [:option {:value "ORACLE"} "ORACLE"]
-           [:option {:value "H2"} "H2"]]
+           [:option {:value "H2"} "H2"]
+           [:option {:value "POSTGRES"} "PostgreSQL"]]
           [c/input (c/bind-value db-spec :url
                                  :type "text" :label "URL"
                                  :placeholder "<server>:<port>..."

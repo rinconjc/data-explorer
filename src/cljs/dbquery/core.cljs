@@ -19,10 +19,11 @@
     (r/unmount-component-at-node container)
     (r/render modal-comp container)))
 
-;; --------------------------
-;; navigation menu
-;; -------------------------
-;; Views
+(defn admin-tab []
+  [c/tab])
+
+(defn import-data-tab []
+  [c/tab])
 
 (defn edit-db-details [db-id done-fn]
   (let [db-info (atom {})]
