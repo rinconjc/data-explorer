@@ -4,7 +4,8 @@
             [clojure.string :as s]
             [dbquery.utils :refer :all]
             )
-  (:import [org.h2.jdbcx JdbcDataSource]
+  (:import [com.jolbox.bonecp BoneCPDataSource]
+           [org.h2.jdbcx JdbcDataSource]
            [oracle.jdbc.pool OracleDataSource]
            [java.sql ResultSet Types]
            [java.text SimpleDateFormat DecimalFormat NumberFormat]
@@ -67,16 +68,17 @@
 
 (defn mk-ds [{:keys [dbms url user_name password]}]
   "Creates a datasource"
-  (let [ds (case dbms
-             "H2" (doto (JdbcDataSource.)
-                    (.setUrl (str "jdbc:h2:" url))
-                    (.setUser user_name)
-                    (.setPassword password))
-             "ORACLE" (doto (OracleDataSource.)
-                        (.setURL (str "jdbc:oracle:thin:@" url))
-                        (.setUser user_name)
-                        (.setPassword password))
-             (throw (Exception. (format "DBMS %s not supported." dbms))))]
+  (let [[driver jdbc-url]
+        (case dbms
+          "H2" ["org.h2.Driver" (str "jdbc:h2:" url)]
+          "ORACLE" ["oracle.jdbc.OracleDriver" (str "jdbc:oracle:thin:@" url)]
+          "POSTGRES" ["org.postgresql.Driver" (str "jdbc:postgresql:" url)]
+          (throw (Exception. (format "DBMS %s not supported." dbms))))
+        ds (doto (BoneCPDataSource.)
+             (.setDriverClass driver)
+             (.setJdbcUrl jdbc-url)
+             (.setUsername user_name)
+             (.setPassword password))]
     (with-open [con (.getConnection ds)]
       ds)))
 
