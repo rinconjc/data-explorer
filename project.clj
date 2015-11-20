@@ -12,7 +12,7 @@
                  [reagent "0.5.1"]
                  [reagent-forms "0.5.11"]
                  [reagent-utils "0.1.5"]
-                 [cljs-ajax "0.5.0"]
+                 [cljs-ajax "0.5.1"]
                  [hiccup "1.0.5"]
                  [environ "1.0.1"]
                  [org.clojure/clojurescript "1.7.122" :scope "provided"]
