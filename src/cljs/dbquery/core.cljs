@@ -19,12 +19,6 @@
     (r/unmount-component-at-node container)
     (r/render modal-comp container)))
 
-(defn admin-tab []
-  [c/tab])
-
-(defn import-data-tab []
-  [c/tab])
-
 (defn edit-db-details [db-id done-fn]
   (let [db-info (atom {})]
     (if db-id
@@ -32,16 +26,26 @@
            :handler #(reset! db-info %) :error-handler #(.log js/console (c/error-text %))))
     (open-modal [dba/database-window db-info done-fn])))
 
+(defn admin-tab []
+  [:div "Admin data"])
+
+(defn import-data-tab []
+  [:div "Import data"])
+
 (defn home-page []
   (let [db-tabs (atom [])
         active-tab (atom "")
-        open-db (fn [db] (when (some? db)
-                           (swap! db-tabs #(conj % db))
-                           (reset! active-tab (db "id"))))
-        select-db (fn[](open-modal [dba/select-db-dialog
-                                    (fn[action db](case action :connect (open-db db)
-                                           (.setTimeout js/window
-                                                        #(edit-db-details (db "id") open-db))))]))]
+        open-db (fn [db]
+                  (when (some? db)
+                    (swap! db-tabs conj db)
+                    (reset! active-tab (db "id"))))
+        select-db (fn[]
+                    (open-modal [dba/select-db-dialog
+                                 (fn[action db]
+                                   (case action :connect (open-db db)
+                                         (.setTimeout js/window
+                                                      #(edit-db-details (db "id") open-db))))]))
+        special-tabs (atom #{})]
     (js/Mousetrap.bind "alt+o", select-db)
     (fn[]
       [:div {:style {:height "100%"}}
@@ -53,17 +57,39 @@
            "Add ..." ]
           [c/menu-item {:on-select select-db}
            "Open ..."]]
-         [c/nav-item {:href "#/"} "Import Data"]]]
+         [c/nav-item {:on-click #(do (swap! special-tabs conj :import-data)
+                                     (reset! active-tab :import-data))}
+          "Import Data"]
+         [c/nav-item {:on-click #(do (swap! special-tabs conj :admin)
+                                     (reset! active-tab :admin))}
+          "Admin"]]]
        [:div {:id "modals"}]
        [:div.container-fluid {:style {:height "calc(100% - 90px)"}}
-        (if-not (empty? @db-tabs)
+        (if (or (seq @db-tabs) (seq @special-tabs))
           [c/tabs {:activeKey @active-tab :on-select #(reset! active-tab %)
-                  :class "small-tabs full-height"}
-          (doall
-           (for [db @db-tabs :let [id (db "id")]]
-             ^{:key id} [c/tab {:eventKey id :class "full-height"
-                                :title (r/as-element [:span (db "name") [c/close-button (fn[e] (swap! db-tabs c/remove-x db))]])}
-                         [db-console db (= id @active-tab)]]))]
+                   :class "small-tabs full-height"}
+           (doall
+            (for [db @db-tabs :let [id (db "id")]] ^{:key id}
+                 [c/tab {:eventKey id :class "full-height"
+                         :title (r/as-element
+                                 [:span (db "name")
+                                  [c/close-button
+                                   (fn[e] (swap! db-tabs (partial remove #(= % db)))
+                                     (if (= id @active-tab)
+                                       (reset! active-tab (:id (first @db-tabs)))))]])}
+                  [db-console db (= id @active-tab)]]))
+           (if (:import-data @special-tabs)
+             [c/tab {:eventKey :import-data
+                     :title (r/as-element
+                             [:span "Import Data"
+                              [c/close-button #(swap! special-tabs disj :import-data)]])}
+              [import-data-tab]])
+           (if (:admin @special-tabs)
+             [c/tab {:eventKey :admin
+                     :title (r/as-element
+                             [:span "Admin"
+                              [c/close-button #(swap! special-tabs disj :admin)]])}
+              [admin-tab]])]
           [:h3 "Welcome to Data Explorer. Open a DB ..."])]])))
 
 (defn login-page []

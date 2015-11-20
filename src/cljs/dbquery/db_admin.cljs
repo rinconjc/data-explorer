@@ -54,7 +54,7 @@
                                              :response-format :json
                                              :handler #(do (when-done)
                                                            (reset! show? false))
-                                             :error-handler #(.log js/console (str "error:" (c/error-text %)))]]
+                                             :error-handler #(.log js/console (str "error:" %))]]
                                  (if (:id @db-spec)
                                    (apply PUT (str "/data-sources/" (:id @db-spec)) params)
                                    (apply POST "/data-sources" params ))))}

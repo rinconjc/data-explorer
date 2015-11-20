@@ -159,7 +159,7 @@
   ;;              (if (= user-id (:app_user_id ds))
   ;;                {:the-ds ds}))
   :handle-ok #(:the-ds %)
-  :new? #(:the-ds %)
+  :new? false
   :delete! (fn [_]
              (k/delete data_source (k/where {:id id}))
              (expire-cache ds-cache id))
