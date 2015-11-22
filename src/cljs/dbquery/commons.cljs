@@ -56,3 +56,7 @@
 
 (defn error-text [e]
   (or (:response e) (get-in e [:parse-error :original-text])))
+
+(defn form-group [{:kesy[group-class label]} input]
+  [:div.form-group {:class group-class}
+   [:label label] input])
