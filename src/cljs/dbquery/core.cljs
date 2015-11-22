@@ -5,7 +5,7 @@
             [goog.events :as events]
             [goog.history.EventType :as EventType]
             [dbquery.db-admin :as dba]
-            [dbquery.commons :as c]
+            [dbquery.commons :as c :refer [form-group]]
             [dbquery.db-console :refer [db-console]]
             [ajax.core :refer [GET POST]]
             [cljsjs.mousetrap])
@@ -30,7 +30,14 @@
   [:div "Admin data"])
 
 (defn import-data-tab []
-  [:div "Import data"])
+  [:div
+   [:h2 "Import Data"]
+   [:form.form-inline
+    (form-group {:label "File"} [:input.form-control {:type "file"}])
+    (form-group {:label "Separator"}
+                [:select.form-control {:field :list :id :separator}
+                 [:option {:value "\t"} "Tab"]
+                 [:option {:value ","} ","]])]])
 
 (defn home-page []
   (let [db-tabs (atom [])
