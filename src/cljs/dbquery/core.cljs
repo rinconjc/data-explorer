@@ -5,7 +5,7 @@
             [goog.events :as events]
             [goog.history.EventType :as EventType]
             [dbquery.db-admin :as dba]
-            [dbquery.commons :as c :refer [form-group]]
+            [dbquery.commons :as c :refer [form-group input button]]
             [dbquery.db-console :refer [db-console]]
             [ajax.core :refer [GET POST]]
             [cljsjs.mousetrap])
@@ -31,13 +31,13 @@
 
 (defn import-data-tab []
   [:div
-   [:h2 "Import Data"]
    [:form.form-inline
-    (form-group {:label "File"} [:input.form-control {:type "file"}])
-    (form-group {:label "Separator"}
-                [:select.form-control {:field :list :id :separator}
-                 [:option {:value "\t"} "Tab"]
-                 [:option {:value ","} ","]])]])
+    [input {:type "file" :className "form-control" :label "CSV File:"}]
+    [input {:type "select" :label "Separator"}
+     [:option {:value "\t"} "Tab"]
+     [:option {:value ","} ","]]
+    [input {:type "checkbox" :label "Has Header?"}]
+    [button {:bsStyle "primary"} "Upload"]]])
 
 (defn home-page []
   (let [db-tabs (atom [])
@@ -77,14 +77,14 @@
                    :class "small-tabs full-height"}
            (doall
             (for [db @db-tabs :let [id (db "id")]] ^{:key id}
-                 [c/tab {:eventKey id :class "full-height"
-                         :title (r/as-element
-                                 [:span (db "name")
-                                  [c/close-button
-                                   (fn[e] (swap! db-tabs (partial remove #(= % db)))
-                                     (if (= id @active-tab)
-                                       (reset! active-tab (:id (first @db-tabs)))))]])}
-                  [db-console db (= id @active-tab)]]))
+              [c/tab {:eventKey id :class "full-height"
+                      :title (r/as-element
+                              [:span (db "name")
+                               [c/close-button
+                                (fn[e] (swap! db-tabs (partial remove #(= % db)))
+                                  (if (= id @active-tab)
+                                    (reset! active-tab (:id (first @db-tabs)))))]])}
+               [db-console db (= id @active-tab)]]))
            (if (:import-data @special-tabs)
              [c/tab {:eventKey :import-data
                      :title (r/as-element
