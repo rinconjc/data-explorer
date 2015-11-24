@@ -5,10 +5,11 @@
             [goog.events :as events]
             [goog.history.EventType :as EventType]
             [dbquery.db-admin :as dba]
-            [dbquery.commons :as c :refer [form-group input button]]
+            [dbquery.commons :as c :refer [input button]]
             [dbquery.db-console :refer [db-console]]
             [ajax.core :refer [GET POST]]
-            [cljsjs.mousetrap])
+            [cljsjs.mousetrap]
+            [dbquery.data-import :refer [import-data-tab]])
   (:import goog.History))
 
 (def user-session (r/atom nil))
@@ -19,25 +20,8 @@
     (r/unmount-component-at-node container)
     (r/render modal-comp container)))
 
-(defn edit-db-details [db-id done-fn]
-  (let [db-info (atom {})]
-    (if db-id
-      (GET (str "/data-sources/" db-id) :response-format :json :keywords? true :format :json
-           :handler #(reset! db-info %) :error-handler #(.log js/console (c/error-text %))))
-    (open-modal [dba/database-window db-info done-fn])))
-
 (defn admin-tab []
   [:div "Admin data"])
-
-(defn import-data-tab []
-  [:div
-   [:form.form-inline
-    [input {:type "file" :className "form-control" :label "CSV File:"}]
-    [input {:type "select" :label "Separator"}
-     [:option {:value "\t"} "Tab"]
-     [:option {:value ","} ","]]
-    [input {:type "checkbox" :label "Has Header?"}]
-    [button {:bsStyle "primary"} "Upload"]]])
 
 (defn home-page []
   (let [db-tabs (atom [])
@@ -51,7 +35,7 @@
                                  (fn[action db]
                                    (case action :connect (open-db db)
                                          (.setTimeout js/window
-                                                      #(edit-db-details (db "id") open-db))))]))
+                                                      #(open-modal [dba/database-window (db "id") open-db]))))]))
         special-tabs (atom #{})]
     (js/Mousetrap.bind "alt+o", select-db)
     (fn[]
@@ -60,7 +44,7 @@
         [c/nav
          [c/nav-item {:href "#/"} "Home"]
          [c/nav-dropdown {:title "Databases" :id "db-dropdown"}
-          [c/menu-item {:on-select #(edit-db-details nil open-db)}
+          [c/menu-item {:on-select #(open-modal [dba/database-window nil open-db])}
            "Add ..." ]
           [c/menu-item {:on-select select-db}
            "Open ..."]]
@@ -118,12 +102,12 @@
        [:form {:on-submit do-login}
         [:h2 "Please sign in"]
         [:div (if @error [c/alert {:bsStyle "Danger"} @error])]
-        [c/input (c/bind-value login-data :userName :type "text"
-                               :placeholder "User Name")]
-        [c/input (c/bind-value login-data :password :type "password"
-                               :placeholder "Password")]
-        [c/button {:bsStyle "primary"
-                   :on-click do-login} "Sign in"]]])))
+        [input {:model [login-data :userName] :type "text"
+                :placeholder "User Name"}]
+        [input {:model [login-data :password] :type "password"
+                :placeholder "Password"}]
+        [button {:bsStyle "primary"
+                 :on-click do-login} "Sign in"]]])))
 
 (defn about-page []
   [:div [:h2 "About dbquery"]
