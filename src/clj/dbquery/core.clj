@@ -196,7 +196,8 @@
   (GET "/" [] (slurp (io/resource "public/index.html")))
 
   (POST "/login" req (handle-login req))
-  (mp/wrap-multipart-params (POST "/upload" req (handle-file-upload req)))
+  (wrap-exception (mp/wrap-multipart-params
+    (POST "/upload" req (handle-file-upload req))))
   (GET "/logout" req (assoc (redirect "/") :session nil))
   (GET "/user" req (if-let [user (get-in req [:session :user])]
                      {:body user}

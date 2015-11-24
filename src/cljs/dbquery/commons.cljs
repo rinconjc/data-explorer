@@ -12,7 +12,7 @@
 (def modal-body (r/adapt-react-class js/ReactBootstrap.Modal.Body))
 (def modal-footer (r/adapt-react-class js/ReactBootstrap.Modal.Footer))
 (def button (r/adapt-react-class js/ReactBootstrap.Button))
-(def input (r/adapt-react-class js/ReactBootstrap.Input))
+(def rb-input (r/adapt-react-class js/ReactBootstrap.Input))
 (def alert (r/adapt-react-class js/ReactBootstrap.Alert))
 (def tabs (r/adapt-react-class js/ReactBootstrap.Tabs))
 (def tab (r/adapt-react-class js/ReactBootstrap.Tab))
@@ -26,10 +26,14 @@
 (def popover (r/adapt-react-class js/ReactBootstrap.Popover))
 (def overlay-trigger (r/adapt-react-class js/ReactBootstrap.OverlayTrigger))
 
-(defn bind-value [an-atom id & attrs]
-  (apply hash-map (list* :value (@an-atom id)
-                          :on-change (fn [e]
-                                       (swap! an-atom assoc id (-> e .-target .-value))) attrs)))
+(defn input
+  "[input {:type text :model [doc id] }]"
+  [{:keys[model] :as attrs} & children]
+  (if-let [[doc id] model]
+    [rb-input (assoc (dissoc attrs :model) :value (@doc id)
+                     :on-change #(swap! doc assoc id (-> % .-target .-value))) children]
+    [rb-input attrs children]))
+
 (defn remove-x [xs x]
   (remove #(= x %) xs))
 
@@ -56,7 +60,3 @@
 
 (defn error-text [e]
   (or (:response e) (get-in e [:parse-error :original-text])))
-
-(defn form-group [{:keys[group-class label]} input]
-  [:div.form-group {:class group-class}
-   [:label label] input])
