@@ -40,7 +40,8 @@
     (js/Mousetrap.bind "alt+o", select-db)
     (fn[]
       [:div {:style {:height "100%"}}
-       [c/navbar {:brand "DataExplorer" :fluid true}
+       [c/navbar {:fluid true}
+        [c/nav-brand "DataExplorer"]
         [c/nav
          [c/nav-item {:href "#/"} "Home"]
          [c/nav-dropdown {:title "Databases" :id "db-dropdown"}
