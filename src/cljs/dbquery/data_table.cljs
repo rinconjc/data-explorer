@@ -1,5 +1,5 @@
 (ns dbquery.data-table
-  (:require [dbquery.commons :as c]
+  (:require [dbquery.commons :as c :refer [input button]]
             [clojure.string :as s]
             [reagent.core :as r :refer [atom]]
             [ajax.core :refer [GET POST]]
@@ -88,7 +88,7 @@
   (let[condition (atom (-> controller .-query (.condition col) (or {})))]
     (fn[col controller]
       [:form.form-inline {:style {:padding "4px"}}
-       [c/input (c/bind-value condition :op :type "select" :id "operator")
+       [input {:model [condition :op] :type "select" :id "operator"}
         [:option {:value ""} "none"]
         [:option {:value "="} "="]
         [:option {:value "!="} "!="]
@@ -98,8 +98,8 @@
         [:option {:value "<="} "<="]
         [:option {:value ">"} ">"]
         [:option {:value ">="} ">="]]
-       [c/input (c/bind-value condition :value :type "text" :id "value")]
-       [c/button {:bs-style "default" :on-click #(.filter controller col @condition)}
+       [input {:model [condition :value] :type "text" :id "value"}]
+       [button {:bs-style "default" :on-click #(.filter controller col @condition)}
         "OK"]])))
 
 (defn dist-values [col controller]
@@ -169,13 +169,12 @@
            (doall
             (map-indexed
              (fn[i c]
-               (let [show? (atom false)]
-                 ^{:key i}
-                 [:th
-                  [:a.btn-link {:on-click #(swap! show? not)} c]
-                  [:a.btn-link {:on-click #(.roll-sort sort-control i)}
-                   [:i.fa.btn-sort {:class (@sort-icons i "fa-sort")}]]
-                  [column-toolbar show? i c sort-control controller]])) (@data "columns")))]]
+               (let [show? (atom false)] ^{:key i}
+                    [:th
+                     [:a.btn-link {:on-click #(swap! show? not)} c]
+                     [:a.btn-link {:on-click #(.roll-sort sort-control i)}
+                      [:i.fa.btn-sort {:class (@sort-icons i "fa-sort")}]]
+                     [column-toolbar show? i c sort-control controller]])) (@data "columns")))]]
          [:tbody
           (map-indexed
            (fn [i row]

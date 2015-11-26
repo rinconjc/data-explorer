@@ -3,6 +3,7 @@
             [cljsjs.react-bootstrap]))
 
 (def navbar (r/adapt-react-class js/ReactBootstrap.Navbar))
+(def nav-brand (r/adapt-react-class js/ReactBootstrap.NavBrand))
 (def nav (r/adapt-react-class js/ReactBootstrap.Nav))
 (def nav-item (r/adapt-react-class js/ReactBootstrap.NavItem))
 (def nav-dropdown (r/adapt-react-class js/ReactBootstrap.NavDropdown))
