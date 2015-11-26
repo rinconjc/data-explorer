@@ -1,8 +1,8 @@
 (ns dbquery.core
   (:gen-class)
   (:import [java.util Date]
-           [java.io FileReader]
-           )
+           [java.text SimpleDateFormat]
+           [java.io FileReader])
   (:require [compojure.core :refer :all]
             [compojure.route :as route]
             ;; [compojure.handler :refer [site]]
@@ -22,7 +22,18 @@
             [liberator.core :refer [defresource resource]]
             [liberator.dev :refer [wrap-trace]]
             [clojure.tools.logging :as log]
-            [clojure.data.csv :as csv]))
+            [clojure.data.csv :as csv]
+            [cheshire.generate :refer [add-encoder]]))
+
+;; custom json encoder for dates
+(defn- date-time-encoder [fmt]
+  (fn[d jsonGenerator]
+    (let [sdf (SimpleDateFormat. fmt)]
+      (.writeString jsonGenerator (.format sdf d)))))
+
+(add-encoder java.util.Date (date-time-encoder "dd/MM/yyyy"))
+(add-encoder java.sql.Date (date-time-encoder "dd/MM/yyyy"))
+(add-encoder java.sql.Timestamp (date-time-encoder "dd/MM/yyyy HH:mm:ss"))
 
 (def ds-cache (atom (cache/lru-cache-factory {})))
 
