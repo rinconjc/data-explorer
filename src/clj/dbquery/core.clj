@@ -92,7 +92,7 @@
 (defn handle-file-upload [{{file :file separator :separator has-header :hasHeader} :params}]
   ;; extract
   (log/info "separator:" separator)
-  (let [{header :header rows :rows} (read-csv (file :tempfile) (.charAt separator 0) (Boolean/parseBoolean has-header))]
+  (let [{header :header rows :rows} (read-csv (file :tempfile) (.charAt separator 0) (some? has-header))]
     {:body {:header header :rows (take 4 rows) :file (.getName (file :tempfile))}}))
 
 (defn handle-exec-sql [req ds-id]

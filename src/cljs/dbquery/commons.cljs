@@ -29,10 +29,13 @@
 
 (defn input
   "[input {:type text :model [doc id] }]"
-  [{:keys[model] :as attrs} & children]
+  [{:keys[model type] :as attrs} & children]
   (if-let [[doc id] model]
-    [rb-input (assoc (dissoc attrs :model) :value (@doc id)
-                     :on-change #(swap! doc assoc id (-> % .-target .-value))) children]
+    (if (= type "file")
+      [rb-input (assoc (dissoc attrs :model)
+                       :on-change #(swap! doc assoc id (-> % .-target .-files (aget 0))))]
+      [rb-input (assoc (dissoc attrs :model) :value (@doc id)
+                      :on-change #(swap! doc assoc id (-> % .-target .-value))) children])
     [rb-input attrs children]))
 
 (defn remove-x [xs x]
