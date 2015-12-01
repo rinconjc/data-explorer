@@ -1,5 +1,6 @@
 (ns dbquery.core-test
-  (:require [clojure.test :refer :all]
+  (:require [clojure.string :as str]
+            [clojure.test :refer :all]
             [dbquery.core :refer :all]
             [dbquery.dbfixture :refer :all]))
 
@@ -21,4 +22,4 @@
 (deftest test-resources
   (testing "query-list"
     (def res (queries-list {})))
-  )
+  (is (= (str "a") (str/trim "  a"))))
