@@ -12,7 +12,22 @@
 (defn import-data-tab []
   (let [upload-params (atom {:separator ","})
         data (atom nil)
-        error (atom nil)]
+        error (atom nil)
+        import-form (atom {})
+        data-sources (atom nil)
+        tables (atom nil)
+        columns (atom nil)]
+
+    (GET "/data-sources" :response-format :json :handler #(reset! data-sources %)
+         :error-handler #(reset! error (error-text %)))
+    (add-watch import-form :key
+               (fn[k r {old-db :database old-table :table} {new-db :database new-table :table}]
+                 (when (not= old-db new-db)
+                   (GET (str "/ds/" new-db "/tables") :response-format :json
+                        :handler #(reset! tables %) :error-handler #(reset! error (error-text %))))
+                 (when (not= old-table new-table)
+                   (GET (str "/ds/" new-db "/tables/" new-table) :response-format :json
+                        :handler #(reset! columns %) :error-handler #(reset! error (error-text %))))))
     (fn[]
       [:div
        [:form.form-inline
@@ -31,7 +46,18 @@
           [:div.table-responsive
            [:table.table-bordered.table-stripped.summary
             [:thead [:tr
-              (for [c (@data "header")] ^{:key c}[:th c])]]
+                     (for [c (@data "header")] ^{:key c}[:th c])]]
             [:tbody (map-indexed
-              (fn[i row]^{:key i}
-                [:tr (for [v row]^{:key v}[:td v])]) (@data "rows"))]]]])])))
+                     (fn[i row]^{:key i}
+                       [:tr (for [v row]^{:key v}[:td v])]) (@data "rows"))]]]
+          [:h4 "Import to:"]
+          [:form.form-inline
+           [input {:type "select" :label "Database" :model [import-form :database]}
+            (map-indexed
+             (fn[i db]^{:key i}
+               [:option {:value (db "id")} (db "name")]) @data-sources)]
+           [input {:type "select" :label "Table" :model [import-form :table] }
+            [:option {:value "_"} "New Table"]
+            (map-indexed
+             (fn[i table]^{:key i}
+               [:option {:value (table "name")} (table "name")]) @tables)]]])])))
