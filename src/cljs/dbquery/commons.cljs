@@ -29,13 +29,18 @@
 
 (defn input
   "[input {:type text :model [doc id] }]"
-  [{:keys[model type] :as attrs} & children]
+  [{:keys [model type] :as attrs} & children]
   (if-let [[doc id] model]
-    (if (= type "file")
-      [rb-input (assoc (dissoc attrs :model)
-                       :on-change #(swap! doc assoc id (-> % .-target .-files (aget 0))))]
+    (case type
+      "file" [rb-input (assoc (dissoc attrs :model)
+                              :on-change #(swap! doc assoc id (-> % .-target .-files (aget 0))))]
+      "text" (let [value (atom (@doc id))]
+               (fn[]
+                [rb-input (assoc (dissoc attrs :model) :value @value
+                                 :on-change #(reset! value (-> % .-target .-value))
+                                 :on-blur #(swap! doc assoc id @value))]))
       [rb-input (assoc (dissoc attrs :model) :value (@doc id)
-                      :on-change #(swap! doc assoc id (-> % .-target .-value))) children])
+                       :on-change #(swap! doc assoc id (-> % .-target .-value))) children])
     [rb-input attrs children]))
 
 (defn remove-x [xs x]
@@ -51,7 +56,7 @@
   (cond
     (empty? xs) nil
     (pred (first xs)) 0
-    :else (if-let [c (index-where pred (rest xs))](inc c))))
+    :else (if-let [c (index-where pred (rest xs))] (inc c))))
 
 (defn remove-nth [v i]
   (vec (concat (subvec v 0 i) (subvec v (inc i)))))
