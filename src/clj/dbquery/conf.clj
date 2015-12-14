@@ -12,14 +12,10 @@
   ([]
    (if-let [conf-file (System/getProperty "conf")]
      (load-conf (java.io.File. conf-file))
-     (load-conf (io/resource "sample-conf.edn"))
-     )
-   )
-  )
+     (load-conf (io/resource "sample-conf.edn")))))
 
 (def conf (load-conf))
 
-(def db-conf  (merge (conf :db) {
-                                 :delimiters ["" ""]
+(def db-conf  (merge (conf :db) {:delimiters ["" ""]
                                  :naming {:keys str/lower-case :fields str/lower-case}
                                  :version 1}))

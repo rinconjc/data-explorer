@@ -1,15 +1,16 @@
 (ns dbquery.core
-  (:require [reagent.core :as r :refer [atom]]
-            [reagent.session :as session]
-            [secretary.core :as secretary :include-macros true]
+  (:require [ajax.core :refer [GET POST]]
+            [dbquery.commons :as c :refer [button input error-text alert
+                                           nav navbar nav-brand menu-item
+                                           nav-dropdown nav-item]]
+            [dbquery.data-import :refer [import-data-tab]]
+            [dbquery.db-admin :as dba]
+            [dbquery.db-console :refer [db-console]]
             [goog.events :as events]
             [goog.history.EventType :as EventType]
-            [dbquery.db-admin :as dba]
-            [dbquery.commons :as c :refer [input button]]
-            [dbquery.db-console :refer [db-console]]
-            [ajax.core :refer [GET POST]]
-            [cljsjs.mousetrap]
-            [dbquery.data-import :refer [import-data-tab]])
+            [reagent.core :as r :refer [atom]]
+            [reagent.session :as session]
+            [secretary.core :as secretary :include-macros true])
   (:import goog.History))
 
 (def user-session (r/atom nil))
@@ -40,19 +41,19 @@
     (js/Mousetrap.bind "alt+o", select-db)
     (fn[]
       [:div {:style {:height "100%"}}
-       [c/navbar {:fluid true}
-        [c/nav-brand "DataExplorer"]
-        [c/nav
-         [c/nav-item {:href "#/"} "Home"]
-         [c/nav-dropdown {:title "Databases" :id "db-dropdown"}
-          [c/menu-item {:on-select #(open-modal [dba/database-window nil open-db])}
+       [navbar {:fluid true}
+        [nav-brand "DataExplorer"]
+        [nav
+         [nav-item {:href "#/"} "Home"]
+         [nav-dropdown {:title "Databases" :id "db-dropdown"}
+          [menu-item {:on-select #(open-modal [dba/database-window nil open-db])}
            "Add ..." ]
-          [c/menu-item {:on-select select-db}
+          [menu-item {:on-select select-db}
            "Open ..."]]
-         [c/nav-item {:on-click #(do (swap! special-tabs conj :import-data)
+         [nav-item {:on-click #(do (swap! special-tabs conj :import-data)
                                      (reset! active-tab :import-data))}
           "Import Data"]
-         [c/nav-item {:on-click #(do (swap! special-tabs conj :admin)
+         [nav-item {:on-click #(do (swap! special-tabs conj :admin)
                                      (reset! active-tab :admin))}
           "Admin"]]]
        [:div {:id "modals"}]
@@ -87,12 +88,8 @@
 (defn login-page []
   (let [login-data (r/atom {})
         error (r/atom nil)
-        login-ok (fn [r]
-                   (js/console.log "ok response" r)
-                   (reset! user-session r))
-        login-fail (fn [e]
-                     (.log js/console "failed login" e)
-                     (reset! error (:status-text e)))
+        login-ok #(reset! user-session %)
+        login-fail #(reset! error (error-text %))
         do-login (fn [e] (reset! error nil)
                    (POST "/login" :format :json
                          :params @login-data
@@ -102,7 +99,7 @@
       [:div {:class "form-signin"}
        [:form {:on-submit do-login}
         [:h2 "Please sign in"]
-        [:div (if @error [c/alert {:bsStyle "Danger"} @error])]
+        [:div (if @error [alert {:bsStyle "danger"} @error])]
         [input {:model [login-data :userName] :type "text"
                 :placeholder "User Name"}]
         [input {:model [login-data :password] :type "password"

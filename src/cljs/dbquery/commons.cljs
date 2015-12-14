@@ -27,21 +27,46 @@
 (def popover (r/adapt-react-class js/ReactBootstrap.Popover))
 (def overlay-trigger (r/adapt-react-class js/ReactBootstrap.OverlayTrigger))
 
-(defn input
-  "[input {:type text :model [doc id] }]"
-  [{:keys [model type] :as attrs} & children]
+(defn bind [attrs model type]
   (if-let [[doc id] model]
+    (let [field (if (vector? id) id [id])]
+      (apply assoc (dissoc attrs :model :options)
+             (if (= type "file")
+               [:on-change #(swap! doc assoc-in field (-> % .-target .-files (aget 0)))]
+               [:value (get-in @doc field)
+                :on-change #(swap! doc assoc-in field (-> % .-target .-value))])))
+    attrs))
+
+(defn to-options [opts children]
+  (if (or children opts)
+    (concat [^{:key ""}[:option {:disabled true} "Select"]]
+            children
+            (map-indexed
+             (fn [i [k v]]
+               ^{:key i} [:option {:value k} v]) opts))))
+
+(defn bare-input
+  [{:keys[model type options] :as attrs} & children]
+  (let [attrs (bind attrs model type)
+        children (to-options options children)]
     (case type
-      "file" [rb-input (assoc (dissoc attrs :model)
-                              :on-change #(swap! doc assoc id (-> % .-target .-files (aget 0))))]
-      "text" (let [value (atom (@doc id))]
-               (fn[]
-                [rb-input (assoc (dissoc attrs :model) :value @value
-                                 :on-change #(reset! value (-> % .-target .-value))
-                                 :on-blur #(swap! doc assoc id @value))]))
-      [rb-input (assoc (dissoc attrs :model) :value (@doc id)
-                       :on-change #(swap! doc assoc id (-> % .-target .-value))) children])
-    [rb-input attrs children]))
+      "text" [:input.form-control attrs]
+      "password" [:input.form-control attrs]
+      "select" [:select.form-control attrs children]
+      "textarea" [:textarea.form-control attrs]
+      "file" [:input attrs]
+      [:div {:class type} [:input attrs]])))
+
+(defn input
+  "[input {:type text :model [doc id] }]
+  [input {:type \"select\" :options seq :kv-fn}]"
+  [{:keys[type label wrapper-class-name label-class-name] :as attrs} & children]
+  [:div.form-group
+   [:label.control-label {:class label-class-name} label]
+   (if wrapper-class-name
+     [:div {:class wrapper-class-name}
+      [bare-input attrs children]]
+     [bare-input attrs children])])
 
 (defn remove-x [xs x]
   (remove #(= x %) xs))
@@ -56,7 +81,7 @@
   (cond
     (empty? xs) nil
     (pred (first xs)) 0
-    :else (if-let [c (index-where pred (rest xs))] (inc c))))
+    :else (if-let [c (index-where pred (rest xs))](inc c))))
 
 (defn remove-nth [v i]
   (vec (concat (subvec v 0 i) (subvec v (inc i)))))
