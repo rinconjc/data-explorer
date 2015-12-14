@@ -27,7 +27,7 @@
 
 ;; custom json encoder for dates
 (defn- date-time-encoder [fmt]
-  (fn[d jsonGenerator]
+  (fn [d jsonGenerator]
     (let [sdf (SimpleDateFormat. fmt)]
       (.writeString jsonGenerator (.format sdf d)))))
 
@@ -48,13 +48,10 @@
   (swap! cache-ref #(cache/evict % entry-id)))
 
 (defn get-ds [ds-id]
-  (let [ds (with-cache ds-cache ds-id
-             #(-> (k/select data_source (k/fields [:password]) (k/where {:id %}))
-                  first
-                  safe-mk-ds))]
-    (if-not (:datasource ds)
-      (expire-cache ds-cache ds-id))
-    ds))
+  (with-cache ds-cache ds-id
+    #(hash-map :datasource
+               (-> (k/select data_source (k/fields [:password]) (k/where {:id %}))
+                   first mk-ds))))
 
 (def common-opts {:available-media-types ["application/json"]})
 
@@ -64,7 +61,7 @@
       (handler req)
       (catch Exception e
         (log/error e "Exception handling request")
-        {:status 500 :body (.getMessage e)}))))
+        {:status 500 :body (or (.getMessage e) "Unknown internal error")}))))
 ;; ds checker middleware
 
 ;; handlers
@@ -96,7 +93,7 @@
     {:body {:header header :rows (take 4 rows) :file (.getName (file :tempfile))}}))
 
 (defn handle-exec-sql [req ds-id]
-  (let [{:keys[raw-sql] :as opts} (:body req)
+  (let [{:keys [raw-sql] :as opts} (:body req)
         ds (get-ds ds-id)
         r (execute ds raw-sql opts)]
     (if (number? r)
@@ -158,8 +155,7 @@
                 id (k/insert data_source (k/values (assoc ds-data :app_user_id user-id)))]
             {::id (first (vals id))})
   :post-redirect? (fn [ctx] {:location (format "/data-sources/%s" (::id ctx))})
-  :handle-ok #(user-data-sources (:user-id %))
-  )
+  :handle-ok #(user-data-sources (:user-id %)))
 
 (defresource data-sources-entry [id] common-opts
   :allowed-methods [:get :put :delete]
@@ -208,7 +204,7 @@
 
   (POST "/login" req (handle-login req))
   (wrap-exception (mp/wrap-multipart-params
-    (POST "/upload" req (handle-file-upload req))))
+                   (POST "/upload" req (handle-file-upload req))))
   (GET "/logout" req (assoc (redirect "/") :session nil))
   (GET "/user" req (if-let [user (get-in req [:session :user])]
                      {:body user}
@@ -219,25 +215,23 @@
   (ANY "/queries" [] queries-list)
   (ANY "/queries/:id" [id] (queries-entry id))
   (PUT "/queries/:id/data-source/:ds" [id ds]
-       (with-body (assoc-query-datasource ds id)))
+    (with-body (assoc-query-datasource ds id)))
   (DELETE "/queries/:id/data-source/:ds" [id ds]
-          (with-body (dissoc-query-datasource ds id)))
+    (with-body (dissoc-query-datasource ds id)))
   (GET "/queries/:id/data-source" [id] (with-body (query-assocs id)))
 
   (context "/ds/:ds-id" [ds-id]
-           (POST "/exec-sql" req (handle-exec-sql req ds-id))
-           (POST "/exec-query" req (handle-exec-query req ds-id))
-           (POST "/exec-query/:id" [id] (handle-exec-query-by-id id))
-           (GET "/tables" req (with-body (handle-list-tables req ds-id)))
-           (GET "/tables/:name" [name] (fn [req]
-                                         (with-body (handle-table-meta req ds-id name))))
-           (GET "/data-types" req (with-body (data-types (get-ds ds-id))))
-           (POST "/import-data" req (handle-data-import ds-id req))
-           (GET "/queries" req (with-body (ds-queries ds-id)))
+    (POST "/exec-sql" req (handle-exec-sql req ds-id))
+    (POST "/exec-query" req (handle-exec-query req ds-id))
+    (POST "/exec-query/:id" [id] (handle-exec-query-by-id id))
+    (GET "/tables" req (with-body (handle-list-tables req ds-id)))
+    (GET "/tables/:name" [name] (fn [req]
+                                  (with-body (handle-table-meta req ds-id name))))
+    (GET "/data-types" req (with-body (data-types (get-ds ds-id))))
+    (POST "/import-data" req (handle-data-import ds-id req))
+    (GET "/queries" req (with-body (ds-queries ds-id)))
            ;; (GET "/related/:tables" [tables] (with-body (get-related-tables ds-id (s/split tables #",\s*"))))
-           )
-  )
-
+))
 
 (defroutes all-routes
   static

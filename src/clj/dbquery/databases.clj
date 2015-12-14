@@ -2,8 +2,7 @@
   (:require [clojure.tools.logging :as log]
             [clojure.java.jdbc :refer :all]
             [clojure.string :as s]
-            [dbquery.utils :refer :all]
-            )
+            [dbquery.utils :refer :all])
   (:import [com.jolbox.bonecp BoneCPDataSource]
            [org.h2.jdbcx JdbcDataSource]
            [oracle.jdbc.pool OracleDataSource]
@@ -12,10 +11,9 @@
            [java.sql Date]))
 
 (def ^:private result-extractors
-  {
-   Types/BIT (fn [rs i] (.getBoolean rs i))
+  {Types/BIT (fn [rs i] (.getBoolean rs i))
    Types/TIMESTAMP (fn [rs i] (.getTimestamp rs i))
-   Types/CLOB (fn [rs i] (->(.getClob rs i) .getCharacterStream slurp))})
+   Types/CLOB (fn [rs i] (-> (.getClob rs i) .getCharacterStream slurp))})
 
 (def ^:private sql-date-types #{Types/DATE Types/TIMESTAMP Types/TIME})
 (def ^:private sql-number-types #{Types/NUMERIC Types/DECIMAL Types/INTEGER Types/DOUBLE})
@@ -29,8 +27,7 @@
   (loop [rows [] count 0]
     (if (and (.next rs) (< count limit))
       (let [row (doall (apply row-reader [rs]))]
-        (recur (conj rows row) (inc count))
-        )
+        (recur (conj rows row) (inc count)))
       rows)))
 
 (defn ^:private read-rs
@@ -39,16 +36,14 @@
          col-count (inc (.getColumnCount rs-meta))
          cols (doall (for [i (range 1 col-count) :let [col-name (.getColumnLabel rs-meta i)] :when (or (nil? columns) (some #{col-name} columns))]
                        [i col-name (col-reader (.getColumnType rs-meta i))]))
-         row-reader (fn [rs] (for [[i _ reader] cols] (apply reader [rs i])))
-         ]
-     {:columns (map second cols) :rows (doall (rs-rows rs row-reader offset limit))}
-     ))
+         row-reader (fn [rs] (for [[i _ reader] cols] (apply reader [rs i])))]
+     {:columns (map second cols) :rows (doall (rs-rows rs row-reader offset limit))}))
   ([rs] (read-rs rs {})))
 
 (defn- key-map [xs]
   (and xs (into {} (for [e xs] (cond
                                  (string? e) [e (keyword (s/lower-case e))]
-                                 (vector? e) [(first e) (second e)] ) ))))
+                                 (vector? e) [(first e) (second e)])))))
 
 (defn read-as-map
   ([rs {:keys [offset limit fields] :or {offset 0 limit 100}}]
@@ -124,8 +119,7 @@
            (if (empty? sqls)
              (if has-rs
                (rs-reader (.getResultSet stmt) opts)
-               (.getUpdateCount stmt)
-               )
+               (.getUpdateCount stmt))
              (recur (first sqls) (rest sqls))))))))
   ([ds sql] (execute ds sql {})))
 
@@ -138,7 +132,6 @@
 (defn- table-pks [meta table]
   (with-open [rs (.getPrimaryKeys meta nil nil table)]
     (read-as-map rs {:fields [["COLUMN_NAME" :name] "KEY_SEQ"]})))
-
 
 (defn- table-fks [meta table]
   (with-open [rs (.getImportedKeys meta nil nil table)]
@@ -153,9 +146,7 @@
              ((fn [m]
                 (if-let [fk (some #(= col-name (:fkcolumn_name %)) fks)]
                   (assoc m :is_fk true :fk_table (:pktable_name fk) :fk_column (:pkcolumn_name fk))
-                  (assoc m :is_fk false)
-                  )))
-             )) cols))
+                  (assoc m :is_fk false)))))) cols))
 
 (defn table-cols [ds name]
   (with-db-metadata [meta ds]
@@ -171,8 +162,7 @@
           pks (into {} (for [tbl @tables :let [tbl-name (:name tbl)]]
                          [tbl-name (future (table-pks meta tbl-name))]))
           fks (into {} (for [tbl @tables :let [tbl-name (:name tbl)]]
-                         [tbl-name (future (table-fks meta tbl-name))]))
-          ]
+                         [tbl-name (future (table-fks meta tbl-name))]))]
       (doall (for [tbl @tables :let [tbl-name (:name tbl)]]
                (assoc tbl :columns (merge-col-keys (@cols tbl-name)
                                                    (deref (pks tbl-name))
@@ -220,8 +210,7 @@
                    (str name " " typedef))
         pk-def (if (some? pk) (str ", PRIMARY KEY(" pk ")") "")]
     (execute ds (str "CREATE TABLE " name "(" (s/join "," col-defs) pk-def ")"))
-    name)
-  )
+    name))
 
 (defn load-data [ds table {header :header rows :rows} mappings]
   (defn param-setter [{source :source format :format type :type} i]
@@ -235,8 +224,7 @@
                    (sql-number-types type) (if (s/blank? format)
                                              (fn [val] (-> (NumberFormat/getNumberInstance) (.parse val)))
                                              (fn [val] (-> (DecimalFormat. format) (.parse val))))
-                   true identity
-                   )]
+                   true identity)]
       (fn [ps row] (let [val (nth row pos)]
                      (try
                        (if (s/blank? val)
@@ -244,17 +232,13 @@
                          (doto ps (.setObject (inc i) (val-fn val) type)))
                        (catch Exception e
                          (log/error e "failed converting col " pos " in " row)
-                         (throw e)))
-                     )
-        )
-      )
-    )
+                         (throw e)))))))
   (let [valid-mappings (filter #(contains? (second %) :source)  mappings)
         cols (keys valid-mappings)
         param-setters (doall (into {} (for [[col mapping] valid-mappings]
                                         [col (param-setter mapping (.indexOf cols col))])))
         insert-sql (str "INSERT INTO " table "(" (s/join "," (map name cols)) ") VALUES("
-                        (s/join "," (repeat (count cols) "?" ) ) ")")]
+                        (s/join "," (repeat (count cols) "?")) ")")]
     (with-open [con (.getConnection (:datasource ds))]
       (let [ps (.prepareStatement con insert-sql)
             errors (doall (for [row rows] (try-let [_ (reduce #((param-setters %2) %1 row) ps cols)]
@@ -262,8 +246,4 @@
                                                    (fn [e] (log/warn e "failed mapping row " row)
                                                      [row e]))))
             rows-inserted (.executeBatch ps)]
-        {:importCount (reduce + rows-inserted) :invalidCount (count (filter some? errors))}
-        )
-      )
-    )
-  )
+        {:importCount (reduce + rows-inserted) :invalidCount (count (filter some? errors))}))))
