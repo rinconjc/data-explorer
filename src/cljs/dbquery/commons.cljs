@@ -28,18 +28,22 @@
 (def overlay-trigger (r/adapt-react-class js/ReactBootstrap.OverlayTrigger))
 
 (defn bind [attrs model type]
-  (if-let [[doc id] model]
-    (let [field (if (vector? id) id [id])]
+  (if-let [[doc & path] model]
+    (let [on-change (:on-change attrs)]
       (apply assoc (dissoc attrs :model :options)
              (if (= type "file")
-               [:on-change #(swap! doc assoc-in field (-> % .-target .-files (aget 0)))]
-               [:value (get-in @doc field)
-                :on-change #(swap! doc assoc-in field (-> % .-target .-value))])))
+               [:on-change (fn [e]
+                             (swap! doc assoc-in path (-> e .-target .-files (aget 0)))
+                             (if (fn? on-change) (on-change e)))]
+               [:value (get-in @doc path)
+                :on-change (fn [e]
+                             (swap! doc assoc-in path (-> e .-target .-value))
+                             (if (fn? on-change) (on-change e)))])))
     attrs))
 
 (defn to-options [opts children]
   (if (or children opts)
-    (concat [^{:key ""}[:option {:disabled true} "Select"]]
+    (concat [^{:key ""}[:option {:value "" :disabled true} "Select"]]
             children
             (map-indexed
              (fn [i [k v]]
@@ -52,7 +56,7 @@
     (case type
       "text" [:input.form-control attrs]
       "password" [:input.form-control attrs]
-      "select" [:select.form-control attrs children]
+      "select" [:select.form-control (assoc attrs :default-value "") children]
       "textarea" [:textarea.form-control attrs]
       "file" [:input attrs]
       [:div {:class type} [:input attrs]])))

@@ -9,7 +9,7 @@
                  [ring/ring-json "0.3.1"]
                  [ring/ring-defaults "0.1.5"]
                  [ring/ring-devel "1.1.8"]
-                 [reagent "0.5.1" :exclusions [cljsjs/react]]
+                 [reagent "0.6.0-alpha" :exclusions [cljsjs/react]]
                  [reagent-forms "0.5.13"]
                  [reagent-utils "0.1.5"]
                  [cljs-ajax "0.5.1"]
