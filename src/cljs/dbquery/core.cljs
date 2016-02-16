@@ -142,7 +142,7 @@
 ;; -------------------------
 ;; Initialize app
 (defn mount-root []
-  (r/render [current-page] (.-body js/document)))
+  (r/render [current-page] (.getElementById js/document "app")))
 
 (defn init! []
   (hook-browser-navigation!)
