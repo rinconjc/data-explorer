@@ -143,6 +143,10 @@
     (or (instance? Number b) (instance? Boolean b)) {:body {:result b}}
     (nil? b) {:status 404}
     true {:body b}))
+
+(defn current-user [ctx]
+  (if-let [user-id (get-in ctx [:request :session :user :id])]
+    {:user-id user-id}))
 ;; resources
 
 (defresource data-sources-list common-opts
@@ -178,8 +182,7 @@
 
 (defresource queries-list common-opts
   :allowed-methods [:get :post]
-  :allowed? #(if-let [user-id (get-in % [:request :session :user :id])]
-               {:user-id user-id})
+  :allowed? current-user
   :post! #(let [{{data :body} :request user-id :user-id} %
                 id (first (vals (k/insert query (k/values (assoc data :app_user_id user-id)))))]
             {::id id})
@@ -194,6 +197,16 @@
   :put! #(k/update query (k/set-fields (get-in % [:request :body]))
                    (k/where {:id id}))
   :delete! (fn [_] (k/delete query (k/where {:id id}))))
+
+(defresource users common-opts
+  :allowed-methods [:get :post]
+  :allowed? #(or (= :post (-> % :request :request-method))
+                 (current-user %))
+  :post! #(let [data (-> % :request :body)
+                id (-> app_user (k/insert (k/values data)) vals first)]
+            {::id id})
+  :post-redirect? (fn[ctx] {:location (format "/users/%s" (::id ctx))})
+  :handle-ok (k/select app_user))
 
 (defroutes static
   (route/resources "/")
@@ -210,28 +223,30 @@
                      {:body user}
                      {:status 401 :body "user not logged in"}))
 
+  (ANY "/users" [] users)
+
   (ANY "/data-sources" [] data-sources-list)
   (ANY "/data-sources/:id" [id] (data-sources-entry id))
   (ANY "/queries" [] queries-list)
   (ANY "/queries/:id" [id] (queries-entry id))
   (PUT "/queries/:id/data-source/:ds" [id ds]
-    (with-body (assoc-query-datasource ds id)))
+       (with-body (assoc-query-datasource ds id)))
   (DELETE "/queries/:id/data-source/:ds" [id ds]
-    (with-body (dissoc-query-datasource ds id)))
+          (with-body (dissoc-query-datasource ds id)))
   (GET "/queries/:id/data-source" [id] (with-body (query-assocs id)))
 
   (context "/ds/:ds-id" [ds-id]
-    (POST "/exec-sql" req (handle-exec-sql req ds-id))
-    (POST "/exec-query" req (handle-exec-query req ds-id))
-    (POST "/exec-query/:id" [id] (handle-exec-query-by-id id))
-    (GET "/tables" req (with-body (handle-list-tables req ds-id)))
-    (GET "/tables/:name" [name] (fn [req]
-                                  (with-body (handle-table-meta req ds-id name))))
-    (GET "/data-types" req (with-body (data-types (get-ds ds-id))))
-    (POST "/import-data" req (handle-data-import ds-id req))
-    (GET "/queries" req (with-body (ds-queries ds-id)))
+           (POST "/exec-sql" req (handle-exec-sql req ds-id))
+           (POST "/exec-query" req (handle-exec-query req ds-id))
+           (POST "/exec-query/:id" [id] (handle-exec-query-by-id id))
+           (GET "/tables" req (with-body (handle-list-tables req ds-id)))
+           (GET "/tables/:name" [name] (fn [req]
+                                         (with-body (handle-table-meta req ds-id name))))
+           (GET "/data-types" req (with-body (data-types (get-ds ds-id))))
+           (POST "/import-data" req (handle-data-import ds-id req))
+           (GET "/queries" req (with-body (ds-queries ds-id)))
            ;; (GET "/related/:tables" [tables] (with-body (get-related-tables ds-id (s/split tables #",\s*"))))
-))
+           ))
 
 (defroutes all-routes
   static

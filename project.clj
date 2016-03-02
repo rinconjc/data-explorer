@@ -22,7 +22,7 @@
                  [org.clojure/tools.logging "0.3.1"]
                  [org.slf4j/slf4j-jdk14 "1.7.13"]
                  [korma "0.4.1"]
-                 [com.github.rinconjc/db-upgrader "1.0-beta7"]
+                 [com.github.rinconjc/db-upgrader "1.0-beta15"]
                  [com.jolbox/bonecp "0.8.0.RELEASE" :exclusions [com.google.guava/guava]]
                  [com.h2database/h2 "1.4.187"]
                  [org.postgresql/postgresql "9.2-1002-jdbc4"]
