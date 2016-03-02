@@ -4,7 +4,7 @@
             [ajax.core :refer [GET POST PUT]]))
 
 (defn database-window [db-id when-done]
-  (let[show? (atom true)
+  (let [show? (atom true)
        error (atom nil)
        db-spec (atom {})]
     (if db-id

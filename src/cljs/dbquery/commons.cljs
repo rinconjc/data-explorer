@@ -61,16 +61,27 @@
       "file" [:input attrs]
       [:div {:class type} [:input attrs]])))
 
+(defn wrap-validator [v cont]
+  (fn [e]
+    (let [r (v (-> e .-target .-value))
+          r (if (keyword? r) r
+                (if r :success :error))]
+      (cont r))))
+
 (defn input
   "[input {:type text :model [doc id] }]
   [input {:type \"select\" :options seq :kv-fn}]"
-  [{:keys[type label wrapper-class-name label-class-name] :as attrs} & children]
-  [:div.form-group
-   [:label.control-label {:class label-class-name} label]
-   (if wrapper-class-name
-     [:div {:class wrapper-class-name}
-      [bare-input attrs children]]
-     [bare-input attrs children])])
+  [{:keys[type label wrapper-class-name label-class-name validator] :as attrs} & children]
+  (let [valid-class (atom nil)
+        attrs (if validator
+                (assoc attrs :on-change (wrap-validator validator #(reset! valid-class (str "has-" (name %))))) attrs)]
+    (fn []
+      [:div.form-group {:class @valid-class}
+       [:label.control-label {:class label-class-name} label]
+       (if wrapper-class-name
+         [:div {:class wrapper-class-name}
+          [bare-input attrs children]]
+         [bare-input attrs children])])))
 
 (defn remove-x [xs x]
   (remove #(= x %) xs))
