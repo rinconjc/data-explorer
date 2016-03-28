@@ -6,7 +6,9 @@
             [clojure.string :as s]
             [cljsjs.codemirror]
             [cljsjs.mousetrap]
-            [ajax.core :refer [GET POST]]))
+            [ajax.core :refer [GET POST PUT]]
+            [clojure.string :as str]
+            [re-frame.core :as rf]))
 
 (deftype ConsoleControl [data-tabs active-tab q-id out-text]
   Object
@@ -105,30 +107,53 @@
                              (.setTimeout js/window #(.focus cm) 1000)
                              (reset! instance cm)))}))
 
+(defn save-sql [sql id status]
+  (when-not (str/blank? sql)
+    (if id
+      (PUT (str "/queries/" id) :params {:sql sql}
+           :handler #(reset! status ["SQL Saved!"])
+           :error-handler #(reset! status [nil ("Failed Saving SQL:" (c/error-text %))])))))
+
+(rf/register-handler
+ :save-sql
+ (fn [state [_ sql id status]]
+   (when-not (str/blank? sql)
+     (if id
+       (PUT (str "/queries/" id) :params {:sql sql}
+            :handler #(reset! status ["SQL Saved!"])
+            :error-handler #(reset! status [nil ("Failed Saving SQL:" (c/error-text %))]))))))
+
 (defn sql-panel [db ops active?]
   (let [cm (atom nil)
         status (atom nil)
+        model (atom {})
         exec-sql
         (fn[]
           (let [sql (if (empty? (.getSelection @cm))
                       (.getValue @cm) (.getSelection @cm))]
             (dt/execute-query db {:raw-sql sql}
-                           #(if-let [data (% "data")]
-                              (.exec-sql ops sql data)
-                              (.output ops (str "rows affected :" (% "rowsAffected"))))
-                           #(.output ops (c/error-text %)))))]
+                              #(if-let [data (% "data")]
+                                 (.exec-sql ops sql data)
+                                 (.output ops (str "rows affected :" (% "rowsAffected"))))
+                              #(.output ops (c/error-text %)))))]
     (fn[db ops]
       (when active?
         (doto js/Mousetrap
           (.bindGlobal "ctrl+enter" exec-sql)))
       [:div.panel.panel-default.full-height {:style {:padding "0px" :margin "0px" :height "100%"}}
        [:div.panel-heading.compact
-        "SQL Editor "
-        [c/button-group {:bsSize "small"}
-         [c/button {:title "Execute" :on-click exec-sql}
-          [:i.fa.fa-play]]
-         [c/button [:i.fa.fa-save]]
-         [c/button [:i.fa.fa-file-o]]]]
+        [c/button-toolbar
+         [c/button-group {:style {:margin-top "5px"}} "SQL Editor"]
+         [c/button-group
+          [c/button {:title "Execute" :on-click exec-sql}
+           [:i.fa.fa-play]]
+          [c/button {:title "Save"
+                     :on-click #(save-sql (.getValue @cm) (get-in @model [:query "id"]) status)}
+           [:i.fa.fa-save]]
+          [c/button [:i.fa.fa-file-o]]]
+         [c/button-group {:bsSize "small"}
+          [:form.form-inline
+           [c/input {:model [model :search] :type "text" :placeholder "search queries" :size 40}]]]]]
        [:div.panel-body {:style {:padding "0px" :overflow "scroll" :height "calc(100% - 46px)"}}
         [code-mirror cm {:mode "text/x-sql"}]]])))
 
@@ -138,15 +163,16 @@
 
 (defn table-meta [db tbl]
   (let [data (atom {})
-        controller (reify Object
-                     (refresh [this]
-                       (retrieve-table-meta db tbl
-                                            #(reset! data {"rows" (% "columns")
-                                                           "columns" ["name" "type_name" "size" "digits" "nullable" "is_pk" "is_fk" "fk_table" "fk_column"]}) #(.log js/console %)))
-                     (sort [_ _]
-                       (.log js/console "sort not implemented"))
-                     (next-page [this]
-                       (.log js/console "next-page not implemented")))]
+        controller
+        (reify Object
+          (refresh [this]
+            (retrieve-table-meta db tbl
+                                 #(reset! data {"rows" (% "columns")
+                                                "columns" ["name" "type_name" "size" "digits" "nullable" "is_pk" "is_fk" "fk_table" "fk_column"]}) #(.log js/console %)))
+          (sort [_ _]
+            (.log js/console "sort not implemented"))
+          (next-page [this]
+            (.log js/console "next-page not implemented")))]
     (.refresh controller)
     (fn[db tbl]
       [dt/data-table data controller])))

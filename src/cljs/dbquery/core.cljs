@@ -1,5 +1,6 @@
 (ns dbquery.core
-  (:require [ajax.core :refer [GET POST]]
+  (:require [ajax.core :refer [GET POST default-interceptors success? to-interceptor]]
+            [ajax.protocols :refer [-body -status]]
             [dbquery.commons :as c :refer [button input error-text alert
                                            nav navbar nav-brand menu-item
                                            nav-dropdown nav-item]]
@@ -10,11 +11,12 @@
             [goog.history.EventType :as EventType]
             [reagent.core :as r :refer [atom]]
             [reagent.session :as session]
-            [secretary.core :as secretary :include-macros true])
+            [secretary.core :as secretary :include-macros true]
+            [clojure.string :as str]
+            [re-frame.core :as rf]
+            [dbquery.handlers]
+            [reagent.ratom :refer-macros [reaction]])
   (:import goog.History))
-
-(def user-session (r/atom nil))
-(GET "/user" :handler #(reset! user-session %))
 
 (defn open-modal [modal-comp]
   (let [container (js/document.getElementById "modals")]
@@ -31,6 +33,7 @@
 
 (defn home-page []
   (let [db-tabs (atom [])
+        user (rf/subscribe [:state :user])
         active-tab (atom "")
         open-db (fn [db]
                   (when (some? db)
@@ -60,7 +63,14 @@
           "Import Data"]
          [nav-item {:on-click #(do (swap! special-tabs conj :admin)
                                    (reset! active-tab :admin))}
-          "Admin"]]]
+          "Admin"]]
+        [nav {:pull-right true}
+         [nav-dropdown {:id "user-dropdown" :title (r/as-element
+                                                    [:span [:i.fa.fa-user]
+                                                     (get @user "nick")])}
+          [menu-item "Profile"]
+          [menu-item {:on-click #(rf/dispatch [:logout])}
+           "Logout"]]]]
        [:div {:id "modals"}]
        [:div.container-fluid {:style {:height "calc(100% - 90px)"}}
         (if (or (seq @db-tabs) (seq @special-tabs))
@@ -92,17 +102,10 @@
 
 (defn login-page []
   (let [login-data (r/atom {})
-        error (r/atom nil)
-        login-ok #(reset! user-session %)
-        login-fail #(reset! error (error-text %))
-        do-login (fn [e] (reset! error nil)
-                   (POST "/login" :format :json
-                         :params @login-data
-                         :handler login-ok
-                         :error-handler login-fail))]
+        error (rf/subscribe [:state :error])]
     (fn []
       [:div.col-md-offset-4.col-md-3
-       [:form {:on-submit do-login}
+       [:form {:on-submit #(rf/dispatch [:login @login-data])}
         [:h2 "Sign in"
          [:a.btn-link.btn.btn-lg {:href "#/register"} "or register as new user"]]
         [:div (if @error [alert {:bsStyle "danger"} @error])]
@@ -112,7 +115,7 @@
                 :placeholder "Password"}]
         [:div {:style {:text-align "right"}}
          [button {:bsStyle "primary"
-                  :on-click do-login} "Sign in"]]]])))
+                  :on-click #(rf/dispatch [:login @login-data])} "Sign in"]]]])))
 
 (defn about-page []
   [:div [:h2 "About dbquery"]
@@ -120,13 +123,7 @@
 
 (defn register-page []
   (let [user (atom {})
-        error (atom nil)
-        save-fn (fn[]
-                  (POST "/users" :format :json :params @user
-                        :handler #(do ;; (toast "User registered!" 5)
-                                    (.log js/console "dispatching to login...")
-                                      (secretary/dispatch! "/login"))
-                        :error-handler #(reset! error (error-text %))))]
+        error (rf/subscribe [:state :error])]
     (fn []
       [:div.col-md-offset-3.col-md-4
        [:h2 "Register new user"]
@@ -150,28 +147,35 @@
                 :wrapper-class-name "col-sm-6"}]
         [:div {:style {:text-align "right"}}
          [button {:bsStyle "primary"
-                  :on-click save-fn} "Submit"]]]])))
+                  :on-click #(rf/dispatch [:register-user @user])} "Submit"]]]])))
+
+(defn logout-page []
+  [:div
+   [:a {:href "#/login"} "Login back"]])
 
 (defn current-page []
-  [:div [(session/get :current-page)]])
+  (let [cur-page (rf/subscribe [:state :current-page])]
+    (fn []
+      [:div [(or @cur-page :div)]])))
 
 ;; -------------------------
 ;; Routes
 (secretary/set-config! :prefix "#")
 
 (secretary/defroute "/" []
-  (session/put! :current-page
-                (if (some? @user-session)
-                  #'home-page #'login-page)))
+  (rf/dispatch [:change-page #'home-page true]))
 
 (secretary/defroute "/about" []
-  (session/put! :current-page #'about-page))
+  (rf/dispatch [:change-page #'about-page false]))
 
 (secretary/defroute "/login" []
-  (session/put! :current-page #'login-page))
+  (rf/dispatch [:change-page #'login-page false]))
 
 (secretary/defroute "/register" []
-  (session/put! :current-page #'register-page))
+  (rf/dispatch [:change-page #'register-page false]))
+
+(secretary/defroute "/logout" []
+  (rf/dispatch [:change-page #'logout-page false]))
 ;; -------------------------
 ;; History
 ;; must be called after routes have been defined

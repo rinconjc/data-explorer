@@ -75,7 +75,7 @@
   (let [valid-class (atom nil)
         attrs (if validator
                 (assoc attrs :on-change (wrap-validator validator #(reset! valid-class (str "has-" (name %))))) attrs)]
-    (fn []
+    (fn [{:keys[type label wrapper-class-name label-class-name validator] :as attrs} & children]
       [:div.form-group {:class @valid-class}
        [:label.control-label {:class label-class-name} label]
        (if wrapper-class-name
