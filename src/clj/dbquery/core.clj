@@ -23,7 +23,8 @@
             [liberator.dev :refer [wrap-trace]]
             [clojure.tools.logging :as log]
             [clojure.data.csv :as csv]
-            [cheshire.generate :refer [add-encoder]]))
+            [cheshire.generate :refer [add-encoder]]
+            [crypto.password.bcrypt :as password]))
 
 ;; custom json encoder for dates
 (defn- date-time-encoder [fmt]
@@ -203,9 +204,9 @@
   :allowed? #(or (= :post (-> % :request :request-method))
                  (current-user %))
   :post! #(let [data (-> % :request :body)
-                id (-> app_user (k/insert (k/values data)) vals first)]
+                id (-> app_user (k/insert (k/values (update data :password password/encrypt)))
+                       vals first)]
             {::id id})
-  :post-redirect? (fn[ctx] {:location (format "/users/%s" (::id ctx))})
   :handle-ok (k/select app_user))
 
 (defroutes static
