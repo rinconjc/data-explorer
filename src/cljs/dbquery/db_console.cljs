@@ -127,8 +127,8 @@
         [c/button-group {:bsSize "small"}
          [c/button {:title "Execute" :on-click exec-sql}
           [:i.fa.fa-play]]
-         [c/button [:i.fa.fa-save]]
-         [c/button [:i.fa.fa-file-o]]]]
+         [c/button {:title "Save" :on-click save-sql} [:i.fa.fa-save]]
+         [c/button {:tittle "Clear" :on-click #()} [:i.fa.fa-file-o]]]]
        [:div.panel-body {:style {:padding "0px" :overflow "scroll" :height "calc(100% - 46px)"}}
         [code-mirror cm {:mode "text/x-sql"}]]])))
 
