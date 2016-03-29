@@ -226,7 +226,8 @@
                                              (fn [val] (-> (NumberFormat/getNumberInstance) (.parse val)))
                                              (fn [val] (-> (DecimalFormat. format) (.parse val))))
                    true identity)]
-      (fn [ps row] (let [val (nth row pos)]
+      (fn [ps row]
+        (let [val (nth row pos)]
                      (try
                        (if (s/blank? val)
                          (doto ps (.setNull (inc i) type))
@@ -234,6 +235,7 @@
                        (catch Exception e
                          (log/error e "failed converting col " pos " in " row)
                          (throw e)))))))
+
   (let [valid-mappings (filter #(contains? (second %) :source)  mappings)
         cols (keys valid-mappings)
         param-setters (doall (into {} (for [[col mapping] valid-mappings]

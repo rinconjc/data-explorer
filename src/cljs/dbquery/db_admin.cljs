@@ -4,9 +4,9 @@
             [ajax.core :refer [GET POST PUT]]))
 
 (defn database-window [db-id when-done]
-  (let[show? (atom true)
-       error (atom nil)
-       db-spec (atom {})]
+  (let [show? (atom true)
+        error (atom nil)
+        db-spec (atom {})]
     (if db-id
       (GET (str "/data-sources/" db-id) :response-format :json :keywords? true :format :json
            :handler #(reset! db-spec %) :error-handler #(.log js/console (c/error-text %))))
@@ -84,9 +84,8 @@
          [:form.form-horizontal {:on-submit handle-ok}
           [input {:value @db-id :type "select" :label "Database"
                   :on-change #(reset! db-id (-> % .-target .-value))}
-           [:option {:key "" :disabled true}  "Select a Database"]
-           (for [[i db] (map-indexed vector @dbs)]
-             ^{:key i}[:option {:value i} (db "name")])]]]]
+           (map-indexed (fn [i db] ^{:key i}
+                          [:option {:value i} (db "name")]) @dbs)]]]]
        [c/modal-footer
         [button {:bsStyle "primary"
                  :on-click #(handle-ok :connect)} "Connect"]
