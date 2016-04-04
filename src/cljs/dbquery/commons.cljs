@@ -27,6 +27,11 @@
 (def popover (r/adapt-react-class js/ReactBootstrap.Popover))
 (def overlay-trigger (r/adapt-react-class js/ReactBootstrap.OverlayTrigger))
 
+(defn open-modal [modal-comp]
+  (let [container (js/document.getElementById "modals")]
+    (r/unmount-component-at-node container)
+    (r/render modal-comp container)))
+
 (defn bind [attrs model type]
   (if-let [[doc & path] model]
     (let [on-change (:on-change attrs)]
