@@ -1,7 +1,7 @@
 (ns dbquery.handlers
-  (:require [ajax.core :refer [GET POST default-interceptors success? to-interceptor]]
+  (:require [ajax.core :refer [GET POST PUT default-interceptors success? to-interceptor]]
             [ajax.protocols :refer [-body -status]]
-            [dbquery.commons :as c :refer [error-text]]
+            [dbquery.commons :as c :refer [error-text open-modal]]
             [reagent.core :as r :refer [atom]]
             [secretary.core :as secretary :include-macros true]
             [clojure.string :as str]
@@ -65,7 +65,9 @@
 (rf/register-handler
  :change
  (fn [state [_ key value]]
-   (assoc state key value)))
+   (if (vector? key)
+     (assoc-in state key value)
+     (assoc state key value))))
 
 (rf/register-handler
  :change-page
@@ -77,7 +79,24 @@
             :error-handler #(secretary/dispatch! "/login"))
        state))))
 
+(rf/register-handler
+ :save-query
+ (fn [state [_ tab-id query success-fn]]
+   (js/console.log "handling save query:" query)
+   (let [query (if (string? query)
+                 (assoc (get-in state [:tabs tab-id :sql-panel :query]) :sql query)
+                 query)
+         [method path] (if-let [id (:id query)] [PUT (str "/queries/" id)] [POST "/queries"])]
+     (method path :params query :format :json
+             :handler #(do (rf/dispatch [:change [:tabs tab-id :sql-panel :query %]])
+                           (and (fn? success-fn) (success-fn)))
+             :error-handler #(rf/dispatch [:change :status [:error (c/error-text %)]]))
+     state)))
+
 ;; register queries
 (rf/register-sub
  :state
- (fn [state [_ key]] (reaction (get @state key))))
+ (fn [state [_ key]]
+   (if (vector? key)
+     (reaction (get-in @state key))
+     (reaction (get @state key)))))

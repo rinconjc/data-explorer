@@ -1,5 +1,5 @@
 (ns dbquery.db-console
-  (:require [dbquery.commons :as c]
+  (:require [dbquery.commons :as c :refer [open-modal input button]]
             [widgets.splitter :as st]
             [dbquery.data-table :as dt]
             [reagent.core :as r :refer [atom]]
@@ -107,26 +107,31 @@
                              (.setTimeout js/window #(.focus cm) 1000)
                              (reset! instance cm)))}))
 
-(defn save-sql [sql id status]
-  (when-not (str/blank? sql)
-    (if id
-      (PUT (str "/queries/" id) :params {:sql sql}
-           :handler #(reset! status ["SQL Saved!"])
-           :error-handler #(reset! status [nil ("Failed Saving SQL:" (c/error-text %))])))))
-
-(rf/register-handler
- :save-sql
- (fn [state [_ sql id status]]
-   (when-not (str/blank? sql)
-     (if id
-       (PUT (str "/queries/" id) :params {:sql sql}
-            :handler #(reset! status ["SQL Saved!"])
-            :error-handler #(reset! status [nil ("Failed Saving SQL:" (c/error-text %))]))))))
+(defn query-form [tab-id query]
+  (let [show? (atom true)]
+    (fn [tab-id query]
+      [c/modal {:on-hide #(reset! show? false) :show @show? :bsSize "small"}
+       [c/modal-header [:h4 "Save Query"]]
+       [c/modal-body
+        [:div.container-fluid
+         [:form.form-horizontal
+          [input {:model [query :name] :type "text" :label "Name" :placeholder "Query name"}]
+          [input {:model [query :description] :type "textarea" :label "Description"}]]]
+        [c/modal-footer
+         [c/button {:bsStyle "primary"
+                    :on-click #(rf/dispatch [:save-query tab-id @query
+                                             (fn [] (reset! show? false))]) }
+          "Save"]
+         [c/button {:bsStyle "default" :on-click #(reset! show? false)}
+          "Close"]]]])))
 
 (defn sql-panel [db ops active?]
   (let [cm (atom nil)
-        status (atom nil)
+        tab-id (db "id")
+        state (rf/subscribe [:state [:tabs tab-id :sql-panel]])
         model (atom {})
+        save-fn #(if (:query @state) (rf/dispatch [:save-query tab-id (.getValue @cm)])
+                     (open-modal [query-form tab-id (atom {:sql (.getValue @cm)})]))
         exec-sql
         (fn[]
           (let [sql (if (empty? (.getSelection @cm))
@@ -136,7 +141,7 @@
                                  (.exec-sql ops sql data)
                                  (.output ops (str "rows affected :" (% "rowsAffected"))))
                               #(.output ops (c/error-text %)))))]
-    (fn[db ops]
+    (fn[db ops active?]
       (when active?
         (doto js/Mousetrap
           (.bindGlobal "ctrl+enter" exec-sql)))
@@ -148,14 +153,15 @@
           [c/button {:title "Execute" :on-click exec-sql}
            [:i.fa.fa-play]]
           [c/button {:title "Save"
-                     :on-click #(save-sql (.getValue @cm) (get-in @model [:query "id"]) status)}
+                     :on-click save-fn}
            [:i.fa.fa-save]]
           [c/button [:i.fa.fa-file-o]]]
          [c/button-group {:bsSize "small"}
           [:form.form-inline
            [c/input {:model [model :search] :type "text" :placeholder "search queries" :size 40}]]]]]
        [:div.panel-body {:style {:padding "0px" :overflow "scroll" :height "calc(100% - 46px)"}}
-        [code-mirror cm {:mode "text/x-sql"}]]])))
+        [code-mirror cm {:mode "text/x-sql"}
+         (get-in @state [:query :sql])]]])))
 
 (defn retrieve-table-meta [db tbl data-fn error-fn]
   (GET (str "/ds/" (db "id") "/tables/" tbl) :response-format :json

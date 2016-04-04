@@ -3,7 +3,7 @@
             [ajax.protocols :refer [-body -status]]
             [dbquery.commons :as c :refer [button input error-text alert
                                            nav navbar nav-brand menu-item
-                                           nav-dropdown nav-item]]
+                                           nav-dropdown nav-item open-modal]]
             [dbquery.data-import :refer [import-data-tab]]
             [dbquery.db-admin :as dba]
             [dbquery.db-console :refer [db-console]]
@@ -18,15 +18,19 @@
             [reagent.ratom :refer-macros [reaction]])
   (:import goog.History))
 
-(defn open-modal [modal-comp]
-  (let [container (js/document.getElementById "modals")]
-    (r/unmount-component-at-node container)
-    (r/render modal-comp container)))
-
 (defn toast [message ttl]
   (let [container (js/document.getElementById "alerts")]
     (r/unmount-component-at-node container)
     (r/render [alert {:dismissAfter ttl} message] container)))
+
+(defn alerts-box []
+  (let [status (rf/subscribe [:state :status])]
+    (fn []
+      (when @status
+        (.setTimeout js/window #(rf/dispatch [:change :status nil] 5000))
+        [:div {:style {:position "absolute" :top "50" :z-index 100 :width 400 :margin "auto"}}
+         [alert {:bsStyle (let [style (first @status)] (case style :error "danger" (name style)))
+                 :dismissAfter 5} (second @status)]]))))
 
 (defn admin-tab []
   [:div "Admin data"])
@@ -49,6 +53,7 @@
     (js/Mousetrap.bind "alt+o", select-db)
     (fn[]
       [:div {:style {:height "100%"}}
+       [alerts-box]
        [navbar {:fluid true}
         [nav-brand "DataExplorer"]
         [nav
