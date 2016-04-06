@@ -129,9 +129,14 @@
   (let [cm (atom nil)
         tab-id (db "id")
         state (rf/subscribe [:state [:tabs tab-id :sql-panel]])
+        suggestions (rf/subscribe [:queries (db "id")])
         model (atom {})
         save-fn #(if (:query @state) (rf/dispatch [:save-query tab-id (.getValue @cm)])
                      (open-modal [query-form tab-id (atom {:sql (.getValue @cm)})]))
+        query-filter (r/track (fn[text]
+                                 (let [re (re-pattern text)]
+                                   (js/console.log "filter by:" text " in " @suggestions)
+                                   (filter #(re-find re (% "name")) @suggestions))))
         exec-sql
         (fn[]
           (let [sql (if (empty? (.getSelection @cm))
@@ -158,7 +163,9 @@
           [c/button [:i.fa.fa-file-o]]]
          [c/button-group {:bsSize "small"}
           [:form.form-inline
-           [c/input {:model [model :search] :type "text" :placeholder "search queries" :size 40}]]]]]
+           [c/input {:model [model :search] :type "typeahead" :placeholder "search queries" :size 40
+                     :data-source query-filter :result-fn #(% "name")
+                     :choice-fn #(js/console.log "query selected %") }]]]]]
        [:div.panel-body {:style {:padding "0px" :overflow "scroll" :height "calc(100% - 46px)"}}
         [code-mirror cm {:mode "text/x-sql"}
          (get-in @state [:query :sql])]]])))
