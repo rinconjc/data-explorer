@@ -1,6 +1,7 @@
 (ns dbquery.commons
   (:require [reagent.core :as r :refer [atom]]
-            [cljsjs.react-bootstrap]))
+            [cljsjs.react-bootstrap]
+            [clojure.string :as str]))
 
 (def navbar (r/adapt-react-class js/ReactBootstrap.Navbar))
 (def nav-brand (r/adapt-react-class js/ReactBootstrap.NavBrand))
@@ -54,6 +55,69 @@
              (fn [i [k v]]
                ^{:key i} [:option {:value k} v]) opts))))
 
+(defn typeahead [{:keys [model choice-fn result-fn data-source] :as attrs
+                  :or {choice-fn identity result-fn identity}}]
+  (let [[doc & path] model
+        typeahead-hidden? (atom true)
+        mouse-on-list? (atom false)
+        selected-index (atom -1)
+        selections (atom [])
+        save! #(swap! doc assoc-in path %)
+        value-of #(-> % .-target .-value)
+        choose-selected #(when (and (not-empty @selections) (> @selected-index -1))
+                           (let [choice (nth @selections @selected-index)]
+                             (save! choice)
+                             (choice-fn choice)
+                             (reset! typeahead-hidden? true)))]
+    (fn [attrs]
+      [:span
+       [:input.form-control
+        (assoc attrs
+               :on-focus    #(save! nil)
+               :on-blur     #(when-not @mouse-on-list?
+                               (reset! typeahead-hidden? true)
+                               (reset! selected-index -1))
+               :on-change   #(when-let [value (str/trim (value-of %))]
+                               (reset! selections (data-source (.toLowerCase value)))
+                               (save! (value-of %))
+                               (reset! typeahead-hidden? false)
+                               (reset! selected-index -1))
+               :on-key-down #(do
+                               (case (.-which %)
+                                 38 (do
+                                      (.preventDefault %)
+                                      (when-not (= @selected-index 0)
+                                        (swap! selected-index dec)))
+                                 40 (do
+                                      (.preventDefault %)
+                                      (when-not (= @selected-index (dec (count @selections)))
+                                        (save! (value-of %))
+                                        (swap! selected-index inc)))
+                                 9  (choose-selected)
+                                 13 (choose-selected)
+                                 27 (do (reset! typeahead-hidden? true)
+                                        (reset! selected-index 0))
+                                 "default")))]
+
+       [:ul {:style {:display (if (or (empty? @selections) @typeahead-hidden?) :none :block) }
+             :class "typeahead-list"
+             :on-mouse-enter #(reset! mouse-on-list? true)
+             :on-mouse-leave #(reset! mouse-on-list? false)}
+        (doall
+         (map-indexed
+          (fn [index result]
+            [:li {:tab-index     index
+                  :key           index
+                  :class         (if (= @selected-index index) "highlighted" "typeahead-item")
+                  :on-mouse-over #(do
+                                    (reset! selected-index (js/parseInt (.getAttribute (.-target %) "tabIndex"))))
+                  :on-click      #(do
+                                    (reset! typeahead-hidden? true)
+                                    (save! result)
+                                    (choice-fn result))}
+             (result-fn result)])
+          @selections))]])))
+
 (defn bare-input
   [{:keys[model type options] :as attrs} & children]
   (let [attrs (bind attrs model type)
@@ -64,6 +128,7 @@
       "select" [:select.form-control (assoc attrs :default-value "") children]
       "textarea" [:textarea.form-control attrs]
       "file" [:input attrs]
+      "typeahead" [typeahead (assoc attrs :model model)]
       [:div {:class type} [:input attrs]])))
 
 (defn wrap-validator [v cont]
@@ -79,7 +144,8 @@
   [{:keys[type label wrapper-class-name label-class-name validator] :as attrs} & children]
   (let [valid-class (atom nil)
         attrs (if validator
-                (assoc attrs :on-change (wrap-validator validator #(reset! valid-class (str "has-" (name %))))) attrs)]
+                (assoc attrs
+                       :on-change (wrap-validator validator #(reset! valid-class (str "has-" (name %))))) attrs)]
     (fn [{:keys[type label wrapper-class-name label-class-name validator] :as attrs} & children]
       [:div.form-group {:class @valid-class}
        [:label.control-label {:class label-class-name} label]
