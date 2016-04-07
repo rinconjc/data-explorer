@@ -13,6 +13,7 @@
 (def ^:private result-extractors
   {Types/BIT (fn [rs i] (.getBoolean rs i))
    Types/TIMESTAMP (fn [rs i] (.getTimestamp rs i))
+   -101 (fn [rs i] (.getTimestamp rs i))
    Types/CLOB (fn [rs i] (-> (.getClob rs i) .getCharacterStream slurp))})
 
 (def ^:private sql-date-types #{Types/DATE Types/TIMESTAMP Types/TIME})
