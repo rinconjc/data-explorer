@@ -66,7 +66,7 @@
         value-of #(-> % .-target .-value)
         choose-selected #(when (and (not-empty @selections) (> @selected-index -1))
                            (let [choice (nth @selections @selected-index)]
-                             (save! choice)
+                             (save! (result-fn choice))
                              (choice-fn choice)
                              (reset! typeahead-hidden? true)))]
     (fn [attrs]
@@ -113,7 +113,7 @@
                                     (reset! selected-index (js/parseInt (.getAttribute (.-target %) "tabIndex"))))
                   :on-click      #(do
                                     (reset! typeahead-hidden? true)
-                                    (save! result)
+                                    (save! (result-fn result))
                                     (choice-fn result))}
              (result-fn result)])
           @selections))]])))
