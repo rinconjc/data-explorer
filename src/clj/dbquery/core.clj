@@ -46,7 +46,9 @@
 
 (defn expire-cache [cache-ref entry-id]
   (log/info "expiring cache entry:" entry-id)
-  (swap! cache-ref #(cache/evict % entry-id)))
+  (when-let [ds (cache/lookup @cache-ref entry-id)]
+    (swap! cache-ref cache/evict entry-id)
+    (future (-> ds :datasource .close))))
 
 (defn get-ds [ds-id]
   (with-cache ds-cache ds-id
