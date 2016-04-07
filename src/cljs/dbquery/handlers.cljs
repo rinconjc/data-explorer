@@ -20,6 +20,7 @@
 
 (swap! default-interceptors concat [treat-nil-as-empty])
 
+
 ;; register queries
 (rf/register-sub
  :state
@@ -31,7 +32,7 @@
 (rf/register-sub
  :queries
  (fn [state [_ db-id]]
-   (let [queries (reaction (get-in state [:queries db-id]))]
+   (let [queries (reaction (get-in @state [:queries db-id]))]
      (when-not @queries
        (GET (str "/ds/" db-id "/queries") :handler #(rf/dispatch [:change [:queries db-id] %])
             :error-handler #(rf/dispatch [:change :status [:error (c/error-text %)]])))
