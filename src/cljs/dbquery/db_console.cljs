@@ -133,10 +133,9 @@
         model (atom {})
         save-fn #(if (:query @state) (rf/dispatch [:save-query tab-id (.getValue @cm)])
                      (open-modal [query-form tab-id (atom {:sql (.getValue @cm)})]))
-        query-filter (r/track (fn[text]
-                                 (let [re (re-pattern text)]
-                                   (js/console.log "filter by:" text " in " @suggestions)
-                                   (filter #(re-find re (% "name")) @suggestions))))
+        query-filter (fn[text]
+                       (let [re (re-pattern text)]
+                         (filter #(re-find re (% "name")) @suggestions)))
         exec-sql
         (fn[]
           (let [sql (if (empty? (.getSelection @cm))
@@ -162,7 +161,7 @@
            [:i.fa.fa-save]]
           [c/button [:i.fa.fa-file-o]]]
          [c/button-group {:bsSize "small"}
-          [:form.form-inline
+          [:form.form-inline {:on-submit #(identity false)}
            [c/input {:model [model :search] :type "typeahead" :placeholder "search queries" :size 40
                      :data-source query-filter :result-fn #(% "name")
                      :choice-fn #(js/console.log "query selected %") }]]]]]
