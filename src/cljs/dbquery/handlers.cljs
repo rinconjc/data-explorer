@@ -41,6 +41,15 @@
        (rf/dispatch [:load-db-resource resource db-id]))
      db-resource)))
 
+(rf/register-sub
+ :dbobjects
+ (fn [state [_ db-id]]
+   (let [dbobjects (reaction (get-in @state [:dbobjects db-id]))]
+     (when-not @dbobjects
+       (GET (str "/ds/" db-id "/tables") :handler #(rf/dispatch [:change [:dbobjects db-id] %])
+            :error-handler #(rf/dispatch [:change :status [:error (c/error-text %)]])))
+     dbobjects)))
+
 ;; event handlers
 
 (rf/register-handler
