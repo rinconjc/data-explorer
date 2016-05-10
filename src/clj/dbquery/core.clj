@@ -52,9 +52,9 @@
 
 (defn get-ds [ds-id]
   (with-cache ds-cache ds-id
-    #(hash-map :datasource
-               (-> (k/select data_source (k/fields [:password]) (k/where {:id %}))
-                   first mk-ds))))
+    #(let [ds-details (first (k/select data_source (k/fields [:password]) (k/where {:id %})))]
+       {:datasource (mk-ds ds-details)
+        :schema (:schema ds-details)})))
 
 (def common-opts {:available-media-types ["application/json"]})
 
