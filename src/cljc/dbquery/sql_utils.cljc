@@ -28,39 +28,35 @@
 
 ;; sql parsing
 
-(defn in-line-comment [text i]
+(defn inline-comment [text i]
   (if (= "--" (.substring text i (+ i 2)))
-    (inc (.indexOf text \n i))))
+    (inc (.indexOf text "\n" i))))
 
 (defn block-comment [text i]
   (if (= "/*" (.substring text i (+ i 2)))
     (+ (.indexOf text "*/" i) 2)))
 
 (defn skip-comments [text i]
-  (if-let [offset (or (in-line-comment text offset) (block-comment text i))]
+  (if-let [offset (and (< (+ i 2) (count text)) (or (inline-comment text i) (block-comment text i)))]
     (skip-comments text offset)
     i))
 
-(defn non-blank [text sql-start i]
-  (if (and (= sql-start i) (= ' ' (.charAt text i)))
-    [nil (inc i) (inc i)]
-    [nil sql-start (inc i)]))
-
-(defn parse-end-sql [text offset]
+(defn end-of-stmt [text offset]
   (let [pos (skip-comments text offset)]
     (if (or (>= pos (.length text)) (= ";" (.charAt text pos)))
       pos
-      (parse-end-sql text (inc pos)))))
+      (end-of-stmt text (inc pos)))))
 
-(defn next-sql [text offset]
-  (let [start (skip-comments text offset)
-        end (parse-end-sql text start)]
-    (if (&& (> end start) (<= end (count text)))
-      [(.substring text start end) (inc end)])))
+(defn next-stmt [text offset]
+  (if (< offset (count text))
+    (let [start (skip-comments text offset)
+          end (end-of-stmt text start)]
+      (if (and (> end start) (<= end (count text)))
+        [(.substring text start end) (inc end)]))))
 
-(defn parse-sql [text]
+(defn sql-statements [text]
   (loop [start 0
          stmts []]
-    (let [[sql offset] (next-sql start)]
-      (if sql (recur offset (conj stmts sql)))
-      stmts)))
+    (let [[sql offset] (next-stmt text start)]
+      (if sql (recur offset (conj stmts sql))
+          stmts))))
