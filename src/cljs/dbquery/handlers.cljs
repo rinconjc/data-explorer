@@ -20,6 +20,8 @@
 
 (swap! default-interceptors concat [treat-nil-as-empty])
 
+(defn error-handler [res]
+  (rf/dispatch [:change :status [:error (c/error-text res)]]))
 
 ;; register queries
 (rf/register-sub
@@ -29,14 +31,15 @@
      (reaction (get-in @state key))
      (reaction (get @state key)))))
 
+
 (rf/register-sub
- :queries
- (fn [state [_ db-id]]
-   (let [queries (reaction (get-in @state [:queries db-id]))]
-     (when-not @queries
-       (GET (str "/ds/" db-id "/queries") :handler #(rf/dispatch [:change [:queries db-id] %])
-            :error-handler #(rf/dispatch [:change :status [:error (c/error-text %)]])))
-     queries)))
+ :db-resource
+ (fn [state [_ resource db]]
+   (let [db-id (db "id")
+         db-resource (reaction (get-in @state [resource db-id]))]
+     (when-not @db-resource
+       (rf/dispatch [:load-db-resource resource db-id]))
+     db-resource)))
 
 (rf/register-sub
  :dbobjects
@@ -48,6 +51,15 @@
      dbobjects)))
 
 ;; event handlers
+
+(rf/register-handler
+ :load-db-resource
+ (fn [state [_ resource db-id & params]]
+   (GET (str "/ds/" db-id "/" (name resource))
+        :params params
+        :handler #(rf/dispatch [:change [resource db-id] %])
+        :error-handler error-handler)
+   state))
 
 (rf/register-handler
  :login

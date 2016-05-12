@@ -61,9 +61,8 @@
                         :tabIndex 100}])}))
 
 (defn db-objects [db ops active?]
-  (let [tables (atom [])
+  (let [tables (rf/subscribe [:db-resource :tables db])
         filtered (atom nil)
-        error (atom nil)
         selected (atom nil)
         search? (atom false)
         icons {"TABLE" "fa-table fa-fw"
@@ -71,7 +70,6 @@
         search-fn (fn[text]
                     (let [re (re-pattern (s/upper-case text))]
                       (reset! filtered (filter #(re-find re (% "name")) @tables))))]
-    (retrieve-db-objects db tables error)
     (fn [db ops active?]
       (when active?
         (doto js/Mousetrap
@@ -81,7 +79,7 @@
       [:div.full-height.panel.panel-default
        [:div.panel-heading.compact
         [c/button-group {:bsSize "small"}
-         [c/button {:on-click #(retrieve-db-objects db tables error :refresh true)}
+         [c/button {:on-click #(rf/dispatch [:load-db-resource :tables :refresh true])}
           [:i.fa.fa-refresh {:title "Refresh Objects"}]]
          [c/button {:on-click #(.preview ops (@selected "name"))}
           [:i.fa.fa-list-alt {:title "Preview Data"}]]
@@ -90,7 +88,6 @@
        [:div.panel-body {:style {:padding "4px 4px"}}
         (if @search?
           [search-box search-fn])
-        [:span @error]
         [:ul {:class "list-unstyled list" :style {:height "100%" :cursor "pointer"}}
          (doall (for [{:strs[type name] :as tb} (or (and @search? @filtered) @tables)]
                   ^{:key name}
@@ -129,7 +126,7 @@
   (let [cm (atom nil)
         tab-id (db "id")
         state (rf/subscribe [:state [:tabs tab-id :sql-panel]])
-        suggestions (rf/subscribe [:queries (db "id")])
+        suggestions (rf/subscribe [:db-resource :queries db])
         model (atom {})
         save-fn #(if (:query @state) (rf/dispatch [:save-query tab-id (.getValue @cm)])
                      (open-modal [query-form tab-id (atom {:sql (.getValue @cm)})]))
@@ -164,7 +161,7 @@
           [:form.form-inline {:on-submit #(identity false)}
            [c/input {:model [model :search] :type "typeahead" :placeholder "search queries" :size 40
                      :data-source query-filter :result-fn #(% "name")
-                     :choice-fn #(js/console.log "query selected %") }]]]]]
+                     :choice-fn #(.setValue @cm (% "sql")) }]]]]]
        [:div.panel-body {:style {:padding "0px" :overflow "scroll" :height "calc(100% - 46px)"}}
         [code-mirror cm {:mode "text/x-sql"}
          (get-in @state [:query :sql])]]])))
