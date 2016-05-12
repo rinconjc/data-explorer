@@ -147,7 +147,7 @@
      (for [c (@data "columns")] ^{:key c}[:td (row c)])]
     [:tr [:td (inc i)]
      (map-indexed
-      (fn[j v] ^{:key j}[:td v]) row)]))
+      (fn[j v] ^{:key j}[:td (str v)]) row)]))
 
 (defn data-table [data controller]
   (let [sort-state (atom [])
