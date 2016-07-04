@@ -1,7 +1,8 @@
 (ns dbquery.commons
-  (:require [reagent.core :as r :refer [atom]]
+  (:require [clojure.string :as str]
             [cljsjs.react-bootstrap]
-            [clojure.string :as str]))
+            [re-frame.core :refer [dispatch]]
+            [reagent.core :as r :refer [atom]]))
 
 (def navbar (r/adapt-react-class js/ReactBootstrap.Navbar))
 (def nav-brand (r/adapt-react-class js/ReactBootstrap.NavBrand))
@@ -32,6 +33,11 @@
   (let [container (js/document.getElementById "modals")]
     (r/unmount-component-at-node container)
     (r/render modal-comp container)))
+
+(defn dispatch-all [ev1 & more]
+  (dispatch ev1)
+  (doseq [ev more]
+    (dispatch ev)))
 
 (defn bind [attrs model type]
   (if-let [[doc & path] model]

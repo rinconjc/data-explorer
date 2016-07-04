@@ -96,9 +96,9 @@
     {:body {:header header :rows (take 4 rows) :file (.getName (file :tempfile))}}))
 
 (defn handle-exec-sql [req ds-id]
-  (let [{:keys [raw-sql] :as opts} (:body req)
+  (let [{:keys [sql] :as opts} (:body req)
         ds (get-ds ds-id)
-        r (execute ds raw-sql opts)]
+        r (execute ds sql opts)]
     (if (number? r)
       {:body {:rowsAffected r}}
       {:body {:data  r}})))
