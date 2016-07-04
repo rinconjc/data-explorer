@@ -1,92 +1,12 @@
 (ns dbquery.data-table
-  (:require [dbquery.commons :as c :refer [input button]]
-            [clojure.string :as s]
-            [reagent.core :as r :refer [atom]]
-            [ajax.core :refer [GET POST]]
-            [dbquery.sql-utils :as sql]))
+  (:require [dbquery.commons :as c :refer [button input]]
+            [dbquery.sql-utils :refer [sort-icons]]
+            [re-frame.core :refer [dispatch subscribe]]
+            [reagent.core :as r :refer [atom]]))
 
-(deftype SortControl [sort-state sort-icons sorter-fn]
-  Object
-  (roll-sort [this i]
-    (let [j (inc i)
-          next-icon
-          (-> (case (@sort-icons i "fa-sort")
-                "fa-sort" ["fa-sort-up" (swap! sort-state conj j)]
-                "fa-sort-up" ["fa-sort-down" (swap! sort-state (partial replace {j (- j)}))]
-                "fa-sort-down" ["fa-sort" (swap! sort-state (partial remove #(= % (- j))))]) first)]
-      (swap! sort-icons assoc i next-icon)
-      (sorter-fn @sort-state)))
-
-  (set-sort [this i ord]
-    (let[j (inc i)
-         next-icon (str "fa-sort" (and ord (str "-" ord)))
-         k (c/index-where #(= j (Math/abs %)) @sort-state)
-         nj (case ord "up" j "down" (- j) nil)]
-      (when-not (= next-icon (@sort-icons i))
-        (swap! sort-icons assoc i next-icon)
-        (if (some? ord)
-          (swap! sort-state #(if k (update % k (fn[_] nj)) (conj % nj)))
-          (swap! sort-state c/remove-nth k))
-        (sorter-fn @sort-state)))))
-
-(deftype SqlQuery [cols tables conditions order group]
-  Object
-  (condition! [_ col condition]
-    (if (empty? (:op condition))
-      (swap! conditions dissoc col)
-      (swap! conditions assoc col condition)))
-  (condition [_ col]
-    (@conditions col))
-  (order! [_ state]
-    (reset! order state))
-  (sql [_]
-    (sql/sql-select @cols @tables @conditions @order @group))
-  (sql-distinct [_ col]
-    (sql/sql-select [(str "distinct " col)] @tables @conditions [] []))
-  (sql-count [_]
-    (sql/sql-select ["count(*)"] @tables @conditions [] [])))
-
-(defn query-from-sql [raw-sql]
-  (SqlQuery. (atom ["*"]) (atom [(str "(" raw-sql ")")]) (atom {}) (atom []) (atom [])))
-
-(defn query-from-table [table]
-  (SqlQuery. (atom ["*"]) (atom [table]) (atom {}) (atom []) (atom [])))
-
-(deftype DataController [ds query data error]
-  Object
-  (execute [_ q data-fn error-fn]
-    (POST (str "/ds/" (ds "id") "/exec-sql")
-          :params q :response-format :json :format :json
-          :handler data-fn
-          :error-handler error-fn))
-
-  (refresh [this]
-    (swap! data assoc :loading true)
-    (.execute this {:raw-sql (.sql query) :limit (max (count (@data "rows")) 40)}
-              #(reset! data (% "data")) #(reset! error (c/error-text %))))
-
-  (sort [this sort-state]
-    (.order! query sort-state)
-    (.refresh this))
-
-  (next-page [this]
-    (when-not (:loading @data)
-      (swap! data assoc :loading true)
-      (.execute this {:raw-sql (.sql query) :offset (count (@data "rows"))}
-                (fn[{{:strs[rows]} "data"}]
-                  (swap! data assoc "rows" (apply conj (@data "rows") rows)
-                         :loading false))
-                #(reset! error (c/error-text %)))))
-
-  (filter [this col condition]
-    (.condition! query col condition)
-    (.refresh this))
-  (column-values [this col data-fn error-fn]
-    (.execute this {:raw-sql (.sql-distinct query col)} data-fn error-fn)))
-
-(defn filter-box [col controller]
-  (let[condition (atom (-> controller .-query (.condition col) (or {})))]
-    (fn[col controller]
+(defn filter-box [query col]
+  (let [condition (atom (-> query :conditions (get col)))]
+    (fn [query col]
       [:form.form-inline {:style {:padding "4px"}}
        [input {:model [condition :op] :type "select" :id "operator"}
         [:option {:value ""} "none"]
@@ -99,39 +19,38 @@
         [:option {:value ">"} ">"]
         [:option {:value ">="} ">="]]
        [input {:model [condition :value] :type "text" :id "value"}]
-       [button {:bs-style "default" :on-click #(.filter controller col @condition)}
+       [button {:bs-style "default" :on-click #(dispatch [:set-filter col @condition])}
         "OK"]])))
 
-(defn dist-values [col controller]
-  (let[values (atom [])]
-    (.column-values controller col #(reset! values (->> (get-in % ["data" "rows"]) (map first))) identity)
-    (fn[col controller]
-      [:div {:style {:padding "5px"}}
-       [:ul.list-unstyled.list {:cursor "pointer"}
-        (map-indexed
-         (fn[i v] ^{:key i}
-           [:li {:on-click #(.filter controller col {:op "=" :value v})}
-            v]) @values)]])))
+(defn dist-values [model col]
+  [:div {:style {:padding "5px"}}
+   [:ul.list-unstyled.list {:cursor "pointer"}
+    (map-indexed
+     (fn[i v] ^{:key i}
+       [:li {:on-click #(dispatch [:set-filter col {:op "=" :value v}])}
+        v]) (-> @model :col-data (get col)))]])
 
-(defn column-toolbar [show? i col sort-control controller]
-  (let[active-box (atom nil)]
-    (fn[show? i col sort-control controller]
-      (if @show?
-        [:div.my-popover
-         [c/button-group {:bsSize "xsmall"}
-          [c/button {:on-click (fn[](swap! active-box #(case % :filter nil :filter)))}
-           [:i.fa.fa-filter]]
-          [c/button {:on-click (fn[](swap! active-box #(case % :distinct nil :distinct))) :title "Distinct Values"}
-           [:i.fa.fa-list-alt]]
-          [c/button [:i.fa.fa-minus]]
-          [c/button [:i.fa.fa-plus]]
-          [c/button {:on-click #(.set-sort sort-control i "up") :title "Sort Asc"} [:i.fa.fa-sort-up]]
-          [c/button {:on-click #(.set-sort sort-control i "down") :title "Sort Desc"} [:i.fa.fa-sort-down]]
-          [c/button {:on-click #(.set-sort sort-control i nil) :title "No Sort"} [:i.fa.fa-sort]]]
-         (case @active-box
-           :filter [filter-box col controller]
-           :distinct [dist-values col controller]
-           "")]))))
+(defn column-toolbar [model i col]
+  (let [active-box (atom nil)]
+    (fn [model i col]
+      [:div.my-popover
+       [c/button-group {:bsSize "xsmall"}
+        [c/button {:on-click (fn[](swap! active-box #(case % :filter nil :filter)))}
+         [:i.fa.fa-filter]]
+        [c/button {:on-click (fn[]
+                               (dispatch [:query-dist-values col])
+                               (swap! active-box #(case % :distinct nil :distinct)))
+                   :title "Distinct Values"}
+         [:i.fa.fa-list-alt]]
+        [c/button [:i.fa.fa-minus]]
+        [c/button [:i.fa.fa-plus]]
+        [c/button {:on-click #(dispatch [:set-sort i :up]) :title "Sort Asc"} [:i.fa.fa-sort-up]]
+        [c/button {:on-click #(dispatch [:set-sort i :down]) :title "Sort Desc"} [:i.fa.fa-sort-down]]
+        [c/button {:on-click #(dispatch [:set-sort i nil]) :title "No Sort"} [:i.fa.fa-sort]]]
+       (case @active-box
+         :filter [filter-box (:query @model) col]
+         :distinct [dist-values model col]
+         "")])))
 
 (defn scroll-bottom? [e]
   (let [elem (.-target e)
@@ -144,63 +63,51 @@
 (defn table-row [data row i]
   (if (map? row)
     [:tr [:td (inc i)]
-     (for [c (@data "columns")] ^{:key c}[:td (row c)])]
+     (for [c (data :columns)] ^{:key c}[:td (row c)])]
     [:tr [:td (inc i)]
      (map-indexed
-      (fn[j v] ^{:key j}[:td v]) row)]))
+      (fn [j v] ^{:key j}[:td v]) row)]))
 
-(defn data-table [data controller]
-  (let [sort-state (atom [])
-        sort-icons (atom {})
-        sort-control (SortControl. sort-state sort-icons #(.sort controller %))]
-    (fn [data controller]
+(defn data-table [db-id id]
+  (let [model (subscribe [:resultset/by-id db-id id])
+        col-toolbar-on (atom nil)]
+    (fn [db-id id]
       [:div.full-height {:style {:position "relative"}}
        [:div.table-responsive
         {:style {:overflow-y "scroll" :height "100%" :position "relative"}
          :on-scroll #(when (scroll-bottom? %)
-                       (.next-page controller))}
+                       (dispatch [:next-page]))}
         [:table.table.table-hover.table-bordered.summary
          [:thead
           [:tr [:th {:style {:width "1px" :padding-left "2px" :padding-right "2px"}}
                 [c/split-button {:style {:display "flex"}
                                  :title (r/as-element [:i.fa.fa-refresh])
-                                 :on-click #(.refresh controller) :bsSize "xsmall"}
+                                 :on-click #(dispatch [:reload]) :bsSize "xsmall"}
                  [c/menu-item {:eventKey 1} "Join with ..."]
                  [c/menu-item {:eventKey 2} "Row Count"]]]
            (doall
             (map-indexed
              (fn[i c]
-               (let [show? (atom false)] ^{:key i}
-                    [:th
-                     [:a.btn-link {:on-click #(swap! show? not)} c]
-                     [:a.btn-link {:on-click #(.roll-sort sort-control i)}
-                      [:i.fa.btn-sort {:class (@sort-icons i "fa-sort")}]]
-                     [column-toolbar show? i c sort-control controller]])) (@data "columns")))]]
+               ^{:key i}
+               [:th {:on-mouse-leave #(reset! col-toolbar-on nil)}
+                [:a.btn-link {:on-click #(swap! col-toolbar-on
+                                                (fn[i*] (if-not (= i i*) i)))} c]
+                [:a.btn-link {:on-click #(dispatch [:roll-sort i])}
+                 [:i.fa.btn-sort {:class (sort-icons (some #(if (= i (first %)) (second %))
+                                                           (-> @model :query :order)))}]]
+                (if-let [condition (-> @model :query :conditions (get c))]
+                  [:a.btn-link {:on-click #(dispatch [:set-filter c nil])
+                                :title (str condition)}
+                   [:i.fa.fa-filter]])
+                (if (= @col-toolbar-on i)
+                  [column-toolbar model i c])]) (-> @model :data :columns)))]]
          [:tbody
-          (map-indexed
-           (fn [i row]
-             ^{:key i} [table-row data row i]) (@data "rows"))]
+          (doall (map-indexed
+                  (fn [i row]
+                    ^{:key i} [table-row (:data @model) row i]) (-> @model :data :rows)))]
          [:tfoot
-          [:tr [:td {:col-span (inc (count (@data "columns")))}
-                [c/button {:on-click #(.next-page controller)}
+          [:tr [:td {:col-span (inc (count (-> @model :data :columns)))}
+                [c/button {:on-click #(dispatch [:next-page])}
                  [:i.fa.fa-chevron-down]]]]]]]
-       (if (:loading @data)
+       (if (:loading @model)
          [c/progress-overlay])])))
-
-(defn execute-query [ds query data-fn error-fn]
-  (POST (str "/ds/" (ds "id") "/exec-sql")
-        :params query :response-format :json :format :json
-        :handler data-fn
-        :error-handler error-fn))
-
-(defn query-table [ds query initial]
-  (let [data (atom initial)
-        error (atom nil)
-        controller (DataController. ds query data error)]
-    (if-not @data
-      (.refresh controller))
-
-    (fn[ds query initial]
-      (if (some? @error)
-        [c/alert {:bsStyle "danger"} @error]
-        [data-table data controller]))))
