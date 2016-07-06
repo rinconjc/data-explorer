@@ -19,11 +19,11 @@
  :edit-db
  [trim-v]
  (fn [state [db-id]]
-   (if-not (nil? db-id)
+   (if db-id
      (GET (str "/data-sources/" db-id) :response-format :json :keywords? true :format :json
-          :handler #(dispatch [:change [:edit-db :content] %])
+          :handler #(dispatch [:change :modal [dba/database-window %]])
           :error-handler #(dispatch [:change [:edit-db :error] (error-text %)])))
-   (assoc state :modal [dba/database-window] :db-edit {:content {}})))
+   (if db-id state (assoc state :modal [dba/database-window {}]))))
 
 (register-handler
  :select-db

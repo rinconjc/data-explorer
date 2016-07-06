@@ -131,7 +131,7 @@
     (case type
       "text" [:input.form-control attrs]
       "password" [:input.form-control attrs]
-      "select" [:select.form-control (assoc attrs :default-value "") children]
+      "select" [:select.form-control (assoc attrs :default-value (or (:value attrs)  "")) children]
       "textarea" [:textarea.form-control attrs]
       "file" [:input attrs]
       "typeahead" [typeahead (assoc attrs :model model)]

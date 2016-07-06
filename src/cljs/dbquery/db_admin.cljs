@@ -4,11 +4,11 @@
             [reagent.core :as r :refer [atom]]
             [reagent.ratom :refer-macros [reaction]]))
 
-(defn database-window []
-  (let [model (subscribe [:db-edit])
-        db-spec (reaction (:content @model))]
-    (fn []
-      [c/modal {:on-hide #(dispatch [:change :modal nil])}
+(defn database-window [db-initial]
+  (let [model (subscribe [:state :edit-db])
+        db-spec (atom db-initial)]
+    (fn [db-initial]
+      [c/modal {:on-hide #(dispatch [:change :modal nil :edit-db nil]) :show true}
        [c/modal-header
         [:h4 "Database Connection"]]
        [c/modal-body
@@ -26,10 +26,9 @@
                   :placeholder "Select database type"
                   :label-class-name "col-sm-4"
                   :wrapper-class-name "col-sm-6"}
-           [:option {:key "" :disabled ""} ""]
-           [:option {:key "ORACLE"} "ORACLE"]
-           [:option {:key "H2"} "H2"]
-           [:option {:key "POSTGRES"} "PostgreSQL"]]
+           ^{:key 1}[:option {:value "ORACLE"} "ORACLE"]
+           ^{:key 2}[:option {:value "H2"} "H2"]
+           ^{:key 3}[:option {:value "POSTGRES"} "PostgreSQL"]]
           [input {:model [db-spec :url]
                   :type "text" :label "URL"
                   :placeholder "<server>:<port>..."
@@ -71,4 +70,4 @@
                  :on-click #(dispatch-all [:open-db (@dbs @selected)]
                                           [:change :modal nil])} "Connect"]
         [button {:bsStyle "primary"
-                 :on-click #(dispatch [:edit-db (-> @dbs @selected :id)])} "Configure"]]])))
+                 :on-click #(dispatch [:edit-db (:id (@dbs @selected))])} "Configure"]]])))
