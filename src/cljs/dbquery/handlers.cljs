@@ -196,10 +196,12 @@
 (register-handler
  :change
  common-middlewares
- (fn [state [key value]]
-   (if (vector? key)
-     (assoc-in state key value)
-     (assoc state key value))))
+ (fn [state [key value & kvs]]
+   (loop [[k v] [key value] kvs kvs s state]
+     (cond
+       (nil? k) s
+       (vector? k) (recur (take 2 kvs) (drop 2 kvs) (assoc-in s k v))
+       :else (recur (take 2 kvs) (drop 2 kvs) (assoc s k v))))))
 
 (register-handler
  :change-page
