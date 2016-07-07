@@ -88,7 +88,7 @@
  (fn [state [db-details]]
    (let [params [:params db-details :format :json
                  :response-format :json
-                 :handler #(dispatch [:update [:edit-db :saved] true])
+                 :handler #(dispatch [:db-saved db-details])
                  :error-handler #(dispatch [:change [:edit-db :error] (error-text %)])]]
      (if (:id db-details)
        (apply PUT (str "/data-sources/" (:id db-details)) params)
@@ -124,9 +124,11 @@
  :open-db
  common-middlewares
  (fn [state [db]]
-   (js/console.log "opening:" db)
-   (dispatch [:activate-db (:id db)])
-   (update state :db-tabs assoc (:id db) {:db db})))
+   (or (when-let [id (:id db)]
+         (dispatch [:activate-db id])
+         (if (get-in state [:db-tabs id]) state
+             (update state :db-tabs assoc id {:db db})))
+       state)))
 
 (register-handler
  :kill-db
@@ -227,16 +229,15 @@
 
 (register-handler
  :save-query
- (fn [state [_ tab-id query success-fn]]
-   (js/console.log "handling save query:" query)
-   (let [script (if (string? query)
-                  (assoc (get-in state [:tabs tab-id :query]) :sql query)
-                  query)
-         [method path] (if-let [id (:id script)] [PUT (str "/queries/" id)] [POST "/queries"])]
-     (method path :params script :format :json
-             :handler #(do (dispatch [:change [:tabs tab-id :query %]])
-                           (and (fn? success-fn) (success-fn)))
-             :error-handler #(dispatch [:change :status [:error (error-text %)]]))
+ [trim-v in-active-db]
+ (fn [state [tab-id query]]
+   (let [[method path] (if-let [id (:id query)]
+                         [PUT (str "/queries/" id)] [POST "/queries"])]
+     (method path :params query :format :json :response-format :json :keywords? true
+             :handler #(dispatch [:change [:db-tabs tab-id :query] % :modal nil])
+             :error-handler #(do
+                               (js/console.log (str "failure saving:" (error-text %)))
+                               (dispatch [:change :modal nil])))
      state)))
 
 (register-handler
@@ -347,7 +348,7 @@
 
 (register-handler
  :set-filter
- [common-middlewares debug in-active-table]
+ [common-middlewares in-active-table]
  (fn [resultset [tab-id col condition]]
    (let [new-rs (update-in resultset [:query :conditions]
                            #(if (str/blank? (:op condition))
