@@ -196,6 +196,8 @@
   :allowed-methods [:get :put :delete]
   :exists? (if-let [q (get-query id)]
              {:the-query q})
+  :new? false
+  :respond-with-entity? true
   :handle-ok #(:the-query %)
   :put! #(k/update query (k/set-fields (get-in % [:request :body]))
                    (k/where {:id id}))

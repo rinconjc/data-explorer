@@ -8,7 +8,8 @@
   (let [model (subscribe [:state :edit-db])
         db-spec (atom db-initial)]
     (fn [db-initial]
-      [c/modal {:on-hide #(dispatch [:change :modal nil :edit-db nil]) :show true}
+      [c/modal {:on-hide #(dispatch [:change :modal nil :edit-db nil])
+                :show (not (:saved @model))}
        [c/modal-header
         [:h4 "Database Connection"]]
        [c/modal-body

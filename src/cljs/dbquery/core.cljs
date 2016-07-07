@@ -26,6 +26,13 @@
    (if db-id state (assoc state :modal [dba/database-window {}]))))
 
 (register-handler
+ :db-saved
+ [trim-v]
+ (fn [state [db]]
+   (dispatch [:open-db db])
+   (dissoc state :modal :edit-db)))
+
+(register-handler
  :select-db
  trim-v
  (fn [state []]
