@@ -32,6 +32,7 @@
     (let [sdf (SimpleDateFormat. fmt)]
       (.writeString jsonGenerator (.format sdf d)))))
 
+(add-encoder (Class/forName "[B") #(.writeString %2 "<binary>"))
 (add-encoder java.util.Date (date-time-encoder "dd/MM/yyyy"))
 (add-encoder java.sql.Date (date-time-encoder "dd/MM/yyyy"))
 (add-encoder java.sql.Timestamp (date-time-encoder "dd/MM/yyyy HH:mm:ss"))
