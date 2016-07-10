@@ -28,7 +28,7 @@
     (map-indexed
      (fn[i v] ^{:key i}
        [:li {:on-click #(dispatch [:set-filter col {:op "=" :value v}])}
-        v]) (-> @model :col-data (get col)))]])
+        v]) (-> model :col-data (get col)))]])
 
 (defn column-toolbar [model i col]
   (let [active-box (atom nil)]
@@ -48,7 +48,7 @@
         [c/button {:on-click #(dispatch [:set-sort i :down]) :title "Sort Desc"} [:i.fa.fa-sort-down]]
         [c/button {:on-click #(dispatch [:set-sort i nil]) :title "No Sort"} [:i.fa.fa-sort]]]
        (case @active-box
-         :filter [filter-box (:query @model) col]
+         :filter [filter-box (:query model) col]
          :distinct [dist-values model col]
          "")])))
 
@@ -68,10 +68,9 @@
      (map-indexed
       (fn [j v] ^{:key j}[:td v]) row)]))
 
-(defn data-table [db-id id]
-  (let [model (subscribe [:resultset/by-id db-id id])
-        col-toolbar-on (atom nil)]
-    (fn [db-id id]
+(defn data-table [model]
+  (let [col-toolbar-on (atom nil)]
+    (fn [model]
       [:div.full-height {:style {:position "relative"}}
        [:div.table-responsive
         {:style {:overflow-y "scroll" :height "100%" :position "relative"}
@@ -94,20 +93,20 @@
                                                 (fn[i*] (if-not (= i i*) i)))} c]
                 [:a.btn-link {:on-click #(dispatch [:roll-sort i])}
                  [:i.fa.btn-sort {:class (sort-icons (some #(if (= i (first %)) (second %))
-                                                           (-> @model :query :order)))}]]
-                (if-let [condition (-> @model :query :conditions (get c))]
+                                                           (-> model :query :order)))}]]
+                (if-let [condition (-> model :query :conditions (get c))]
                   [:a.btn-link {:on-click #(dispatch [:set-filter c nil])
                                 :title (str condition)}
                    [:i.fa.fa-filter]])
                 (if (= @col-toolbar-on i)
-                  [column-toolbar model i c])]) (-> @model :data :columns)))]]
+                  [column-toolbar model i c])]) (-> model :data :columns)))]]
          [:tbody
           (doall (map-indexed
                   (fn [i row]
-                    ^{:key i} [table-row (:data @model) row i]) (-> @model :data :rows)))]
+                    ^{:key i} [table-row (:data model) row i]) (-> model :data :rows)))]
          [:tfoot
-          [:tr [:td {:col-span (inc (count (-> @model :data :columns)))}
+          [:tr [:td {:col-span (inc (count (-> model :data :columns)))}
                 [c/button {:on-click #(dispatch [:next-page])}
                  [:i.fa.fa-chevron-down]]]]]]]
-       (if (:loading @model)
+       (if (:loading model)
          [c/progress-overlay])])))

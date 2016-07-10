@@ -1,9 +1,10 @@
 (ns dbquery.db-console
-  (:require [dbquery.commons :as c :refer [input open-modal]]
+  (:require [dbquery.commons :as c :refer [input]]
             [dbquery.data-table :as dt]
             [re-frame.core :refer [dispatch subscribe]]
             [reagent.core :as r :refer [atom]]
             [widgets.splitter :as st]
+            [reagent.ratom :refer-macros [reaction]]
             [cljsjs.codemirror]))
 
 (defn search-box [f]
@@ -40,10 +41,13 @@
                         :on-double-click #(dispatch [:preview-table])}
                    [:i.fa {:class (icons type)}] name]))]]])))
 
-(defn code-mirror [instance config]
+(defn code-mirror [instance config value]
   (r/create-class
    {:reagent-render
-    (fn[config] [:textarea.mousetrap {:style {:width "100%" :height "100%"}}])
+    (fn[instance config value]
+      (if @instance
+        (.setValue @instance value))
+      [:textarea.mousetrap {:style {:width "100%" :height "100%"}}])
     :component-did-mount
     (fn[c]
       (let [cm (.fromTextArea js/CodeMirror (r/dom-node c) (clj->js config))]
@@ -77,7 +81,7 @@
                    (dispatch [:save-query (assoc @query :sql (.getValue @cm))]))
         query-filter (fn[text]
                        (let [re (re-pattern text)]
-                         (filter #(re-find re (% "name")) @suggestions)))
+                         (filter #(re-find re (or (:name %) "")) @suggestions)))
         exec-sql #(dispatch [:submit-sql id (if (empty? (.getSelection @cm))
                                               (.getValue @cm) (.getSelection @cm))])
         reset-fn #(do
@@ -92,21 +96,22 @@
          [c/button-group
           [c/button {:title "Execute" :on-click exec-sql}
            [:i.fa.fa-play]]
-          [c/button {:title "Save"
-                     :on-click save-fn}
+          [c/button {:title "Save" :on-click save-fn}
            [:i.fa.fa-save]]
           [c/button {:on-click reset-fn}
            [:i.fa.fa-file-o]]]
          [c/button-group {:bsSize "small"}
-          [:form.form-inline {:on-submit #(identity false)}
-           [c/input {:model [model :search] :type "typeahead" :placeholder "search queries" :size 40
-                     :data-source query-filter :result-fn #(% :name)
-                     :choice-fn #(.setValue @cm (% "sql")) }]]]
+          [:form.form-inline {:on-submit #(.preventDefault %)}
+           [c/input {:model [model :search] :type "typeahead"
+                     :placeholder "search queries" :size 40 :tab-index 1
+                     :data-source query-filter :result-fn #(:name %)
+                     :choice-fn #(dispatch [:set-in-active-db :query %]) }]]]
          [:span (:name @query)]]]
        [:div.panel-body {:style {:padding "0px" :overflow "scroll" :height "calc(100% - 46px)"}}
         [code-mirror cm {:mode "text/x-sql"
+                         :tabindex 2
                          :extraKeys {:Ctrl-Enter exec-sql :Alt-S save-fn}}
-         (or (get @query :sql) "--...")]]])))
+         (or (:sql @query) "")]]])))
 
 (defn db-console [id]
   (let [db-tab (subscribe [:db-tab/by-id id])]
@@ -115,16 +120,16 @@
        [db-objects id]
        [st/vertical-splitter {:split-at 200}
         [sql-panel id]
-        [c/tabs {:activeKey (:active-table @db-tab)
+        [c/tabs {:active-key (:active-table @db-tab)
                  :on-select #(dispatch [:activate-table id %])
                  :class "small-tabs full-height"}
-         (if-let [out (:db-out @db-tab)]
-           [c/tab {:eventKey :out :title "SQL Output"}
+         (if-let [out (:dbout @db-tab)]
+           [c/tab {:event-key :out :title "SQL Output"}
             [:div out]])
-         (doall (for [[rs-id rs] (:resultsets @db-tab)]
-                  ^{:key rs-id}
-                  [c/tab {:eventKey rs-id
-                          :title (r/as-element
-                                  [:span {:title rs-id} rs-id
-                                   [c/close-button #(dispatch [:kill-table id rs-id])]])}
-                   [dt/data-table id rs-id]]))]]])))
+         (for [[rs-id rs] (:resultsets @db-tab)]
+           ^{:key rs-id}
+           [c/tab {:event-key rs-id
+                   :title (r/as-element
+                           [:span {:title rs-id} rs-id
+                            [c/close-button #(dispatch [:kill-table id rs-id])]])}
+            [dt/data-table rs]])]]])))
