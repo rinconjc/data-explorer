@@ -139,11 +139,13 @@
 
 (register-handler
  :activate-table
- [common-middlewares tab-path]
+ [common-middlewares debug tab-path]
  (fn [state [db-id q-id]]
-   (let [current (:active-table state)]
-     (if (= current q-id) state
-         (assoc state :active-table q-id)))))
+   (let [current (:active-table state)
+         now (.getTime (js/Date.))
+         last-change (or (:last-change state) 0)]
+     (if (or (= current q-id) (< (- now last-change) 1000)) state
+         (assoc state :active-table q-id :last-change now)))))
 
 (register-handler
  :kill-table
@@ -251,7 +253,7 @@
 
 (register-handler
  :exec-queries
- [common-middlewares tab-path]
+ [common-middlewares debug tab-path]
  (fn [state [db-id]]
    (update state :in-queue
            (fn [[q & more]]
@@ -272,11 +274,11 @@
            :params {:sql sql :offset offset :limit limit}
            :response-format :json :format :json :keywords? true
            :handler #(do
-                       (dispatch [:exec-queries db-id])
                        (if-let [data (% :data)]
                          (dispatch [:update-result db-id q data offset])
                          (dispatch [:update db-id :dbout
-                                    str sql "\nrows affected:" (:rowsAffected %)])))
+                                    str sql "\nrows affected:" (:rowsAffected %)]))
+                       (dispatch [:exec-queries db-id]))
            :error-handler #(dispatch [:update db-id :dbout
                                       str sql "\nFailed with:" (error-text %)])))
    state))
@@ -285,18 +287,18 @@
  :update-result
  [common-middlewares tab-path]
  (fn [state [db-id q data offset]]
-   (if (map? q)
+   (if (string? q)
+     (let [qnum (inc (or (state :query-count) 0))
+           q {:id (str "Query #" qnum) :data data
+              :query (query-from-sql q)}]
+       (dispatch [:activate-table db-id (:id q)])
+       (-> state (update :resultsets assoc (:id q) q)
+           (assoc :query-count qnum)))
      (-> state (update-in [:resultsets (:id q)] merge q
                           {:data (if (pos? (or offset 0))
                                    (update (:data q) :rows concat (:rows data)) data)
                            :loading false})
-         (assoc :active-table (:id q)))
-     (let [qnum (inc (or (state :query-count) 0))
-           q {:id (str "Query #" qnum) :data data
-              :query (query-from-sql q)}]
-       (-> state (update :resultsets assoc (:id q) q)
-           (assoc :query-count qnum
-                  :active-table (:id q)))))))
+         (assoc :active-table (:id q))))))
 
 (register-handler
  :preview-table
