@@ -1,7 +1,8 @@
 (ns dbquery.commons
-  (:require [reagent.core :as r :refer [atom]]
+  (:require [clojure.string :as str]
             [cljsjs.react-bootstrap]
-            [clojure.string :as str]))
+            [re-frame.core :refer [dispatch]]
+            [reagent.core :as r :refer [atom]]))
 
 (def navbar (r/adapt-react-class js/ReactBootstrap.Navbar))
 (def nav-brand (r/adapt-react-class js/ReactBootstrap.NavBrand))
@@ -32,6 +33,11 @@
   (let [container (js/document.getElementById "modals")]
     (r/unmount-component-at-node container)
     (r/render modal-comp container)))
+
+(defn dispatch-all [ev1 & more]
+  (dispatch ev1)
+  (doseq [ev more]
+    (dispatch ev)))
 
 (defn bind [attrs model type]
   (if-let [[doc & path] model]
@@ -68,7 +74,7 @@
                            (let [choice (nth @selections @selected-index)]
                              (save! (result-fn choice))
                              (choice-fn choice)
-                             (reset! typeahead-hidden? true)))]
+                             (if % (reset! typeahead-hidden? true))))]
     (fn [attrs]
       [:span
        [:input.form-control
@@ -87,14 +93,16 @@
                                  38 (do
                                       (.preventDefault %)
                                       (when-not (= @selected-index 0)
-                                        (swap! selected-index dec)))
+                                        (swap! selected-index dec)
+                                        (choose-selected false)))
                                  40 (do
                                       (.preventDefault %)
                                       (when-not (= @selected-index (dec (count @selections)))
                                         (save! (value-of %))
-                                        (swap! selected-index inc)))
-                                 9  (choose-selected)
-                                 13 (choose-selected)
+                                        (swap! selected-index inc)
+                                        (choose-selected false)))
+                                 9  (choose-selected true)
+                                 13 (choose-selected true)
                                  27 (do (reset! typeahead-hidden? true)
                                         (reset! selected-index 0))
                                  "default")))]
@@ -125,7 +133,7 @@
     (case type
       "text" [:input.form-control attrs]
       "password" [:input.form-control attrs]
-      "select" [:select.form-control (assoc attrs :default-value "") children]
+      "select" [:select.form-control (assoc attrs :default-value (or (:value attrs)  "")) children]
       "textarea" [:textarea.form-control attrs]
       "file" [:input attrs]
       "typeahead" [typeahead (assoc attrs :model model)]

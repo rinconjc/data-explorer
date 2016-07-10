@@ -1,24 +1,21 @@
 (ns dbquery.db-admin
-  (:require [dbquery.commons :as c :refer [input button error-text]]
+  (:require [dbquery.commons :as c :refer [button dispatch-all input]]
+            [re-frame.core :refer [dispatch subscribe]]
             [reagent.core :as r :refer [atom]]
-            [ajax.core :refer [GET POST PUT]]))
+            [reagent.ratom :refer-macros [reaction]]))
 
-(defn database-window [db-id when-done]
-  (let [show? (atom true)
-        error (atom nil)
-        db-spec (atom {})]
-    (if db-id
-      (GET (str "/data-sources/" db-id) :response-format :json :keywords? true :format :json
-           :handler #(reset! db-spec %) :error-handler #(.log js/console (c/error-text %))))
-
-    (fn [db-id when-done]
-      [c/modal {:on-hide #(reset! show? false) :show @show?}
+(defn database-window [db-initial]
+  (let [model (subscribe [:state :edit-db])
+        db-spec (atom db-initial)]
+    (fn [db-initial]
+      [c/modal {:on-hide #(dispatch [:change :modal nil :edit-db nil])
+                :show (not (:saved @model))}
        [c/modal-header
         [:h4 "Database Connection"]]
        [c/modal-body
         [:div.container-fluid
-         (if @error
-           [c/alert {:bs-style "danger"} @error])
+         (if (:error @model)
+           [c/alert {:bs-style "danger"} (:error @model)])
          [:form {:class-name "form-horizontal"}
           [input {:model [db-spec :name] :type "text"
                   :label "Connection Name"
@@ -30,10 +27,9 @@
                   :placeholder "Select database type"
                   :label-class-name "col-sm-4"
                   :wrapper-class-name "col-sm-6"}
-           [:option {:key "" :disabled ""} ""]
-           [:option {:key "ORACLE"} "ORACLE"]
-           [:option {:key "H2"} "H2"]
-           [:option {:key "POSTGRES"} "PostgreSQL"]]
+           ^{:key 1}[:option {:value "ORACLE"} "ORACLE"]
+           ^{:key 2}[:option {:value "H2"} "H2"]
+           ^{:key 3}[:option {:value "POSTGRES"} "PostgreSQL"]]
           [input {:model [db-spec :url]
                   :type "text" :label "URL"
                   :placeholder "<server>:<port>..."
@@ -53,41 +49,26 @@
                   :wrapper-class-name "col-sm-5"}]]]]
        [c/modal-footer
         [button {:bsStyle "primary"
-                 :on-click
-                 (fn [e]
-                   (let [params [:params @db-spec :format :json
-                                 :response-format :json
-                                 :handler #(do (when-done)
-                                               (reset! show? false))
-                                 :error-handler #(reset! error (error-text %))]]
-                     (if (:id @db-spec)
-                       (apply PUT (str "/data-sources/" (:id @db-spec)) params)
-                       (apply POST "/data-sources" params ))))}
+                 :on-click #(dispatch [:save-db @db-spec])}
          "Connect"]]])))
 
-(defn select-db-dialog [return-fn]
-  (let [show? (atom true)
-        db-id (atom nil)
-        dbs (atom [])
-        handle-ok (fn [action]
-                    (reset! show? false)
-                    (return-fn action (@dbs @db-id)))]
-    (GET "/data-sources" :response-format :json
-         :handler #(reset! dbs %)
-         :error-handler #(js/console.log "failed retrieving dbs..." %))
-    (fn [return-fn]
-      [c/modal {:show @show? :on-hide #(reset! show? false) :bsSize "small"}
+(defn select-db-dialog []
+  (let [selected (atom 0)
+        dbs (subscribe [:db-list])]
+    (fn []
+      [c/modal {:on-hide #(dispatch [:change :modal nil]) :bsSize "small" :show true}
        [c/modal-header
         [:h4 "Open Database"]]
        [c/modal-body
         [:div.container-fluid
-         [:form.form-horizontal {:on-submit handle-ok}
-          [input {:value @db-id :type "select" :label "Database"
-                  :on-change #(reset! db-id (-> % .-target .-value))}
+         [:form.form-horizontal {:on-submit #(dispatch [:open-db (@dbs @selected)])}
+          [input {:value @selected :type "select" :label "Database"
+                  :on-change #(reset! selected (-> % .-target .-value))}
            (map-indexed (fn [i db] ^{:key i}
-                          [:option {:value i} (db "name")]) @dbs)]]]]
+                          [:option {:value i} (db :name)]) @dbs)]]]]
        [c/modal-footer
         [button {:bsStyle "primary"
-                 :on-click #(handle-ok :connect)} "Connect"]
+                 :on-click #(dispatch-all [:open-db (@dbs @selected)]
+                                          [:change :modal nil])} "Connect"]
         [button {:bsStyle "primary"
-                 :on-click #(handle-ok :configure)} "Configure"]]])))
+                 :on-click #(dispatch [:edit-db (:id (@dbs @selected))])} "Configure"]]])))
