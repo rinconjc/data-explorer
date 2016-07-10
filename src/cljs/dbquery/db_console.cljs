@@ -1,55 +1,11 @@
 (ns dbquery.db-console
-  (:require [dbquery.commons :as c :refer [open-modal input button]]
-            [widgets.splitter :as st]
+  (:require [dbquery.commons :as c :refer [input]]
             [dbquery.data-table :as dt]
+            [re-frame.core :refer [dispatch subscribe]]
             [reagent.core :as r :refer [atom]]
-            [clojure.string :as s]
-            [cljsjs.codemirror]
-            [cljsjs.mousetrap]
-            [ajax.core :refer [GET POST PUT]]
-            [clojure.string :as str]
-            [re-frame.core :as rf]))
-
-(deftype ConsoleControl [data-tabs active-tab q-id out-text]
-  Object
-  (preview [_ tbl]
-    (when-not (some #(= tbl (:id %)) @data-tabs)
-      (.log js/console "adding table " tbl)
-      (swap! data-tabs conj {:id tbl :query (dt/query-from-table tbl)}))
-    (reset! active-tab tbl))
-
-  (exec-sql [_ sql data]
-    (let [id (str "Query #" (swap! q-id inc))]
-      (swap! data-tabs conj {:id id :query (dt/query-from-sql sql) :data data})
-      (reset! active-tab id)))
-
-  (delete-tab [_ t]
-    (swap! data-tabs (partial remove #(= t %)))
-    (if (= (:id t) @active-tab)
-      (reset! active-tab (:id (first @data-tabs)))))
-
-  (info [_ tbl]
-    (let [id (str tbl "*")]
-      (when-not (some #(= id (:id %)) @data-tabs)
-        (swap! data-tabs conj {:id id :table tbl}))
-      (reset! active-tab id)))
-
-  (output [_ text]
-    (let [id "output"]
-      (reset! out-text text)
-      (when-not (some #(= id (:id %)) @data-tabs)
-        (swap! data-tabs #(vec (cons {:id id :text @out-text} %))))
-      (reset! active-tab id))))
-
-(defn mk-console-control [data-tabs active-tab]
-  (let [q-id (atom 0)
-        out-text (atom nil)]
-    (ConsoleControl. data-tabs active-tab q-id out-text)))
-
-(defn retrieve-db-objects [db resp-atom error-atom & {:keys [refresh]}]
-  (GET (str "/ds/" (db "id") "/tables?refresh=" refresh) :response-format :json
-       :handler #(reset! resp-atom %)
-       :error-handler #(reset! error-atom %)))
+            [widgets.splitter :as st]
+            [reagent.ratom :refer-macros [reaction]]
+            [cljsjs.codemirror]))
 
 (defn search-box [f]
   (r/create-class
@@ -60,92 +16,79 @@
                         :placeholder "search..." :size 35 :style {:width "100%"}
                         :tabIndex 100}])}))
 
-(defn db-objects [db ops active?]
-  (let [tables (rf/subscribe [:db-resource :tables db])
-        filtered (atom nil)
-        selected (atom nil)
-        search? (atom false)
+(defn db-objects [tab-id]
+  (let [model (subscribe [:db-objects-model tab-id])
         icons {"TABLE" "fa-table fa-fw"
-               "VIEW" "fa-copy fa-fw"}
-        search-fn (fn[text]
-                    (let [re (re-pattern (s/upper-case text))]
-                      (reset! filtered (filter #(re-find re (% "name")) @tables))))]
-    (fn [db ops active?]
-      (when active?
-        (doto js/Mousetrap
-          (.bind "alt+d" #(.preview ops (@selected "name")))
-          (.bind "/" #(swap! search? not))
-          (.bind "esc" #(reset! search? false))))
+               "VIEW" "fa-copy fa-fw"}]
+    (fn [tab-id]
       [:div.full-height.panel.panel-default
        [:div.panel-heading.compact
         [c/button-group {:bsSize "small"}
-         [c/button {:on-click #(rf/dispatch [:load-db-resource :tables :refresh true])}
+         [c/button {:on-click #(dispatch [:load-db-objects true])}
           [:i.fa.fa-refresh {:title "Refresh Objects"}]]
-         [c/button {:on-click #(.preview ops (@selected "name"))}
+         [c/button {:on-click #(dispatch [:preview-table])}
           [:i.fa.fa-list-alt {:title "Preview Data"}]]
-         [c/button {:on-click #(.info ops (@selected "name"))}
+         [c/button {:on-click #(dispatch [:table-meta])}
           [:i.fa.fa-info {:title "Show metadata"}]]]]
        [:div.panel-body {:style {:padding "4px 4px"}}
-        (if @search?
-          [search-box search-fn])
+        (if (:q @model)
+          [search-box #(dispatch [:filter-objects %])])
         [:ul {:class "list-unstyled list" :style {:height "100%" :cursor "pointer"}}
-         (doall (for [{:strs[type name] :as tb} (or (and @search? @filtered) @tables)]
+         (doall (for [{:keys[type name] :as tb} (:items @model)]
                   ^{:key name}
-                  [:li {:class (if (= tb @selected) "selected" "") :tabIndex 101
-                        :on-click #(reset! selected tb)
-                        :on-double-click #(.preview ops name)}
+                  [:li {:class (if (= tb (:selected @model)) "selected" "") :tabIndex 101
+                        :on-click #(dispatch [:set-in-active-db :selected tb])
+                        :on-double-click #(dispatch [:preview-table])}
                    [:i.fa {:class (icons type)}] name]))]]])))
 
-(defn code-mirror [instance config]
+(defn code-mirror [instance config value]
   (r/create-class
-   {:reagent-render (fn[config] [:textarea.mousetrap {:style {:width "100%" :height "100%"}}])
-    :component-did-mount (fn[c]
-                           (let [cm (.fromTextArea js/CodeMirror (r/dom-node c) (clj->js config))]
-                             (.setTimeout js/window #(.focus cm) 1000)
-                             (reset! instance cm)))}))
+   {:reagent-render
+    (fn[instance config value]
+      (if @instance
+        (.setValue @instance value))
+      [:textarea.mousetrap {:style {:width "100%" :height "100%"}}])
+    :component-did-mount
+    (fn[c]
+      (let [cm (.fromTextArea js/CodeMirror (r/dom-node c) (clj->js config))]
+        (.setTimeout js/window #(.focus cm) 1000)
+        (reset! instance cm)))}))
 
-(defn query-form [tab-id query]
-  (let [show? (atom true)]
-    (fn [tab-id query]
-      [c/modal {:on-hide #(reset! show? false) :show @show? :bsSize "small"}
-       [c/modal-header [:h4 "Save Query"]]
-       [c/modal-body
-        [:div.container-fluid
-         [:form.form-horizontal
-          [input {:model [query :name] :type "text" :label "Name" :placeholder "Query name"}]
-          [input {:model [query :description] :type "textarea" :label "Description"}]]]
-        [c/modal-footer
-         [c/button {:bsStyle "primary"
-                    :on-click #(rf/dispatch [:save-query tab-id @query
-                                             (fn [] (reset! show? false))]) }
-          "Save"]
-         [c/button {:bsStyle "default" :on-click #(reset! show? false)}
-          "Close"]]]])))
+(defn query-form [tab-id initial-query]
+  (let [query (atom initial-query)]
+    (fn [tab-id initial-query]
+     [c/modal {:on-hide #(dispatch [:change :modal nil]) :show true :bsSize "small"}
+      [c/modal-header [:h4 "Save Query"]]
+      [c/modal-body
+       [:div.container-fluid
+        [:form.form-horizontal
+         [input {:model [query :name] :type "text" :label "Name" :placeholder "Query name"}]
+         [input {:model [query :description] :type "textarea" :label "Description"}]]]
+       [c/modal-footer
+        [c/button {:bsStyle "primary"
+                   :on-click #(dispatch [:save-query @query])}
+         "Save"]
+        [c/button {:bsStyle "default" :on-click #(dispatch [:change :modal nil])}
+         "Close"]]]])))
 
-(defn sql-panel [db ops active?]
+(defn sql-panel [id]
   (let [cm (atom nil)
-        tab-id (db "id")
-        state (rf/subscribe [:state [:tabs tab-id :sql-panel]])
-        suggestions (rf/subscribe [:db-resource :queries db])
+        query (subscribe [:query id])
+        suggestions (subscribe [:db-queries id])
         model (atom {})
-        save-fn #(if (:query @state) (rf/dispatch [:save-query tab-id (.getValue @cm)])
-                     (open-modal [query-form tab-id (atom {:sql (.getValue @cm)})]))
+        save-fn #(if (nil? @query)
+                   (dispatch [:change :modal [query-form id {:sql (.getValue @cm)}]])
+                   (dispatch [:save-query (assoc @query :sql (.getValue @cm))]))
         query-filter (fn[text]
                        (let [re (re-pattern text)]
-                         (filter #(re-find re (% "name")) @suggestions)))
-        exec-sql
-        (fn[]
-          (let [sql (if (empty? (.getSelection @cm))
-                      (.getValue @cm) (.getSelection @cm))]
-            (dt/execute-query db {:raw-sql sql}
-                              #(if-let [data (% "data")]
-                                 (.exec-sql ops sql data)
-                                 (.output ops (str "rows affected :" (% "rowsAffected"))))
-                              #(.output ops (c/error-text %)))))]
-    (fn[db ops active?]
-      (when active?
-        (doto js/Mousetrap
-          (.bindGlobal "ctrl+enter" exec-sql)))
+                         (filter #(re-find re (or (:name %) "")) @suggestions)))
+        exec-sql #(dispatch [:submit-sql id (if (empty? (.getSelection @cm))
+                                              (.getValue @cm) (.getSelection @cm))])
+        reset-fn #(do
+                    (dispatch [:set-in-active-db :query nil])
+                    (.setValue @cm ""))]
+
+    (fn[id]
       [:div.panel.panel-default.full-height {:style {:padding "0px" :margin "0px" :height "100%"}}
        [:div.panel-heading.compact
         [c/button-toolbar
@@ -153,61 +96,40 @@
          [c/button-group
           [c/button {:title "Execute" :on-click exec-sql}
            [:i.fa.fa-play]]
-          [c/button {:title "Save"
-                     :on-click save-fn}
+          [c/button {:title "Save" :on-click save-fn}
            [:i.fa.fa-save]]
-          [c/button [:i.fa.fa-file-o]]]
+          [c/button {:on-click reset-fn}
+           [:i.fa.fa-file-o]]]
          [c/button-group {:bsSize "small"}
-          [:form.form-inline {:on-submit #(identity false)}
-           [c/input {:model [model :search] :type "typeahead" :placeholder "search queries" :size 40
-                     :data-source query-filter :result-fn #(% "name")
-                     :choice-fn #(.setValue @cm (% "sql")) }]]]]]
+          [:form.form-inline {:on-submit #(.preventDefault %)}
+           [c/input {:model [model :search] :type "typeahead"
+                     :placeholder "search queries" :size 40 :tab-index 1
+                     :data-source query-filter :result-fn #(:name %)
+                     :choice-fn #(dispatch [:set-in-active-db :query %]) }]]]
+         [:span (:name @query)]]]
        [:div.panel-body {:style {:padding "0px" :overflow "scroll" :height "calc(100% - 46px)"}}
-        [code-mirror cm {:mode "text/x-sql"}
-         (get-in @state [:query :sql])]]])))
+        [code-mirror cm {:mode "text/x-sql"
+                         :tabindex 2
+                         :extraKeys {:Ctrl-Enter exec-sql :Alt-S save-fn}}
+         (or (:sql @query) "")]]])))
 
-(defn retrieve-table-meta [db tbl data-fn error-fn]
-  (GET (str "/ds/" (db "id") "/tables/" tbl) :response-format :json
-       :handler data-fn :error-handler error-fn))
-
-(defn table-meta [db tbl]
-  (let [data (atom {})
-        controller
-        (reify Object
-          (refresh [this]
-            (retrieve-table-meta db tbl
-                                 #(reset! data {"rows" (% "columns")
-                                                "columns" ["name" "type_name" "size" "digits" "nullable" "is_pk" "is_fk" "fk_table" "fk_column"]}) #(.log js/console %)))
-          (sort [_ _]
-            (.log js/console "sort not implemented"))
-          (next-page [this]
-            (.log js/console "next-page not implemented")))]
-    (.refresh controller)
-    (fn[db tbl]
-      [dt/data-table data controller])))
-
-(defn sql-output [v]
-  [:div (:text v)])
-
-(defn db-console [db active?]
-  (let [active-tab (atom nil)
-        data-tabs (atom [])
-        ops (mk-console-control data-tabs active-tab)]
-    (fn[db active?]
+(defn db-console [id]
+  (let [db-tab (subscribe [:db-tab/by-id id])]
+    (fn[id]
       [st/horizontal-splitter {:split-at 240}
-       [db-objects db ops active?]
+       [db-objects id]
        [st/vertical-splitter {:split-at 200}
-        [sql-panel db ops active?]
-        [c/tabs {:activeKey @active-tab
-                 :on-select #(reset! active-tab %)
+        [sql-panel id]
+        [c/tabs {:active-key (:active-table @db-tab)
+                 :on-select #(dispatch [:activate-table id %])
                  :class "small-tabs full-height"}
-         (for [t @data-tabs :let [id (:id t)]]
-           ^{:key id}
-           [c/tab {:eventKey id
+         (if-let [out (:dbout @db-tab)]
+           [c/tab {:event-key :out :title "SQL Output"}
+            [:div out]])
+         (for [[rs-id rs] (:resultsets @db-tab)]
+           ^{:key rs-id}
+           [c/tab {:event-key rs-id
                    :title (r/as-element
-                           [:span {:title (:title t)} id
-                            [c/close-button #(.delete-tab ops t)]])}
-            (cond
-              (:query t) [dt/query-table db (:query t) (:data t)]
-              (:table t) [table-meta db (:table t)]
-              :else [sql-output t])])]]])))
+                           [:span {:title rs-id} rs-id
+                            [c/close-button #(dispatch [:kill-table id rs-id])]])}
+            [dt/data-table rs]])]]])))
