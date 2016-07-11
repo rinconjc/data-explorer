@@ -76,10 +76,7 @@
    (let [db-tab (subscribe [:db-tab/by-id db-id])
          queries (reaction (:db-queries @db-tab))]
      (if-not @queries
-       (GET (str "/ds/" db-id "/queries")
-            :response-format :json :keywords? true :format :json
-            :handler #(dispatch [:change [:db-tabs db-id :db-queries] %])
-            :error-handler #(js/console.log %)))
+       (dispatch [:load-db-queries db-id]))
      queries)))
 
 (register-sub
