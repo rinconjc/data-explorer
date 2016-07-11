@@ -57,19 +57,33 @@
 (defn query-form [tab-id initial-query]
   (let [query (atom initial-query)]
     (fn [tab-id initial-query]
-     [c/modal {:on-hide #(dispatch [:change :modal nil]) :show true :bsSize "small"}
-      [c/modal-header [:h4 "Save Query"]]
-      [c/modal-body
-       [:div.container-fluid
-        [:form.form-horizontal
-         [input {:model [query :name] :type "text" :label "Name" :placeholder "Query name"}]
-         [input {:model [query :description] :type "textarea" :label "Description"}]]]
-       [c/modal-footer
-        [c/button {:bsStyle "primary"
-                   :on-click #(dispatch [:save-query @query])}
-         "Save"]
-        [c/button {:bsStyle "default" :on-click #(dispatch [:change :modal nil])}
-         "Close"]]]])))
+      [c/modal {:on-hide #(dispatch [:change :modal nil]) :show true :bsSize "small"}
+       [c/modal-header [:h4 "Save Query"]]
+       [c/modal-body
+        [:div.container-fluid
+         [:form.form-horizontal
+          [input {:model [query :name] :type "text" :label "Name" :placeholder "Query name"}]
+          [input {:model [query :description] :type "textarea" :label "Description"}]]]
+        [c/modal-footer
+         [c/button {:bsStyle "primary"
+                    :on-click #(dispatch [:save-query @query])}
+          "Save"]
+         [c/button {:bsStyle "default" :on-click #(dispatch [:change :modal nil])}
+          "Close"]]]])))
+
+(defn share-query [q-id]
+  (let [db-list (subscribe [:db-list])
+        ids (atom #{})]
+    (fn []
+      [:div.my-popover
+       [:form
+        (map-indexed
+               (fn[i db] ^{:key i}
+                 [:div.checkbox
+                  [:label [:input {:type "checkbox" :value (:id db)
+                                   :on-change #((swap! ids (if (-> % -.target -.checked) conj disj) (:id db)))}
+                           (:name db)]]]) @db-list)
+        [c/button {:bsStyle "primary" :on-click #(dispatch [:assign-query q-id @ids])}]]])))
 
 (defn sql-panel [id]
   (let [cm (atom nil)
@@ -103,10 +117,14 @@
          [c/button-group {:bsSize "small"}
           [:form.form-inline {:on-submit #(.preventDefault %)}
            [c/input {:model [model :search] :type "typeahead"
-                     :placeholder "search queries" :size 40 :tab-index 1
+                     :placeholder "search queries" :size 20 :tab-index 1
                      :data-source query-filter :result-fn #(:name %)
-                     :choice-fn #(dispatch [:set-in-active-db :query %]) }]]]
-         [:span (:name @query)]]]
+                     :choice-fn #(dispatch [:set-in-active-db :query %]) }]
+           [c/button {:on-click #(dispatch [:load-db-queries])} [:i.fa.fa-refresh]]
+           [c/button {:title "share"
+                      :on-click #(dispatch [:load-db-queries])} [:i.fa.fa-share]]]]
+         [c/button-group
+          [:span (:name @query)]]]]
        [:div.panel-body {:style {:padding "0px" :overflow "scroll" :height "calc(100% - 46px)"}}
         [code-mirror cm {:mode "text/x-sql"
                          :tabindex 2
@@ -124,8 +142,11 @@
                  :on-select #(dispatch [:activate-table id %])
                  :class "small-tabs full-height"}
          (if-let [out (:dbout @db-tab)]
-           [c/tab {:event-key :out :title "SQL Output"}
-            [:div out]])
+           [c/tab {:event-key :out
+                   :title (r/as-element
+                           [:span "SQL Output"
+                            [c/close-button #(dispatch [:set-in-active-db id :dbout nil])]])}
+            [:pre {:style {:height "100%"}} out]])
          (for [[rs-id rs] (:resultsets @db-tab)]
            ^{:key rs-id}
            [c/tab {:event-key rs-id

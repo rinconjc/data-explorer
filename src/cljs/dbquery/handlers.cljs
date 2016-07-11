@@ -4,7 +4,7 @@
              [default-interceptors GET POST PUT success? to-interceptor]]
             [ajax.protocols :refer [-body -status]]
             [clojure.string :as str]
-            [dbquery.commons :refer [error-text]]
+            [dbquery.commons :refer [error-text dispatch-all]]
             [dbquery.sql-utils
              :refer
              [next-order
@@ -225,9 +225,29 @@
 
 (register-handler
  :set-in-active-db
- [common-middlewares in-active-db]
+ [debug common-middlewares in-active-db]
  (fn [state [_ key val]]
    (assoc state key val)))
+
+(register-handler
+ :load-db-queries
+ [common-middlewares in-active-db]
+ (fn [state [db-id]]
+   (GET (str "/ds/" db-id "/queries")
+        :response-format :json :keywords? true :format :json
+        :handler #(dispatch [:change [:db-tabs db-id :db-queries] %])
+        :error-handler #(js/console.log %))
+   state))
+
+(register-handler
+ :assign-query
+ [common-middlewares]
+ (fn [state [query ds-id]]
+   (PUT (str "/queries/" (:id query) "/data-source/" ds-id)
+        :format :json
+        :handler #(dispatch [:update ds-id :db-queries conj query])
+        :error-handler #(js/console.log "failed assigning query " %))
+   state))
 
 (register-handler
  :save-query
@@ -236,7 +256,8 @@
    (let [[method path] (if-let [id (:id query)]
                          [PUT (str "/queries/" id)] [POST "/queries"])]
      (method path :params query :format :json :response-format :json :keywords? true
-             :handler #(dispatch [:change [:db-tabs tab-id :query] % :modal nil])
+             :handler #(do (dispatch [:change [:db-tabs tab-id :query] % :modal nil])
+                           (if (= method POST) (dispatch [:assign-query % tab-id])))
              :error-handler #(do
                                (js/console.log (str "failure saving:" (error-text %)))
                                (dispatch [:change :modal nil])))
@@ -277,10 +298,11 @@
                        (if-let [data (% :data)]
                          (dispatch [:update-result db-id q data offset])
                          (dispatch [:update db-id :dbout
-                                    str sql "\nrows affected:" (:rowsAffected %)]))
+                           str sql "\nrows affected:" (:rowsAffected %) "\n"]))
                        (dispatch [:exec-queries db-id]))
-           :error-handler #(dispatch [:update db-id :dbout
-                                      str sql "\nFailed with:" (error-text %)])))
+           :error-handler #(dispatch-all [:update db-id :in-queue empty]
+                                         [:update db-id :dbout str "\n" sql "\n" (error-text %) "\n"]
+                                         [:activate-table db-id :out])))
    state))
 
 (register-handler
