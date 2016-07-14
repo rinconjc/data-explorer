@@ -75,7 +75,7 @@
       [:div {:style {:height "100%"}}
        [alerts-box]
        [navbar {:fluid true}
-        [nav-brand "DataExplorer"]
+        [nav-brand [:i.fa.fa-database.fa-5x]]
         [nav
          [nav-item {:href "#/"} "Home"]
          [nav-dropdown {:title "Databases" :id "db-dropdown"}

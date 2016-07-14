@@ -67,7 +67,8 @@
               {:init-ns          dbquery.repl
                :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
 
-              :dependencies [[org.clojure/tools.namespace "0.2.11"]
+              :dependencies [[figwheel-sidecar "0.5.4-3"]
+                             [org.clojure/tools.namespace "0.2.11"]
                              [ring/ring-mock "0.3.0"]
                              [ring/ring-devel "1.4.0"]
                              [lein-figwheel "0.4.0"]
@@ -76,7 +77,7 @@
                              [com.cemerick/piggieback "0.2.1"]]
 
               :source-paths ["env/dev/clj"]
-              :plugins      [[lein-figwheel "0.4.0"]
+              :plugins      [[lein-figwheel "0.5.4-3"]
                              [lein-cljsbuild "1.0.6"]]
 
               :injections   [(require 'pjstadig.humane-test-output)
