@@ -63,10 +63,10 @@
 (defn table-row [data row i]
   (if (map? row)
     [:tr [:td (inc i)]
-     (for [c (data :columns)] ^{:key c}[:td (row c)])]
+     (for [c (data :columns)] ^{:key c}[:td (str (row c))])]
     [:tr [:td (inc i)]
      (map-indexed
-      (fn[j v] ^{:key j}[:td (str v)]) row)]))
+      (fn[j v] ^{:key j}[:td v]) row)]))
 
 (defn data-table [model]
   (let [col-toolbar-on (atom nil)]

@@ -333,16 +333,17 @@
 
 (register-handler
  :table-meta
- [common-middlewares in-active-db with-selected-table]
+ [debug common-middlewares in-active-db with-selected-table]
  (fn [state [table tab-id]]
    (let [id (str table "*")]
      (if (get-in state [:resultsets id])
        (assoc state :active-table id)
        (do
-         (GET (str "/ds/" tab-id "/tables/" table) :response-format :json :keywords? true
+         (GET (str "/ds/" tab-id "/tables/" table) :response-format :json
               :handler #(dispatch [:update-result tab-id {:id id :table table}
-                                   {:rows (% :columns)
-                                    :columns [:name "type_name" "size" "digits" "nullable" "is_pk" "is_fk" "fk_table" "fk_column"]}])
+                                   {:rows (% "columns")
+                                    :columns ["name" "type_name" "size" "digits" "nullable"
+                                              "is_pk" "is_fk" "fk_table" "fk_column"]}])
               :error-handler #(.log js/console %))
          state)))))
 

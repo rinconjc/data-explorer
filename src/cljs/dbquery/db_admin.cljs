@@ -52,23 +52,22 @@
                  :on-click #(dispatch [:save-db @db-spec])}
          "Connect"]]])))
 
-(defn select-db-dialog []
-  (let [selected (atom 0)
-        dbs (subscribe [:db-list])]
-    (fn []
+(defn select-db-dialog [dbs]
+  (let [selected (atom 0)]
+    (fn [dbs]
       [c/modal {:on-hide #(dispatch [:change :modal nil]) :bsSize "small" :show true}
        [c/modal-header
         [:h4 "Open Database"]]
        [c/modal-body
         [:div.container-fluid
-         [:form.form-horizontal {:on-submit #(dispatch [:open-db (@dbs @selected)])}
+         [:form.form-horizontal {:on-submit #(dispatch [:open-db (dbs @selected)])}
           [input {:value @selected :type "select" :label "Database"
                   :on-change #(reset! selected (-> % .-target .-value))}
            (map-indexed (fn [i db] ^{:key i}
-                          [:option {:value i} (db :name)]) @dbs)]]]]
+                          [:option {:value i} (db :name)]) dbs)]]]]
        [c/modal-footer
         [button {:bsStyle "primary"
-                 :on-click #(dispatch-all [:open-db (@dbs @selected)]
+                 :on-click #(dispatch-all [:open-db (dbs @selected)]
                                           [:change :modal nil])} "Connect"]
         [button {:bsStyle "primary"
-                 :on-click #(dispatch [:edit-db (:id (@dbs @selected))])} "Configure"]]])))
+                 :on-click #(dispatch [:edit-db (:id (dbs @selected))])} "Configure"]]])))
