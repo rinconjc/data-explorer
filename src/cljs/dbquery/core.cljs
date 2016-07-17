@@ -36,7 +36,10 @@
  :select-db
  trim-v
  (fn [state []]
-   (assoc state :modal [dba/select-db-dialog])))
+   (GET "/data-sources" :response-format :json :keywords? true
+        :handler #(dispatch [:change :modal [dba/select-db-dialog %]])
+        :error-handler #(js/console.log "failed retrieving dbs..." %))
+   state))
 
 (defn toast [message ttl]
   (let [container (js/document.getElementById "alerts")]
