@@ -79,11 +79,11 @@
           open (if (= (s/upper-case begin) "BEGIN") 1 0)]
       #?(:cljs (loop [open open
                       regex (js/RegExp. "(begin|end)\\W", "gi")]
-                 (let [[_ [match] index] (.exec regex sub-text)
+                 (let [[_ match :as r] (.exec regex sub-text)
                        open (if (= (s/lower-case match) "end") (dec open) (inc open))]
                    (if (> open 0)
                      (recur open regex)
-                     (+ 1 offset (.indexOf sub-text ";" index)))))
+                     (+ 1 offset (.indexOf sub-text ";" (.-index r))))))
          :clj (loop [matcher (re-matcher #"(?i)(begin|end)\W" sub-text)
                      open open]
                 (when (.find matcher)
