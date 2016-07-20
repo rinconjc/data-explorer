@@ -290,6 +290,7 @@
      (dispatch [:update db-id [:resultsets (:id q)] assoc :loading true]))
    (let [offset (or offset 0)
          limit (or limit 40)
+         qid (inc (state :query-count 0))
          sql (if (string? q) q (sql-select (:query q)))]
      (POST (str "/ds/" db-id "/exec-sql")
            :params {:sql sql :offset offset :limit limit}
@@ -303,7 +304,14 @@
            :error-handler #(dispatch-all [:update db-id :in-queue empty]
                                          [:update db-id :dbout str "\n" sql "\n" (error-text %) "\n"]
                                          [:activate-table db-id :out])))
-   state))
+   (update state :execution conj {:sql sql :id qid :status :executing})))
+
+(register-handler
+ :exec-done
+ [common-middlewares tab-path]
+ (fn [state [db-id qid resp error]]
+   (update state :execution update-where #(= (:id %) qid)
+           assoc :status :done :error error :time ())))
 
 (register-handler
  :update-result
@@ -311,7 +319,7 @@
  (fn [state [db-id q data offset]]
    (if (string? q)
      (let [qnum (inc (or (state :query-count) 0))
-           q {:id (str "Query #" qnum) :data data
+           q {:id (str "Result #" qnum) :data data
               :query (query-from-sql q)}]
        (dispatch [:activate-table db-id (:id q)])
        (-> state (update :resultsets assoc (:id q) q)
