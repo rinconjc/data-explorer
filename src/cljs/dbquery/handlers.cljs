@@ -290,45 +290,54 @@
      (dispatch [:update db-id [:resultsets (:id q)] assoc :loading true]))
    (let [offset (or offset 0)
          limit (or limit 40)
-         qid (inc (state :query-count 0))
+         qid (inc (state :exec-count 0))
          sql (if (string? q) q (sql-select (:query q)))]
      (POST (str "/ds/" db-id "/exec-sql")
            :params {:sql sql :offset offset :limit limit}
            :response-format :json :format :json :keywords? true
            :handler #(do
-                       (if-let [data (% :data)]
-                         (dispatch [:update-result db-id q data offset])
-                         (dispatch [:update db-id :dbout
-                           str sql "\nrows affected:" (:rowsAffected %) "\n"]))
+                       (dispatch [:exec-done db-id qid q offset % nil])
                        (dispatch [:exec-queries db-id]))
-           :error-handler #(dispatch-all [:update db-id :in-queue empty]
-                                         [:update db-id :dbout str "\n" sql "\n" (error-text %) "\n"]
-                                         [:activate-table db-id :out])))
-   (update state :execution conj {:sql sql :id qid :status :executing})))
+           :error-handler #(dispatch [:exec-done db-id qid q offset nil (error-text %)]))
+     (-> state (update :execution conj {:sql sql :id qid :status :executing
+                                        :start (. js/Date now)})
+         (assoc :exec-count qid)))))
+
+(defmulti update-result (fn [q & _]
+                          (js/console.log "multi of " q)
+                          (cond (string? q) :string :else :default) ))
+
+(defmethod update-result :string [q state data offset]
+  (let [qnum (inc (or (state :result-count) 0))
+        q {:id (str "Result #" qnum) :data data
+           :query (query-from-sql q)}]
+    (-> state (update :resultsets assoc (:id q) q)
+        (assoc :result-count qnum)
+        ((if (seq (:in-queue state)) identity
+             #(assoc % :active-table (:id q)))))))
+
+(defmethod update-result :default [q state data offset]
+  (-> state (update-in [:resultsets (:id q)] merge q
+                       {:data (if (pos? (or offset 0))
+                                (update (:data q) :rows concat (:rows data)) data)
+                        :loading false})
+      (assoc :active-table (:id q))))
 
 (register-handler
  :exec-done
  [common-middlewares tab-path]
- (fn [state [db-id qid resp error]]
-   (update state :execution update-where #(= (:id %) qid)
-           assoc :status :done :error error :time ())))
-
-(register-handler
- :update-result
- [common-middlewares tab-path]
- (fn [state [db-id q data offset]]
-   (if (string? q)
-     (let [qnum (inc (or (state :query-count) 0))
-           q {:id (str "Result #" qnum) :data data
-              :query (query-from-sql q)}]
-       (dispatch [:activate-table db-id (:id q)])
-       (-> state (update :resultsets assoc (:id q) q)
-           (assoc :query-count qnum)))
-     (-> state (update-in [:resultsets (:id q)] merge q
-                          {:data (if (pos? (or offset 0))
-                                   (update (:data q) :rows concat (:rows data)) data)
-                           :loading false})
-         (assoc :active-table (:id q))))))
+ (fn [state [db-id qid q offset resp error]]
+   (let [state
+         (update state :execution
+                 (fn[xs](map #(if (= (:id %) qid)
+                                (assoc % :status :done :error error
+                                       :time (/ (- (. js/Date now) (:start %)) 1000.0)
+                                       :update-count (and (not error) (:rowsAffected resp)))
+                                %) xs)))]
+     (if error
+       (assoc state :in-queue nil :active-table :exec-log)
+       (if-let [data (:data resp)]
+         (update-result q state data offset))))))
 
 (register-handler
  :preview-table
