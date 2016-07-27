@@ -78,11 +78,11 @@
       [:div.my-popover
        [:form
         (map-indexed
-               (fn[i db] ^{:key i}
-                 [:div.checkbox
-                  [:label [:input {:type "checkbox" :value (:id db)
-                                   :on-change #((swap! ids (if (-> % -.target -.checked) conj disj) (:id db)))}
-                           (:name db)]]]) @db-list)
+         (fn[i db] ^{:key i}
+           [:div.checkbox
+            [:label [:input {:type "checkbox" :value (:id db)
+                             :on-change #((swap! ids (if (-> % -.target -.checked) conj disj) (:id db)))}
+                     (:name db)]]]) @db-list)
         [c/button {:bsStyle "primary" :on-click #(dispatch [:assign-query q-id @ids])}]]])))
 
 (defn sql-panel [id]
@@ -141,12 +141,19 @@
         [c/tabs {:active-key (:active-table @db-tab)
                  :on-select #(dispatch [:activate-table id %])
                  :class "small-tabs full-height"}
-         (if-let [out (:dbout @db-tab)]
-           [c/tab {:event-key :out
+         (if-let [exec-rows (:execution @db-tab)]
+           [c/tab {:event-key :exec-log
                    :title (r/as-element
-                           [:span "SQL Output"
-                            [c/close-button #(dispatch [:set-in-active-db id :dbout nil])]])}
-            [:pre {:style {:height "100%"}} out]])
+                           [:span "SQL Execution"
+                            [c/close-button #(dispatch [:set-in-active-db id :execution nil])]])}
+            [:div {:style {:height "100%"}}
+             [:ul.list-group
+              (for [x exec-rows] ^{:key (:id x)}
+                [:li.list-group-item
+                 [:span.pull-right.small
+                  (cond (= :executing (:status x)) [:i.fa.fa-spinner]
+                        (:error x) [:span.red (:error x)]
+                        :else (str (:time x) "s"))] (:sql x)])]]])
          (for [[rs-id rs] (:resultsets @db-tab)]
            ^{:key rs-id}
            [c/tab {:event-key rs-id

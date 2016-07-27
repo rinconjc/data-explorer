@@ -177,6 +177,9 @@
     (pred (first xs)) 0
     :else (if-let [c (index-where pred (rest xs))](inc c))))
 
+(defn update-where [pred xs f]
+  (map #(if (pred %) (f %) %) xs))
+
 (defn remove-nth [v i]
   (vec (concat (subvec v 0 i) (subvec v (inc i)))))
 
