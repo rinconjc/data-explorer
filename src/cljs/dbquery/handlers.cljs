@@ -337,7 +337,8 @@
      (if error
        (assoc state :in-queue nil :active-table :exec-log)
        (if-let [data (:data resp)]
-         (update-result q state data offset))))))
+         (update-result q state data offset)
+         state)))))
 
 (register-handler
  :preview-table
