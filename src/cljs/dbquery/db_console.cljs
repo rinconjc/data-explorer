@@ -146,13 +146,14 @@
                    :title (r/as-element
                            [:span "SQL Execution"
                             [c/close-button #(dispatch [:set-in-active-db id :execution nil])]])}
-            [:div {:style {:height "100%"}}
+            [:div {:style {:height "100%" :overflow-y "scroll"}}
              [:ul.list-group
               (for [x exec-rows] ^{:key (:id x)}
                 [:li.list-group-item
                  [:span.pull-right.small
                   (cond (= :executing (:status x)) [:i.fa.fa-spinner]
                         (:error x) [:span.red (:error x)]
+                        (:update-count x) (str (:update-count x) " rows " (:time x) "s")
                         :else (str (:time x) "s"))] (:sql x)])]]])
          (for [[rs-id rs] (:resultsets @db-tab)]
            ^{:key rs-id}
