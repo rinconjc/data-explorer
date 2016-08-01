@@ -352,24 +352,26 @@
 (register-handler
  :table-meta
  [debug common-middlewares in-active-db with-selected-table]
- (fn [state [table tab-id]]
-   (let [id (str table "*")]
-     (if (get-in state [:resultsets id])
-       (assoc state :active-table id)
-       (do
-         (GET (str "/ds/" tab-id "/tables/" table) :response-format :json
-              :handler #(dispatch [:update-result tab-id {:id id :table table}
-                                   {:rows (% "columns")
-                                    :columns ["name" "type_name" "size" "digits" "nullable"
-                                              "is_pk" "is_fk" "fk_table" "fk_column"]}])
-              :error-handler #(.log js/console %))
-         state)))))
+ (fn [state [table tab-id reload?]]
+   (let [id (str table "*")
+         rs (get-in state [:resultsets id])]
+     (if (or reload? (not rs))
+       (GET (str "/ds/" tab-id "/tables/" table) :response-format :json
+            :params {:refresh reload?}
+            :handler #(dispatch [:update tab-id [:resultsets id] assoc :data
+                                 {:rows (% "columns")
+                                  :columns ["name" "type_name" "size" "digits" "nullable"
+                                            "is_pk" "is_fk" "fk_table" "fk_column"]}
+                                 :loading false :last-page? true])
+            :error-handler #(.log js/console %)))
+     (-> state (assoc :active-table id)
+         (update :resultsets assoc id (if-not rs {:id id :table table :loading true} (assoc rs :loading true)))))))
 
 (register-handler
  :next-page
  [common-middlewares in-active-table]
  (fn [resultset [tab-id]]
-   (if-not (:loading resultset)
+   (if-not (or (:loading resultset) (:last-page? resultset))
      (dispatch [:exec-query tab-id resultset (-> resultset :data :rows count)]))
    resultset))
 
@@ -416,4 +418,7 @@
  :reload
  [common-middlewares in-active-table]
  (fn [resultset [tab-id]]
-   (dispatch [:exec-query tab-id resultset 0 (-> resultset :data :rows count)])))
+   (if (:table resultset)
+     (dispatch [:table-meta true])
+     (dispatch [:exec-query tab-id resultset 0 (-> resultset :data :rows count)]))
+   resultset))

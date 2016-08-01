@@ -3,16 +3,20 @@
             [dbquery.model :refer :all]
             [korma.core :as k]))
 
-(defn dummy-ds [] (safe-mk-ds {:dbms "H2" :url  "mem:test1;DB_CLOSE_DELAY=0" :user_name  "sa" :password "sa"}))
+(def ds-ref (atom nil))
+
+(defn dummy-ds []
+  @ds-ref)
+
 (defn fixture [f]
-  (def con (.getConnection (:datasource (dummy-ds))))
-  (println "dummy ds connection active")
-  (try
-    (f)
-    (finally
-      (.close con)
-      (println "dummy ds connection closed")))
-  )
+  (let [db (safe-mk-ds {:dbms "H2" :url  "mem:test2;DB_CLOSE_DELAY=0" :user_name  "sa" :password "sa"})]
+    (reset! ds-ref db)
+    (println "dummy ds connection active")
+    (try
+      (f)
+      (finally
+        (.close (:datasource db))
+        (println "dummy ds connection closed")))))
 
 (defn model-fixture [f]
   (with-open [con (.getConnection (force ds))]
@@ -24,6 +28,4 @@
       (println "creating test datasource:")
       (if (nil? (first (k/select data_source (k/where {:id 1}))))
         (k/insert data_source (k/values (merge {:name "test" :id 1} dsinfo))))
-      (f))
-    )
-  )
+      (f))))
