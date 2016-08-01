@@ -126,7 +126,7 @@
 (defn handle-table-meta [{{refresh :refresh} :params} ds-id table]
   (if-let [table-id (-> (k/select ds_table (k/fields ::* :id)
                                   (k/where {:name table})) first :id)]
-    {:columns (if refresh
+    {:columns (if (= "true" refresh)
                 (let [cols (table-cols (get-ds ds-id) table)]
                   (sync-table-cols table-id cols)
                   cols)

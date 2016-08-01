@@ -106,7 +106,8 @@
                     ^{:key i} [table-row (:data model) row i]) (-> model :data :rows)))]
          [:tfoot
           [:tr [:td {:col-span (inc (count (-> model :data :columns)))}
-                [c/button {:on-click #(dispatch [:next-page])}
-                 [:i.fa.fa-chevron-down]]]]]]]
+                (if-not (:last-page? model)
+                  [c/button {:on-click #(dispatch [:next-page])}
+                   [:i.fa.fa-chevron-down]])]]]]]
        (if (:loading model)
          [c/progress-overlay])])))
