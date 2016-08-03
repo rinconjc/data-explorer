@@ -220,6 +220,7 @@
 
 (defn init! []
   (dispatch [:init-db])
+
   (doto js/Mousetrap
     (.bind "alt+d" #(dispatch [:preview-table]))
     (.bind "/" #(dispatch [:set-in-active-db :q ""]))
