@@ -145,7 +145,7 @@
          (-> col
              (assoc :is_pk (some? (some #(= col-name (:name %)) pks)))
              ((fn [m]
-                (if-let [fk (some #(= col-name (:fkcolumn_name %)) fks)]
+                (if-let [fk (some #(if (= col-name (:fkcolumn_name %)) %) fks)]
                   (assoc m :is_fk true :fk_table (:pktable_name fk) :fk_column (:pkcolumn_name fk))
                   (assoc m :is_fk false)))))) cols))
 
@@ -228,13 +228,13 @@
                    true identity)]
       (fn [ps row]
         (let [val (nth row pos)]
-                     (try
-                       (if (s/blank? val)
-                         (doto ps (.setNull (inc i) type))
-                         (doto ps (.setObject (inc i) (val-fn val) type)))
-                       (catch Exception e
-                         (log/error e "failed converting col " pos " in " row)
-                         (throw e)))))))
+          (try
+            (if (s/blank? val)
+              (doto ps (.setNull (inc i) type))
+              (doto ps (.setObject (inc i) (val-fn val) type)))
+            (catch Exception e
+              (log/error e "failed converting col " pos " in " row)
+              (throw e)))))))
 
   (let [valid-mappings (filter #(contains? (second %) :source)  mappings)
         cols (keys valid-mappings)
