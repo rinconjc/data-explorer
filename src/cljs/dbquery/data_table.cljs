@@ -5,21 +5,11 @@
             [reagent.core :as r :refer [atom]]))
 
 (defn filter-box [query col]
-  (let [condition (atom (-> query :conditions (get col)))]
+  (let [condition (atom {:value (-> query :conditions (get col))})]
     (fn [query col]
-      [:form.form-inline {:style {:padding "4px"}}
-       [input {:model [condition :op] :type "select" :id "operator"}
-        [:option {:value ""} "none"]
-        [:option {:value "="} "="]
-        [:option {:value "!="} "!="]
-        [:option {:value "like"} "like"]
-        [:option {:value "between"} "between"]
-        [:option {:value "<"} "<"]
-        [:option {:value "<="} "<="]
-        [:option {:value ">"} ">"]
-        [:option {:value ">="} ">="]]
+      [:form.form-inline {:style {:padding "4px"} :on-submit #(do (dispatch [:set-filter col (:value @condition)]) (.preventDefault %))}
        [input {:model [condition :value] :type "text" :id "value"}]
-       [button {:bs-style "default" :on-click #(dispatch [:set-filter col @condition])}
+       [button {:bs-style "default"}
         "OK"]])))
 
 (defn dist-values [model col]
@@ -27,7 +17,7 @@
    [:ul.list-unstyled.list {:cursor "pointer"}
     (map-indexed
      (fn[i v] ^{:key i}
-       [:li {:on-click #(dispatch [:set-filter col {:op "=" :value v}])}
+       [:li {:on-click #(dispatch [:set-filter col (str "='" v "'")])}
         v]) (-> model :col-data (get col)))]])
 
 (defn column-toolbar [model i col]

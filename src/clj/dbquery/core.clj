@@ -65,7 +65,7 @@
       (handler req)
       (catch Exception e
         (log/error e "Exception handling request")
-        {:status 500 :body (or (.getMessage e) "Unknown internal error")}))))
+        {:status 500 :body (or (re-find #"^.+" (.getMessage e)) "Unknown internal error")}))))
 ;; ds checker middleware
 
 ;; handlers

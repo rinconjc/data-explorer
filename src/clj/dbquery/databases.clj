@@ -1,14 +1,11 @@
 (ns dbquery.databases
-  (:require [clojure.tools.logging :as log]
-            [clojure.java.jdbc :refer :all]
+  (:require [clojure.java.jdbc :refer :all]
             [clojure.string :as s]
+            [clojure.tools.logging :as log]
             [dbquery.utils :refer :all])
-  (:import [com.jolbox.bonecp BoneCPDataSource]
-           [org.h2.jdbcx JdbcDataSource]
-           [oracle.jdbc.pool OracleDataSource]
-           [java.sql ResultSet Types]
-           [java.text SimpleDateFormat DecimalFormat NumberFormat]
-           [java.sql Date]))
+  (:import com.zaxxer.hikari.HikariDataSource
+           [java.sql Date ResultSet Types]
+           [java.text DecimalFormat NumberFormat SimpleDateFormat]))
 
 (def ^:private result-extractors
   {Types/BIT (fn [rs i] (.getBoolean rs i))
@@ -66,12 +63,12 @@
   "Creates a datasource"
   (let [[driver jdbc-url]
         (case dbms
-          "H2" ["org.h2.Driver" (str "jdbc:h2:" url)]
-          "ORACLE" ["oracle.jdbc.OracleDriver" (str "jdbc:oracle:thin:@" url)]
-          "POSTGRES" ["org.postgresql.Driver" (str "jdbc:postgresql:" url)]
+          "H2" ["org.h2.jdbcx.JdbcDataSource" (str "jdbc:h2:" url)]
+          "ORACLE" ["oracle.jdbc.pool.OracleDataSource" (str "jdbc:oracle:thin:@" url)]
+          "POSTGRES" ["org.postgresql.ds.PGSimpleDataSource" (str "jdbc:postgresql:" url)]
           (throw (Exception. (format "DBMS %s not supported." dbms))))
-        ds (doto (BoneCPDataSource.)
-             (.setDriverClass driver)
+        ds (doto (HikariDataSource.)
+             ;; (.setDataSourceClassName driver)
              (.setJdbcUrl jdbc-url)
              (.setUsername user_name)
              (.setPassword password))]
