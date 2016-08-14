@@ -31,6 +31,7 @@
 (def common-middlewares [trim-v (if ^boolean goog.DEBUG log-ex)
                          ;; (when ^boolean goog.DEBUG debug)
                          ])
+
 ;; add ajax interceptor
 (defn empty-means-nil [response]
   (if-not (str/blank? (-body response))
