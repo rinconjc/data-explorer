@@ -396,7 +396,7 @@
  [common-middlewares in-active-table]
  (fn [resultset [tab-id col condition]]
    (let [new-rs (update-in resultset [:query :conditions]
-                           #(if (str/blank? (:op condition))
+                           #(if (str/blank? condition)
                               (dissoc % col)  (assoc % col condition)))]
      (dispatch [:exec-query tab-id new-rs])
      new-rs)))

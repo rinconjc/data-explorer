@@ -77,7 +77,7 @@
     (fn[]
       [:div {:style {:height "100%"}}
        [alerts-box]
-       [navbar {:fluid true}
+       [navbar {:class "navbar-inverse" :fluid true}
         [nav-brand [:i.fa.fa-database.fa-5x]]
         [nav
          [nav-item {:href "#/"} "Home"]
