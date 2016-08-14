@@ -24,8 +24,8 @@
 
 (defn sql-where [conditions]
   (if-not (empty? conditions)
-    (str " WHERE " (s/join " and " (for [[col {:keys [op value]}] conditions]
-                                     (str col " " op " '" value "'"))))))
+    (str " WHERE " (s/join " and " (for [[col predicate] conditions]
+                                     (str col " " predicate))))))
 
 (defn from-sql [tables]
   (str " FROM " (first tables) " "
