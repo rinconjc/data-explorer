@@ -2,7 +2,8 @@
   (:require [clojure.string :as str]
             [cljsjs.react-bootstrap]
             [re-frame.core :refer [dispatch]]
-            [reagent.core :as r :refer [atom]]))
+            [reagent.core :as r :refer [atom]]
+            [reagent.core :as reagent]))
 
 (def navbar (r/adapt-react-class js/ReactBootstrap.Navbar))
 (def nav-brand (r/adapt-react-class js/ReactBootstrap.NavBrand))
@@ -126,6 +127,15 @@
              (result-fn result)])
           @selections))]])))
 
+(def focus-wrapper
+  (with-meta identity
+    {:component-did-mount #(.focus (reagent/dom-node %))}))
+
+(defn focus-aware [focus? e]
+  (if focus?
+    [focus-wrapper e]
+    e))
+
 (defn bare-input
   [{:keys[model type options] :as attrs} & children]
   (let [attrs (bind attrs model type)
@@ -152,15 +162,16 @@
   [{:keys[type label wrapper-class-name label-class-name validator] :as attrs} & children]
   (let [valid-class (atom nil)
         attrs (if validator
-                (assoc attrs
-                       :on-change (wrap-validator validator #(reset! valid-class (str "has-" (name %))))) attrs)]
+                (assoc attrs :on-change
+                       (wrap-validator validator
+                                       #(reset! valid-class (str "has-" (name %))))) attrs)]
     (fn [{:keys[type label wrapper-class-name label-class-name validator] :as attrs} & children]
       [:div.form-group {:class @valid-class}
        [:label.control-label {:class label-class-name} label]
        (if wrapper-class-name
          [:div {:class wrapper-class-name}
-          [bare-input attrs children]]
-         [bare-input attrs children])])))
+          [focus-aware (:focus attrs) [bare-input attrs children]]]
+         [focus-aware (:focus attrs) [bare-input attrs children]])])))
 
 (defn remove-x [xs x]
   (remove #(= x %) xs))

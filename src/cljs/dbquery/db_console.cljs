@@ -151,7 +151,7 @@
               (for [x exec-rows] ^{:key (:id x)}
                 [:li.list-group-item
                  [:span.pull-right.small
-                  (cond (= :executing (:status x)) [:i.fa.fa-spinner]
+                  (cond (= :executing (:status x)) [:i.fa.fa-spinner.fa-spin]
                         (:error x) [:span.red (:error x)]
                         (:update-count x) (str (:update-count x) " rows " (:time x) "s")
                         :else (str (:time x) "s"))] (:sql x)])]]])
