@@ -72,7 +72,7 @@
                 [c/split-button {:style {:display "flex"}
                                  :title (r/as-element [:i.fa.fa-refresh])
                                  :on-click #(dispatch [:reload]) :bsSize "xsmall"}
-                 [c/menu-item {:eventKey 1} "Join with ..."]
+                 [c/menu-item {:eventKey 1} "Join with..."]
                  [c/menu-item {:eventKey 2} "Row Count"]]]
            (doall
             (map-indexed

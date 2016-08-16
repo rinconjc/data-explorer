@@ -361,7 +361,7 @@
             :params {:refresh reload?}
             :handler #(dispatch [:update tab-id [:resultsets id] assoc :data
                                  {:rows (% "columns")
-                                  :columns ["name" "type_name" "size" "digits" "nullable"
+                                  :columns ["name" "type_name" "data_type" "size" "digits" "nullable"
                                             "is_pk" "is_fk" "fk_table" "fk_column"]}
                                  :loading false :last-page? true])
             :error-handler #(.log js/console %)))
