@@ -7,9 +7,11 @@
 (defn filter-box [query col]
   (let [condition (atom {:value (-> query :conditions (get col))})]
     (fn [query col]
-      [:form.form-inline {:style {:padding "4px"} :on-submit #(do (dispatch [:set-filter col (:value @condition)]) (.preventDefault %))}
-       [input {:model [condition :value] :type "text" :id "value"}]
-       [button {:bs-style "default"}
+      [:form.form-inline {:style {:padding "4px"}
+                          :on-submit #(do (dispatch [:set-filter col (:value @condition)])
+                                          (.preventDefault %))}
+       [input {:model [condition :value] :type "text" :id "value" :focus true}]
+       [button {:bs-style "default" :type "submit"}
         "OK"]])))
 
 (defn dist-values [model col]
@@ -79,7 +81,7 @@
              (fn[i c]
                ^{:key i}
                [:th {:on-mouse-leave #(reset! col-toolbar-on nil)}
-                [:a.btn-link {:on-click #(swap! col-toolbar-on
+                [:a.btn-link {:on-mouse-over #(swap! col-toolbar-on
                                                 (fn[i*] (if-not (= i i*) i)))} c]
                 [:a.btn-link {:on-click #(dispatch [:roll-sort i])}
                  [:i.fa.btn-sort {:class (sort-icons (some #(if (= i (first %)) (second %))

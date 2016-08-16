@@ -61,7 +61,7 @@
        [c/modal-body
         [:div.container-fluid
          [:form.form-horizontal {:on-submit #(dispatch [:open-db (dbs @selected)])}
-          [input {:value @selected :type "select" :label "Database"
+          [input {:value @selected :type "select" :label "Database" :focus true
                   :on-change #(reset! selected (-> % .-target .-value))}
            (map-indexed (fn [i db] ^{:key i}
                           [:option {:value i} (db :name)]) dbs)]]]]
