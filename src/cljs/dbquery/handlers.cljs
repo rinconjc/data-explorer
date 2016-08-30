@@ -1,7 +1,7 @@
 (ns dbquery.handlers
   (:require [ajax.core
              :refer
-             [default-interceptors GET POST PUT success? to-interceptor]]
+             [default-interceptors DELETE GET POST PUT success? to-interceptor]]
             [ajax.protocols :refer [-body -status]]
             [clojure.string :as str]
             [dbquery.commons :refer [error-text dispatch-all]]
@@ -15,7 +15,8 @@
               sql-select
               sql-statements]]
             [re-frame.core :as rf :refer [debug dispatch register-handler trim-v]]
-            [secretary.core :as secretary :include-macros true]))
+            [secretary.core :as secretary :include-macros true]
+            [clojure.set :as set]))
 
 (defn log-ex
   [handler]
@@ -242,11 +243,22 @@
 (register-handler
  :assign-query
  [common-middlewares]
- (fn [state [query ds-id]]
-   (PUT (str "/queries/" (:id query) "/data-source/" ds-id)
-        :format :json
-        :handler #(dispatch [:update ds-id :db-queries conj query])
-        :error-handler #(js/console.log "failed assigning query " %))
+ (fn [state [q-id ds-ids]]
+   (let [old (reduce #(if (:query_id %2) (conj %1 (:id %2)) %1) #{} (:query-assocs state))
+         added-ids (set/difference ds-ids old)
+         removed-ids (set/difference old ds-ids)]
+     (when (seq added-ids)
+       (POST (str "/queries/" q-id "/data-sources")
+             :params {:ds-ids added-ids}
+             :format :json
+             :handler #(dispatch [:change :query-assocs nil])
+             :error-handler #(js/console.log "failed assigning query " %)))
+     (when (seq removed-ids)
+       (DELETE (str "/queries/" q-id "/data-sources")
+             :params {:ds-ids removed-ids}
+             :format :json
+             :handler #(dispatch [:change :query-assocs nil])
+             :error-handler #(js/console.log "failed assigning query " %))))
    state))
 
 (register-handler
@@ -422,3 +434,13 @@
      (dispatch [:table-meta true])
      (dispatch [:exec-query tab-id resultset 0 (-> resultset :data :rows count)]))
    resultset))
+
+(register-handler
+ :query-sharings
+ [common-middlewares]
+ (fn [state [q-id]]
+   (GET (str "/queries/" q-id "/data-source") :format :json :response-format :json
+        :keywords? true
+        :handler #(dispatch [:change :query-assocs %])
+        :error-handler #(.log js/console %))
+   state))

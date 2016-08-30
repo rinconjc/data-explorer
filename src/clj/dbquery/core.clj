@@ -237,8 +237,10 @@
   (ANY "/queries/:id" [id] (queries-entry id))
   (PUT "/queries/:id/data-source/:ds" [id ds]
        (with-body (assoc-query-datasource ds id)))
-  (DELETE "/queries/:id/data-source/:ds" [id ds]
-          (with-body (dissoc-query-datasource ds id)))
+  (POST "/queries/:id/data-sources" [id]
+        #(with-body (assoc-query-datasource id (get-in % [:body :ds-ids]))))
+  (DELETE "/queries/:id/data-sources" [id]
+          #(with-body (dissoc-query-datasource id (get-in % [:body :ds-ids]))))
   (GET "/queries/:id/data-source" [id] (with-body (query-assocs id)))
 
   (context "/ds/:ds-id" [ds-id]

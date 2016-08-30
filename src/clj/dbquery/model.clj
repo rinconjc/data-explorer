@@ -1,18 +1,17 @@
 ;; the model definitions
 (ns dbquery.model
-  (:import [com.rinconj.dbupgrader DbUpgrader]
-           [org.h2.jdbcx JdbcDataSource]
-           [org.jasypt.util.text BasicTextEncryptor]
-           )
-  (:require [korma.db :refer :all]
+  (:require [clojure.java.jdbc :as jdbc]
             [clojure.tools.logging :as log]
-            [korma.core :refer :all]
-            [dbquery.conf :refer :all]
             [crypto.password.bcrypt :as password]
-            [clojure.java.jdbc :as j]
-            [dbquery.databases :as db]
-            ))
-
+            [dbquery
+             [conf :refer :all]
+             [databases :as db]]
+            [korma
+             [core :refer :all]
+             [db :refer :all]])
+  (:import com.rinconj.dbupgrader.DbUpgrader
+           org.h2.jdbcx.JdbcDataSource
+           org.jasypt.util.text.BasicTextEncryptor))
 
 (defn encrypt [str]
   (-> (doto (BasicTextEncryptor.)
@@ -101,15 +100,15 @@ join data_source_query dq on dq.query_id = q.id where dq.data_source_id =?"
 from data_source ds left join data_source_query q on q.data_source_id = ds.id
 and q.query_id = ?" {:rs-reader db/read-as-map :args [qid]}))
 
-(defn assoc-query-datasource [ds-id q-id]
-  (db/execute {:datasource (force ds)}
-              "insert into data_source_query(data_source_id, query_id)
- values(?,?)" {:args [ds-id q-id]} ))
+(defn assoc-query-datasource [q-id ds-ids]
+  (apply jdbc/insert! {:datasource (force ds)}
+         "data_source_query" ["data_source_id" "query_id"]
+         (for [id ds-ids] [id q-id])))
 
-(defn dissoc-query-datasource [ds-id q-id]
-  (db/execute {:datasource (force ds)}
-              "delete data_source_query where data_source_id=?
-and query_id=?" {:args [ds-id q-id]} ))
+(defn dissoc-query-datasource [q-id ds-ids]
+  (jdbc/execute! {:datasource (force ds)}
+                 (cons "delete data_source_query where data_source_id=?
+and query_id=?" (for [id ds-ids] [id q-id])) :multi? true))
 
 
 (defn sync-table-cols [table-id cols]

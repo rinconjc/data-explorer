@@ -17,21 +17,22 @@
     (def saved (first (k/select data_source (k/where {:id id}))))
     (println saved)
     (is (some? saved))
-    (is (some? (safe-mk-ds saved)))
-    )
+    (is (some? (safe-mk-ds saved))))
 
   (testing "queries"
     (k/insert data_source (k/values {:name "ds" :dbms "H2" :url ":mem" :user_name "sa" :password "sa"}))
     (k/insert data_source (k/values {:name "ds1" :dbms "H2" :url ":mem1" :user_name "sa" :password "sa"}))
-    (k/insert query (k/values {:name "q1" :description "test query" :sql "select sysdate from dual"}))
-    )
+    (k/insert query (k/values {:name "q1" :description "test query" :sql "select sysdate from dual"})))
 
   (testing "load metadata"
-    (load-metadata {:datasource (force ds)} 1)
-    )
+    (load-metadata {:datasource (force ds)} 1))
 
-  (testing "related tables"
-    (k/insert ds_table (k/values {:}))
-    (get-related-tables 1 [""])
-    )
-  )
+  ;; (testing "related tables"
+  ;;   (k/insert ds_table (k/values {:}))
+  ;;   (get-related-tables 1 [""]))
+
+  (testing "query db assocs"
+    (let [q (first (vals (k/insert query (k/values {:name "q2" :sql "blah"}))))
+          ds1 (first (vals (k/insert data_source (k/values {:name "ds1" :dbms "H2" :url "xyz" :user_name "sa"}))))]
+      (assoc-query-datasource q [ds1])
+      (dissoc-query-datasource q [ds1]))))
