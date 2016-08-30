@@ -68,10 +68,10 @@
           "POSTGRES" ["org.postgresql.ds.PGSimpleDataSource" (str "jdbc:postgresql:" url)]
           (throw (Exception. (format "DBMS %s not supported." dbms))))
         ds (doto (HikariDataSource.)
-             ;; (.setDataSourceClassName driver)
              (.setJdbcUrl jdbc-url)
              (.setUsername user_name)
-             (.setPassword password))]
+             (.setPassword password)
+             (.setLoginTimeout 10000))]
     (with-open [con (.getConnection ds)]
       ds)))
 
@@ -82,9 +82,7 @@
 
 (defn table-data
   ([ds table limit]
-   (db-query-with-resultset ds
-                            [(str "SELECT * FROM " table)]
-                            #(read-rs % {:limit limit})))
+   (db-query-with-resultset ds [(str "SELECT * FROM " table)] #(read-rs % {:limit limit})))
   ([ds table] (table-data ds table 100)))
 
 (defn- get-db-tables [meta schema]

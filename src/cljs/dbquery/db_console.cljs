@@ -71,24 +71,27 @@
          [c/button {:bsStyle "default" :on-click #(dispatch [:change :modal nil])}
           "Close"]]]])))
 
-(defn share-query [q-id]
-  (let [db-list (subscribe [:db-list])
-        ids (atom #{})]
-    (fn []
-      [:div.my-popover
+(defn share-query [db-list q-id]
+  (let [ids (atom (into #{} (for [db db-list :when (:query_id db)] (:id db))))]
+    (fn [db-list q-id]
+      [:div.my-popover {:style {:margin-top "37px" :padding "5px"}}
        [:form
-        (map-indexed
-         (fn[i db] ^{:key i}
-           [:div.checkbox
-            [:label [:input {:type "checkbox" :value (:id db)
-                             :on-change #((swap! ids (if (-> % -.target -.checked) conj disj) (:id db)))}
-                     (:name db)]]]) @db-list)
-        [c/button {:bsStyle "primary" :on-click #(dispatch [:assign-query q-id @ids])}]]])))
+        (doall
+         (map-indexed
+          (fn[i db] ^{:key i}
+            [:div.checkbox
+             [:label
+              [:input {:type "checkbox" :value (:id db) :checked (contains? @ids (:id db))
+                       :on-change #(swap! ids (if (-> % .-target .-checked) conj disj) (:id db))}]
+              (:name db)]]) db-list))
+        [c/button {:bsStyle "primary"
+                   :on-click #(dispatch [:assign-query q-id @ids])} "Save"]]])))
 
 (defn sql-panel [id]
   (let [cm (atom nil)
         query (subscribe [:query id])
         suggestions (subscribe [:db-queries id])
+        query-assocs (subscribe [:state :query-assocs])
         model (atom {})
         save-fn #(if (nil? @query)
                    (dispatch [:change :modal [query-form id {:sql (.getValue @cm)}]])
@@ -120,9 +123,12 @@
                      :placeholder "search queries" :size 20 :tab-index 1
                      :data-source query-filter :result-fn #(:name %)
                      :choice-fn #(dispatch [:set-in-active-db :query %]) }]
-           [c/button {:on-click #(dispatch [:load-db-queries])} [:i.fa.fa-refresh]]
-           [c/button {:title "share"
-                      :on-click #(dispatch [:load-db-queries])} [:i.fa.fa-share]]]]
+           [c/button {:on-click #(dispatch [:load-db-queries])} [:i.fa.fa-refresh]]]]
+         [c/button-group
+          [c/button {:title "share" :disabled (nil? (:id @query))
+                     :on-click #(dispatch [:query-sharings (:id @query)])} [:i.fa.fa-share]]
+          (if @query-assocs
+            [share-query @query-assocs (:id @query)])]
          [c/button-group
           [:span (:name @query)]]]]
        [:div.panel-body {:style {:padding "0px" :overflow "scroll" :height "calc(100% - 46px)"}}

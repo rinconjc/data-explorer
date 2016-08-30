@@ -20,9 +20,9 @@
 
 (defn model-fixture [f]
   (with-open [con (.getConnection (force ds))]
-    (def dsinfo {:dbms "H2" :url "mem:ds-1" :user_name "sa" :password "sa"})
-    (def ds1 (mk-ds dsinfo))
-    (with-open [con2 (.getConnection ds1)]
+    (def dsinfo {:dbms "H2" :url "mem:ds-2" :user_name "sa" :password "sa"})
+    (with-open [ds1 (mk-ds dsinfo)
+                con2 (.getConnection ds1)]
       (execute {:datasource ds1} "create table tablea(id int, name varchar(20))")
       (sync-db "test")
       (println "creating test datasource:")
