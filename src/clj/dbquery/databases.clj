@@ -72,11 +72,11 @@
              (.setUsername user_name)
              (.setPassword password)
              (.setLoginTimeout 10000)
-             (.addDataSourceProperty "connectionTimeout" 1000)
-             (.addDataSourceProperty "minimumIdle" 0)
-             (.addDataSourceProperty "maximumPoolSize" 4)
-             (.addDataSourceProperty "idleTimeout" 180000)
-             (.addDataSourceProperty "maxLifetime" 300000))]
+             (.setConnectionTimeout 1000)
+             (.setMinimumIdle 0)
+             (.setMaximumPoolSize 4)
+             (.setIdleTimeout 180000)
+             (.setMaxLifetime 300000))]
     (with-open [con (.getConnection ds)]
       ds)))
 

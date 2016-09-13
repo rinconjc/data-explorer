@@ -52,17 +52,28 @@
                   (- (.-clientHeight %))) elem)]
     (and (> scroll-top 0) (< gap 2))))
 
-(defn table-row [data row i]
+(defmulti table-cell (fn [metadata v] (:type metadata)))
+
+(defmethod table-cell :default [_ v] v)
+(defmethod table-cell :link [metadata v]
+  [:a.btn-link {:on-click (:on-click metadata)}  v])
+(defmethod table-cell :image [_ v]
+  [:img {:src v}])
+
+(defn table-row [data row i metadata]
   (if (map? row)
     [:tr [:td (inc i)]
      (for [c (data :columns)] ^{:key c}[:td (str (row c))])]
     [:tr [:td (inc i)]
      (map-indexed
-      (fn[j v] ^{:key j}[:td {:title v} v]) row)]))
+      (fn[j v] ^{:key j}
+        [:td {:title v}
+         (table-cell (nth metadata j nil) v)]) row)]))
 
 (defn data-table [model]
   (let [col-toolbar-on (atom nil)]
     (fn [model]
+      (js/console.log "rendering table")
       [:div.full-height {:style {:position "relative"}}
        [:div.table-responsive
         {:style {:overflow-y "scroll" :height "100%" :position "relative"}
@@ -82,7 +93,7 @@
                ^{:key i}
                [:th {:on-mouse-leave #(reset! col-toolbar-on nil)}
                 [:a.btn-link {:on-mouse-over #(swap! col-toolbar-on
-                                                (fn[i*] (if-not (= i i*) i)))} c]
+                                                     (fn[i*] (if-not (= i i*) i)))} c]
                 [:a.btn-link {:on-click #(dispatch [:roll-sort i])}
                  [:i.fa.btn-sort {:class (sort-icons (some #(if (= i (first %)) (second %))
                                                            (-> model :query :order)))}]]
@@ -94,8 +105,9 @@
                   [column-toolbar model i c])]) (-> model :data :columns)))]]
          [:tbody
           (doall (map-indexed
-                  (fn [i row]
-                    ^{:key i} [table-row (:data model) row i]) (-> model :data :rows)))]
+                  (fn [i row] ^{:key i}
+                    [table-row (:data model) row i (or (:metadata model) [])])
+                  (-> model :data :rows)))]
          [:tfoot
           [:tr [:td {:col-span (inc (count (-> model :data :columns)))}
                 (if-not (:last-page? model)

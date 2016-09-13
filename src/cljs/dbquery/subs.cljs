@@ -102,3 +102,9 @@
  (fn [state [_ tab-id q-id]]
    (let [resultsets (subscribe [:resultsets tab-id])]
      (reaction (get @resultsets q-id)))))
+
+(register-sub
+ :metadata
+ (fn [state [_ db-id table]]
+   (let [dbsubs (subscribe [:db-tab/by-id db-id])]
+     (reaction (get-in @dbsubs [:meta-tables table])))))
