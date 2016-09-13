@@ -137,6 +137,16 @@
                          :extraKeys {:Ctrl-Enter exec-sql :Alt-S save-fn}}
          (or (:sql @query) "")]]])))
 
+(defn metadata-table [db-id {:keys [table] :as model}]
+  (let [data (subscribe [:metadata db-id table])]
+    (fn [db-id {:keys [subs-key] :as model}]
+      [dt/data-table (assoc model :data
+                            {:rows @data
+                             :columns ["name" "type_name" "data_type" "size" "digits" "nullable"
+                                       "is_pk" "is_fk" "fk_table" "fk_column"]}
+                            :last-page? true
+                            :loading false)])))
+
 (defn db-console [id]
   (let [db-tab (subscribe [:db-tab/by-id id])]
     (fn[id]
@@ -167,4 +177,6 @@
                    :title (r/as-element
                            [:span {:title rs-id} rs-id
                             [c/close-button #(dispatch [:kill-table id rs-id])]])}
-            [dt/data-table rs]])]]])))
+            (case (:type rs)
+              :metadata [metadata-table id rs]
+              [dt/data-table rs])])]]])))

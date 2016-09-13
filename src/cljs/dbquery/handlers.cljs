@@ -256,10 +256,10 @@
              :error-handler #(js/console.log "failed assigning query " %)))
      (when (seq removed-ids)
        (DELETE (str "/queries/" q-id "/data-sources")
-             :params {:ds-ids removed-ids}
-             :format :json
-             :handler #(dispatch [:change :query-assocs nil])
-             :error-handler #(js/console.log "failed assigning query " %))))
+               :params {:ds-ids removed-ids}
+               :format :json
+               :handler #(dispatch [:change :query-assocs nil])
+               :error-handler #(js/console.log "failed assigning query " %))))
    state))
 
 (register-handler
@@ -359,7 +359,9 @@
  (fn [state [table tab-id]]
    (if (get-in state [:resultsets table])
      (assoc state :active-table table)
-     (do (dispatch [:exec-query tab-id {:id table :query (query-from-table table)}])
+     (do (dispatch [:exec-query tab-id {:id table
+                                        :query (query-from-table table)
+                                        :table table}])
          state))))
 
 (register-handler
@@ -369,16 +371,21 @@
    (let [id (str table "*")
          rs (get-in state [:resultsets id])]
      (if (or reload? (not rs))
-       (GET (str "/ds/" tab-id "/tables/" table) :response-format :json
-            :params {:refresh reload?}
-            :handler #(dispatch [:update tab-id [:resultsets id] assoc :data
-                                 {:rows (% "columns")
-                                  :columns ["name" "type_name" "data_type" "size" "digits" "nullable"
-                                            "is_pk" "is_fk" "fk_table" "fk_column"]}
-                                 :loading false :last-page? true])
-            :error-handler #(.log js/console %)))
+       (dispatch [:load-meta-table tab-id table reload?]))
      (-> state (assoc :active-table id)
-         (update :resultsets assoc id (if-not rs {:id id :table table :loading true} (assoc rs :loading true)))))))
+         (update :resultsets assoc id
+                 (if-not rs {:id id :type :metadata :table table :loading true}
+                         (assoc rs :loading true)))))))
+
+(register-handler
+ :load-meta-table
+ [debug common-middlewares]
+ (fn [state [db-id table reload?]]
+   (GET (str "/ds/" db-id "/tables/" table) :response-format :json
+        :params {:refresh reload?}
+        :handler #(dispatch [:update db-id [:meta-tables] assoc table (% "columns")])
+        :error-handler #(.log js/console %))
+   state))
 
 (register-handler
  :next-page
