@@ -147,6 +147,11 @@
                             :last-page? true
                             :loading false)])))
 
+(defn preview-table [db-id rs]
+  (let [metadata (subscribe [:col-meta db-id (:table rs)])]
+    (fn [db-id rs]
+      [dt/data-table rs (map #(get @metadata %) (-> rs :data :columns))])))
+
 (defn db-console [id]
   (let [db-tab (subscribe [:db-tab/by-id id])]
     (fn[id]
@@ -179,4 +184,5 @@
                             [c/close-button #(dispatch [:kill-table id rs-id])]])}
             (case (:type rs)
               :metadata [metadata-table id rs]
+              :preview [preview-table id rs]
               [dt/data-table rs])])]]])))

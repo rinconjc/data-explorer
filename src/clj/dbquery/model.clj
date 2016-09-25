@@ -7,7 +7,7 @@
              [conf :refer :all]
              [databases :as db]]
             [korma
-             [core :refer :all]
+             [core :as k]
              [db :refer :all]])
   (:import com.rinconj.dbupgrader.DbUpgrader
            org.h2.jdbcx.JdbcDataSource
@@ -72,7 +72,7 @@
   (belongs-to ds_table {:fk :table_id}))
 
 (defn login [user pass]
-  (if-let [found-user (first (select app_user (fields :password) (where {:nick user})))]
+  (if-let [found-user (first (k/select app_user (fields :password) (k/where {:nick user})))]
     (if (password/check pass (:password found-user))
       (dissoc found-user :password))))
 
@@ -112,21 +112,20 @@ and query_id=?" (for [id ds-ids] [id q-id])) :multi? true))
 
 
 (defn sync-table-cols [table-id cols]
-  (delete ds_column
-          (where {:table_id table-id}))
-  (insert ds_column
-          (values (for [c cols]
-                    (-> c
-                        (dissoc :table_name)
-                        (assoc :table_id table-id))))))
+  (k/delete ds_column
+          (k/where {:table_id table-id}))
+  (let [rows (for [c cols] (-> c (dissoc :table_name) (assoc :table_id table-id)))
+        rows (cons (merge {:is_fk false :fk_table nil :fk_column nil}
+                          (first rows)) (rest rows))]
+    (k/insert ds_column (values rows))))
 
 (defn sync-table-meta [ds-id table-meta]
   (log/info "syncing table metadata:" ds-id (prn-str table-meta))
   (let [table-id
-        (or (-> (select ds_table (where {:name (:name table-meta)
+        (or (-> (k/select ds_table (k/where {:name (:name table-meta)
                                          :data_source_id ds-id}))
                 first :id)
-            (-> (insert ds_table
+            (-> (k/insert ds_table
                         (values (-> table-meta
                                     (select-keys [:name :type])
                                     (assoc :data_source_id ds-id)) ))
@@ -144,26 +143,26 @@ and query_id=?" (for [id ds-ids] [id q-id])) :multi? true))
   (let [tables  (db/get-tables ds)]
     (future
       (let [new-tables (into {} (for [t tables] [(:name t) t]))
-            old-tables (into {} (for [t (select ds_table (fields ::* :name :id)
-                                                (where {:data_source_id ds-id}))]
+            old-tables (into {} (for [t (k/select ds_table (fields ::* :name :id)
+                                                (k/where {:data_source_id ds-id}))]
                                   [(:name t) (:id t)]))]
         (doseq [[name table] new-tables :when (not (contains? old-tables name)) ]
           (log/info "syncing new table metadata:" name)
           (sync-table-meta ds-id (assoc table :columns (db/table-cols ds name))))
         (doseq [[name id] old-tables :when (not (contains? new-tables name))]
           (log/info "deleting removed table metadata:" name)
-          (delete ds_column (where {:table_id id}))
-          (delete ds_table (where {:id id})))))
+          (k/delete ds_column (k/where {:table_id id}))
+          (k/delete ds_table (k/where {:id id})))))
     tables))
 
 ;; (defn get-table-joins [ds-id table]
-;;   (->>(select
+;;   (->>(k/select
 ;;        ds_column
 ;;        (fields ::* [:fk_table :parent-table] [:fk_column :parent-col]
 ;;                [:name :child-col])
 ;;        (with ds_table (fields ::*)
-;;              (where {:name table}))
-;;        (where {:data_source_id ds-id :is_fk true}))
+;;              (k/where {:name table}))
+;;        (k/where {:data_source_id ds-id :is_fk true}))
 ;;       (group-by :parent-table)
 ;;       (map (fn [key cols]
-;;              (assoc key :cols (map #(select-keys % [:child-col :parent-col]) cols))))))
+;;              (assoc key :cols (map #(k/select-keys % [:child-col :parent-col]) cols))))))
