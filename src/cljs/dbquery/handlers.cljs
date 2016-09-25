@@ -359,7 +359,7 @@
  (fn [state [table tab-id]]
    (if (get-in state [:resultsets table])
      (assoc state :active-table table)
-     (do (dispatch [:exec-query tab-id {:id table
+     (do (dispatch [:exec-query tab-id {:id table :type :preview
                                         :query (query-from-table table)
                                         :table table}])
          state))))

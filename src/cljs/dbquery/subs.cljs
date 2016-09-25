@@ -108,3 +108,17 @@
  (fn [state [_ db-id table]]
    (let [dbsubs (subscribe [:db-tab/by-id db-id])]
      (reaction (get-in @dbsubs [:meta-tables table])))))
+
+(register-sub
+ :col-meta
+ (fn [state [_ db-id table]]
+   (let [metadata (subscribe [:metadata db-id table])]
+     (if-not @metadata
+       (dispatch [:load-meta-table db-id table]))
+     (reaction
+      (into {} (for [{:strs [name type_name fk_column fk_table]} @metadata
+                     :let [col (keyword name)]]
+                 (if (some? fk_table)
+                   [name {:type :link :on-click #(dispatch [:pop-parent db-id fk_table
+                                                           fk_column (-> % .-target .-text)])}]
+                   [name {:type type_name}])))))))

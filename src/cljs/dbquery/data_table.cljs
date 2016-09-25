@@ -68,12 +68,11 @@
      (map-indexed
       (fn[j v] ^{:key j}
         [:td {:title v}
-         (table-cell (nth metadata j nil) v)]) row)]))
+         (table-cell (nth metadata j) v)]) row)]))
 
-(defn data-table [model]
+(defn data-table [model col-meta]
   (let [col-toolbar-on (atom nil)]
-    (fn [model]
-      (js/console.log "rendering table")
+    (fn [model col-meta]
       [:div.full-height {:style {:position "relative"}}
        [:div.table-responsive
         {:style {:overflow-y "scroll" :height "100%" :position "relative"}
@@ -106,7 +105,7 @@
          [:tbody
           (doall (map-indexed
                   (fn [i row] ^{:key i}
-                    [table-row (:data model) row i (or (:metadata model) [])])
+                    [table-row (:data model) row i col-meta])
                   (-> model :data :rows)))]
          [:tfoot
           [:tr [:td {:col-span (inc (count (-> model :data :columns)))}
