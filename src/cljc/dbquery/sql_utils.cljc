@@ -1,6 +1,5 @@
 (ns dbquery.sql-utils
-  (:require [clojure.string :as s]
-            [clojure.string :as str]))
+  (:require [clojure.string :as s]))
 
 (def ^:const sort-icons {:up "fa-sort-up" :down "fa-sort-down" nil "fa-sort"})
 (def ^:const next-order {nil :up :up :down :down nil})
@@ -19,7 +18,7 @@
   (if-not (empty? order-state)
     (->> (for [[c ord] order-state]
           (str (inc c) (if (= :up ord) "" " desc")))
-        (str/join ",")
+         (s/join ",")
         (str " order by "))))
 
 (defn sql-where [conditions]
@@ -74,23 +73,10 @@
 
 (defn end-of-block [text i]
   (if-let [[_ begin] (re-find #"(?i)^\s*(DECLARE|BEGIN)\W" (subs text i))]
-    (let [offset (+ i (count begin))
-          sub-text (subs text offset)
-          open (if (= (s/upper-case begin) "BEGIN") 1 0)]
-      #?(:cljs (loop [open open
-                      regex (js/RegExp. "(begin|end)\\W", "gi")]
-                 (let [[_ match :as r] (.exec regex sub-text)
-                       open (if (= (s/lower-case match) "end") (dec open) (inc open))]
-                   (if (> open 0)
-                     (recur open regex)
-                     (+ 1 offset (.indexOf sub-text ";" (.-index r))))))
-         :clj (loop [matcher (re-matcher #"(?i)(begin|end)\W" sub-text)
-                     open open]
-                (when (.find matcher)
-                  (let [open (if (.equalsIgnoreCase "end" (.group matcher 1)) (dec open) (inc open))]
-                    (if (> open 0)
-                      (recur matcher open)
-                      (+ 1 offset (.indexOf sub-text ";" (.end matcher)))))))))))
+    (loop [offset (+ i (count begin))]
+      (if-let [eob (re-find #"^;\s*/" (subs text offset))]
+        (+ offset (count eob))
+        (recur (inc (skip-comments (subs text offset) offset)))))))
 
 (defn end-of-stmt [text offset]
   (let [pos (skip-comments text offset)]

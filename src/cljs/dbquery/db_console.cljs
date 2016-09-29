@@ -147,6 +147,14 @@
                             :last-page? true
                             :loading false)])))
 
+(defn record-view [db-id table col value]
+  )
+
+(defmethod dt/table-cell :link [metadata v]
+  (let [show? (atom false)]
+    (fn [metadata v]
+      [:a.btn-link {:on-click (:on-click metadata)}  v])))
+
 (defn preview-table [db-id rs]
   (let [metadata (subscribe [:col-meta db-id (:table rs)])]
     (fn [db-id rs]

@@ -55,8 +55,7 @@
 (defmulti table-cell (fn [metadata v] (:type metadata)))
 
 (defmethod table-cell :default [_ v] v)
-(defmethod table-cell :link [metadata v]
-  [:a.btn-link {:on-click (:on-click metadata)}  v])
+
 (defmethod table-cell :image [_ v]
   [:img {:src v}])
 

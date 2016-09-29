@@ -452,3 +452,8 @@
         :handler #(dispatch [:change :query-assocs %])
         :error-handler #(.log js/console %))
    state))
+
+(register-handler
+ :pop-parent
+ [common-middlewares tab-path]
+ (fn pop-parent [state [db-id fk-table fk-column value]]))
