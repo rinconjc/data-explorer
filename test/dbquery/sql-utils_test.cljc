@@ -12,9 +12,9 @@ more comments*/select x from y;--final comments")))
 more comments*/select x from y;\ncreate table t(col1 int --inline comment\n);"))))
 
   (testing "parse pl/sql blocks"
-    (is (= ["select x from y" "begin\nstmt1; \nstmt2;\n end\n;"]
+    (is (= ["select x from y" "begin\nstmt1; \nstmt2;\n end\n;/"]
            (sql-statements "--comment \n/* blah blah
-more comments*/select x from y;\nbegin\nstmt1; \nstmt2;\n end\n;\n--more comments")))))
+more comments*/select x from y;\nbegin\nstmt1; \nstmt2;\n end\n;/\n--more comments")))))
 
 (deftest sql-ops
   (testing "set order"
