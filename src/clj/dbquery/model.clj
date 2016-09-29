@@ -7,7 +7,8 @@
              [conf :refer :all]
              [databases :as db]]
             [korma
-             [core :as k]
+             [core :as k :refer [defentity transform entity-fields belongs-to
+                                 many-to-many prepare fields exec-raw values]]
              [db :refer :all]])
   (:import com.rinconj.dbupgrader.DbUpgrader
            org.h2.jdbcx.JdbcDataSource
