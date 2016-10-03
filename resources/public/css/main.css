@@ -91,3 +91,6 @@ body > div > div {
 .red {
     color:#d44950;
 }
+a {
+    cursor:pointer;
+}
