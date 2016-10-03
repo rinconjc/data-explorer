@@ -454,6 +454,17 @@
    state))
 
 (register-handler
- :pop-parent
- [common-middlewares tab-path]
- (fn pop-parent [state [db-id fk-table fk-column value]]))
+ :load-record
+ [common-middlewares in-active-db]
+ (fn load-record [state [db-id {:keys [fk_table fk_column value] :as key}]]
+   (let [active-row (:active-record state)]
+     (if-not (and active-row (= key (:key active-row)))
+       (POST (str "/ds/" db-id "/exec-sql")
+             :params {:sql (str "select * from " fk_table " where "
+                                fk_column "=" (if (string? value) (str \' value \') value))}
+             :format :json :keywords? true :response-format :json
+             :handler #(dispatch [:update db-id :active-record assoc
+                                  :key key :data (zipmap (-> % :data :columns)
+                                                         (-> % :data :rows first))])
+             :error-handler #(js/console.log "error:" %)))
+     state)))

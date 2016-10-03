@@ -119,6 +119,12 @@
       (into {} (for [{:strs [name type_name fk_column fk_table]} @metadata
                      :let [col (keyword name)]]
                  (if (some? fk_table)
-                   [name {:type :link :on-click #(dispatch [:pop-parent db-id fk_table
-                                                           fk_column (-> % .-target .-text)])}]
+                   [name {:type :link :fk_table fk_table :fk_column fk_column
+                          :db-id db-id}]
                    [name {:type type_name}])))))))
+
+(register-sub
+ :active-record
+ (fn [state [_ db-id]]
+   (let [db-state (subscribe [:db-tab/by-id db-id])]
+     (reaction (:active-record @db-state)))))

@@ -147,13 +147,29 @@
                             :last-page? true
                             :loading false)])))
 
-(defn record-view [db-id table col value]
-  )
+(defn record-view [db-id]
+  (let [data (subscribe [:active-record db-id])]
+    (fn [db-id]
+      [:div.my-popover {:style {:padding "10px"}}
+       (if @data
+         [:dl.dl-horizontal
+          (for [[k v] (:data @data)]
+            ^{:key k} [:span [:dt k] [:dd (or v "(null)")]])]
+         [:h4 "loading..."])])))
 
-(defmethod dt/table-cell :link [metadata v]
+(defn link-cell [metadata v]
   (let [show? (atom false)]
     (fn [metadata v]
-      [:a.btn-link {:on-click (:on-click metadata)}  v])))
+      [:div {:on-mouse-leave #(reset! show? false)}
+       [:a.btn-link
+        {:on-click
+         #(if (reset! show? (not @show?))
+            (dispatch [:load-record
+                       (assoc (select-keys metadata [:fk_table :fk_column]) :value v)]))}
+        v]
+       (if @show? [record-view (:db-id metadata)])])))
+
+(defmethod dt/table-cell :link [metadata v] [link-cell metadata v])
 
 (defn preview-table [db-id rs]
   (let [metadata (subscribe [:col-meta db-id (:table rs)])]
