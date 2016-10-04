@@ -20,3 +20,4 @@ resources/public/js/out/
 /resources/public/css/assets.css
 /resources/public/js/assets.js
 .*
+!.travis.yml
