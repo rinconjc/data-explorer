@@ -436,10 +436,10 @@
 
 (register-handler
  :reload
- [common-middlewares in-active-table]
+ [debug common-middlewares in-active-table]
  (fn [resultset [tab-id]]
-   (if (:table resultset)
-     (dispatch [:table-meta true])
+   (case (:type resultset)
+     :metadata (dispatch [:table-meta true])
      (dispatch [:exec-query tab-id resultset 0 (-> resultset :data :rows count)]))
    resultset))
 
@@ -458,13 +458,14 @@
  [common-middlewares in-active-db]
  (fn load-record [state [db-id {:keys [fk_table fk_column value] :as key}]]
    (let [active-row (:active-record state)]
-     (if-not (and active-row (= key (:key active-row)))
+     (when-not (and active-row (= key (:key active-row)))
        (POST (str "/ds/" db-id "/exec-sql")
              :params {:sql (str "select * from " fk_table " where "
                                 fk_column "=" (if (string? value) (str \' value \') value))}
              :format :json :keywords? true :response-format :json
              :handler #(dispatch [:update db-id :active-record assoc
-                                  :key key :data (zipmap (-> % :data :columns)
-                                                         (-> % :data :rows first))])
-             :error-handler #(js/console.log "error:" %)))
+                                  :key key :data (mapv list (-> % :data :columns)
+                                                       (-> % :data :rows first))])
+             :error-handler #(js/console.log "error:" %))
+       (dissoc state :active-record))
      state)))

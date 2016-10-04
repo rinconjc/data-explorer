@@ -152,9 +152,11 @@
     (fn [db-id]
       [:div.my-popover {:style {:padding "10px"}}
        (if @data
-         [:dl.dl-horizontal
-          (for [[k v] (:data @data)]
-            ^{:key k} [:span [:dt k] [:dd (or v "(null)")]])]
+         [:div
+          [:h4.center-block.bg-default (-> @data :key :fk_table)]
+          [:dl.dl-horizontal
+           (for [[k v] (:data @data)]
+             ^{:key k} [:span [:dt k] [:dd (or v "(null)")]])]]
          [:h4 "loading..."])])))
 
 (defn link-cell [metadata v]
