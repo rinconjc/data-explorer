@@ -12,7 +12,8 @@
             [secretary.core :as secretary :include-macros true]
             [cljsjs.mousetrap]
             [dbquery.subs]
-            [dbquery.handlers])
+            [dbquery.handlers]
+            [dbquery.data-import :refer[import-data-tab]])
   (:import goog.History))
 
 (register-handler
@@ -58,16 +59,6 @@
 (defn admin-tab []
   [:div "Admin data"])
 
-(defn db-tab [id]
-  (let [db (subscribe [:db-tab/by-id id])]
-    (fn [id]
-      (js/console.log "tab of" id " and " (clj->js @db))
-      [tab {:eventKey id :class "full-height"
-            :title (r/as-element
-                    [:span (-> @db :db :name)
-                     [close-button #(dispatch [:kill-db id])]])}
-       [db-console id]])))
-
 (defn home-page []
   (let [db-tabs (subscribe [:db-tabs])
         user (subscribe [:state :user])
@@ -86,9 +77,9 @@
            "Add ..." ]
           [menu-item {:on-select #(dispatch [:select-db])}
            "Open ..."]]
-         [nav-item {:on-click #(dispatch [:show-data-import])}
+         [nav-item {:on-click #(dispatch [:show-tab :import-data "Import Data"])}
           "Import Data"]
-         [nav-item {:on-click #(dispatch [:show-admin])}
+         [nav-item {:on-click #(dispatch [:show-tab :admin "Admin"])}
           "Admin"]]
         [nav {:pull-right true}
          [nav-dropdown {:id "user-dropdown" :title (r/as-element
@@ -103,12 +94,16 @@
         (if (seq @db-tabs)
           [tabs {:activeKey @active-tab :on-select #(dispatch [:activate-db %])
                  :class "small-tabs full-height"}
-           (doall (for [[id a-tab] @db-tabs] ^{:key id}
-                    [tab {:eventKey id :class "full-height"
-                          :title (r/as-element
-                                  [:span (-> a-tab :db :name)
-                                   [close-button #(dispatch [:kill-db id])]])}
-                     [db-console id]]))
+           (doall
+            (for [[id a-tab] @db-tabs] ^{:key id}
+              [tab {:eventKey id :class "full-height"
+                    :title (r/as-element
+                            [:span (-> a-tab :name)
+                             [close-button #(dispatch [:kill-db id])]])}
+               (case id
+                 :import-data [import-data-tab]
+                 :admin [admin-tab]
+                 [db-console id])]))
            ;; (doall (for [id @tab-ids]
            ;;    ^{:key id} [db-tab id]))
            ;; (if (:import-data @special-tabs)

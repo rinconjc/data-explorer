@@ -82,7 +82,7 @@
  :init-db
  common-middlewares
  (fn [state []]
-   {:db-tabs {}}))
+   (or state {:db-tabs {}})))
 
 (register-handler
  :save-db
@@ -129,7 +129,7 @@
    (or (when-let [id (:id db)]
          (dispatch [:activate-db id])
          (if (get-in state [:db-tabs id]) state
-             (update state :db-tabs assoc id {:db db})))
+             (update state :db-tabs assoc id {:db db :name (:name db)})))
        state)))
 
 (register-handler
@@ -469,3 +469,10 @@
              :error-handler #(js/console.log "error:" %))
        (dissoc state :active-record))
      state)))
+
+(register-handler
+ :show-tab
+ [debug common-middlewares]
+ (fn [state [tab-id tab-name]]
+   (dispatch [:activate-db tab-id])
+   (update state :db-tabs assoc tab-id {:id tab-id :name tab-name})))
