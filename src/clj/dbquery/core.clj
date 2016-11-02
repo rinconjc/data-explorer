@@ -132,9 +132,10 @@
                   cols)
                 (k/select ds_column (k/where {:table_id table-id}) (k/order :id)))}))
 
-(defn handle-data-import [ds-id {{{file :file separator :separator has-header :hasHeader} :inputFile dest :dest} :body}]
+(defn handle-data-import [ds-id {{{file :file separator :separator has-header :hasHeader}
+                                  :inputFile dest :dest} :body}]
   (let [ds (get-ds ds-id)
-        table (if (= "_" (dest :table))
+        table (if (= "_" (:table dest))
                 (create-table ds (dest :newTable) (dest :columns) nil)
                 (dest :table))
         filePath (str (System/getProperty "java.io.tmpdir") "/" file)

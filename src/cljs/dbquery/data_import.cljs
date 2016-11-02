@@ -12,10 +12,10 @@
         :error-handler #(reset! error (error-text %))))
 
 (defn size-required? [type]
-  (#{2 3 1 12} type))
+  (#{"2" "3" "1" "12"} type))
 
 (defn format-required? [type]
-  (#{91 92 93 3 8 2 7} type))
+  (#{"91" "92" "93" "3" "8" "2" "7"} type))
 
 (defn new-table-with-fields [import-form data dest-error]
   (let [data-types (atom nil)]
@@ -40,6 +40,9 @@
                           [:i.fa.fa-minus]]]
                     [:td [bare-input {:type "text" :model [import-form :columns i :column_name] :size 20}]]
                     [:td [bare-input {:type "select" :model [import-form :columns i :type]
+                                      :on-change #(swap! import-form update-in
+                                                         [:columns i] assoc
+                                                         :type_name (-> % .-target .-label))
                                       :options (for [t @data-types] [(t "data_type") (t "type_name")])}]]
                     [:td (if (size-required? (get-in @import-form [:columns i :type]))
                            [bare-input {:type "text" :model [import-form :columns i :size] :size 5}])]
@@ -84,11 +87,11 @@
                [bare-input {:type "text" :model [import-form :mappings name :format] :size 12}])]
             [:td ]])]]])))
 
-(defn import-dest-form [data]
+(defn import-dest-form [data import-form]
   (let [dest-error (atom nil)
         tables (atom nil)
         data-sources (atom nil)
-        import-form (atom {:columns [] :mappings []})]
+        alert (atom nil)]
 
     (GET "/data-sources" :response-format :json
          :handler #(do (reset! data-sources %) (reset! dest-error nil))
@@ -99,7 +102,7 @@
                  (when (not= old-db new-db)
                    (GET (str "/ds/" new-db "/tables") :response-format :json
                         :handler #(reset! tables %) :error-handler #(reset! dest-error (error-text %))))))
-    (fn [data]
+    (fn [data import-form]
       [:div
        [:h4 "Preview Data:"]
        [:div.table-responsive
@@ -129,7 +132,17 @@
 (defn import-data-tab []
   (let [upload-params (atom {:separator ","})
         data (atom nil)
-        upload-error (atom nil)]
+        upload-error (atom nil)
+        import-form (atom {:columns [] :mappings []})
+        import-fn (fn[]
+                    (POST (str "/ds/" (:database @import-form) "/import-data")
+                          :format :json
+                          :params (merge @upload-params
+                                         {:dest @import-form
+                                          :file (:file @data)})
+                          :handler #(reset! alert {:type "success" :message "Data imported!"} )
+                          :error-handler #(reset! alert {:type "danger" :message (str "Failed importing" %)})))]
+
     (fn []
       [:div
        (if @upload-error
@@ -140,7 +153,9 @@
         [input {:type "select" :model [upload-params :separator]
                 :label "Separator" :options [["\t" "Tab"] ["," ","]]}]
         [input {:type "checkbox" :model [upload-params :hasHeader]
-                :label "Has Header?"}]
+                :label "Has Header?" :value "true"}]
         [button {:bsStyle "primary" :on-click #(upload-file @upload-params data upload-error)} "Upload"]]
        (if @data
-         [import-dest-form data])])))
+         [:div
+          [import-dest-form data import-form]
+          [:button.btn.btn-primary {:on-click import-fn} "Import now"]])])))
