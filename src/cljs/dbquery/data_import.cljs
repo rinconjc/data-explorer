@@ -7,7 +7,7 @@
 
 (defn- upload-file [params data error]
   (POST "/upload" :body (reduce #(doto %1 (.append (name (first %2)) (second %2))) (js/FormData.) params)
-        :response-format :json
+        :response-format :json :keywords? true
         :handler #(reset! data %)
         :error-handler #(reset! error (error-text %))))
 
@@ -39,15 +39,17 @@
                            :title "Remove" :bsStyle "primary"}
                           [:i.fa.fa-minus]]]
                     [:td [bare-input {:type "text" :model [import-form :columns i :column_name] :size 20}]]
-                    [:td [bare-input {:type "select" :model [import-form :columns i :type]
-                                      :on-change #(swap! import-form update-in
-                                                         [:columns i] assoc
-                                                         :type_name (-> % .-target .-label))
-                                      :options (for [t @data-types] [(t "data_type") (t "type_name")])}]]
+                    [:td [bare-input
+                          {:type "select" :model [import-form :columns i :type]
+                           :on-change #(swap! import-form update-in
+                                              [:columns i] assoc
+                                              :type_name (let [elem (.-target %)]
+                                                           (-> elem .-options (.item (.-selectedIndex elem)) .-text)))
+                           :options (for [t @data-types] [(t "data_type") (t "type_name")])}]]
                     [:td (if (size-required? (get-in @import-form [:columns i :type]))
                            [bare-input {:type "text" :model [import-form :columns i :size] :size 5}])]
                     [:td [bare-input {:type "select" :model [import-form :mappings i :source]
-                                      :options (for [h (@data "header")] [h h])}]]
+                                      :options (for [h (:header @data)] [h h])}]]
                     [:td (if (format-required? (get-in @import-form [:columns i :type]))
                            [bare-input {:type "text" :model [import-form :mappings i :format]}])]
                     [:td]]) (@import-form :columns)))]
@@ -60,7 +62,7 @@
                 [:i.fa.fa-plus]]]]]]])))
 
 (defn table-mappings [import-form data dest-error]
-  (let [headers (@data "header")]
+  (let [headers (:header @data)]
 
     (GET (str "/ds/" (:database @import-form) "/tables/" (:table @import-form))
          :response-format :json
@@ -108,11 +110,11 @@
        [:div.table-responsive
         [:table.table-bordered.table-stripped.summary
          [:thead [:tr
-                  (for [c (@data "header")] ^{:key c} [:th c])]]
+                  (for [c (:header @data)] ^{:key c} [:th c])]]
          [:tbody (map-indexed
                   (fn [i row] ^{:key i}
                     [:tr (map-indexed
-                          (fn [j v] ^{:key j} [:td v]) row)]) (@data "rows"))]]]
+                          (fn [j v] ^{:key j} [:td v]) row)]) (:rows @data))]]]
        [:h4 "Import to:"]
        [:form.form-inline
         [input {:type "select" :label "Database: " :model [import-form :database]
@@ -133,15 +135,19 @@
   (let [upload-params (atom {:separator ","})
         data (atom nil)
         upload-error (atom nil)
-        import-form (atom {:columns [] :mappings []})
+        import-form (atom {:columns [] :mappings {}})
+        alert-data (atom nil)
         import-fn (fn[]
-                    (POST (str "/ds/" (:database @import-form) "/import-data")
-                          :format :json
-                          :params (merge @upload-params
-                                         {:dest @import-form
-                                          :file (:file @data)})
-                          :handler #(reset! alert {:type "success" :message "Data imported!"} )
-                          :error-handler #(reset! alert {:type "danger" :message (str "Failed importing" %)})))]
+                    (let [dest (if (:newTable @import-form)
+                                 (let [cols (:columns @import-form)]
+                                   (update @import-form
+                                           :mappings #(into {} (for [[i d] %] [(-> cols (get i) :column_name) d])))) @import-form)]
+                      (POST (str "/ds/" (:database @import-form) "/import-data")
+                            :format :json
+                            :params (merge @upload-params
+                                           {:dest dest :file (:file @data)})
+                            :handler #(reset! alert-data {:type "success" :message "Data imported!"} )
+                            :error-handler #(reset! alert-data {:type "danger" :message (str "Failed importing" %)}))))]
 
     (fn []
       [:div
@@ -158,4 +164,7 @@
        (if @data
          [:div
           [import-dest-form data import-form]
-          [:button.btn.btn-primary {:on-click import-fn} "Import now"]])])))
+          [:button.btn.btn-primary {:on-click import-fn} "Import now"]
+          (if @alert-data
+            [alert {:bsStyle (:type @alert-data)}
+            (:message @alert-data)])])])))

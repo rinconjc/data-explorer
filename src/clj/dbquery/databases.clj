@@ -2,7 +2,8 @@
   (:require [clojure.java.jdbc :refer :all]
             [clojure.string :as s]
             [clojure.tools.logging :as log]
-            [dbquery.utils :refer :all])
+            [dbquery.utils :refer :all]
+            [clojure.java.jdbc :as jdbc])
   (:import com.zaxxer.hikari.HikariDataSource
            [java.sql Date ResultSet Types]
            [java.text DecimalFormat NumberFormat SimpleDateFormat]))
@@ -206,9 +207,9 @@
       (read-rs rs {:limit limit :offset offset}))))
 
 (defn create-table [ds name cols pk]
-  (let [col-defs (for [{name :column_name {type :type_name} :type size :size} cols
-                       :let [typedef (if (some? size) (str type "(" size ")") type)]]
-                   (str name " " typedef))
+  (let [col-defs (for [{:keys [column_name type_name size]} cols
+                       :let [typedef (if (some? size) (str type_name "(" size ")") type_name)]]
+                   (str column_name " " typedef))
         pk-def (if (some? pk) (str ", PRIMARY KEY(" pk ")") "")]
     (execute ds (str "CREATE TABLE " name "(" (s/join "," col-defs) pk-def ")"))
     name))
@@ -242,11 +243,13 @@
                                         [col (param-setter mapping (.indexOf cols col))])))
         insert-sql (str "INSERT INTO " table "(" (s/join "," (map name cols)) ") VALUES("
                         (s/join "," (repeat (count cols) "?")) ")")]
+    ;; (jdbc/insert! ds table (map name cols) )
     (with-open [con (.getConnection (:datasource ds))]
       (let [ps (.prepareStatement con insert-sql)
-            errors (doall (for [row rows] (try-let [_ (reduce #((param-setters %2) %1 row) ps cols)]
-                                                   (.addBatch ps)
-                                                   (fn [e] (log/warn e "failed mapping row " row)
-                                                     [row e]))))
+            errors (doall (for [row rows]
+                            (try-let [_ (reduce #((param-setters %2) %1 row) ps cols)]
+                                     (.addBatch ps)
+                                     (fn [e] (log/warn e "failed mapping row " row)
+                                       [row e]))))
             rows-inserted (.executeBatch ps)]
         {:importCount (reduce + rows-inserted) :invalidCount (count (filter some? errors))}))))
