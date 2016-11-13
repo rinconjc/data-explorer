@@ -12,10 +12,12 @@
         :error-handler #(reset! error (error-text %))))
 
 (defn size-required? [type]
-  (#{"2" "3" "1" "12"} type))
+  ;; (#{"2" "3" "1" "12"} type)
+  (#{2 3 1 12} type))
 
 (defn format-required? [type]
-  (#{"91" "92" "93" "3" "8" "2" "7"} type))
+  ;; (#{"91" "92" "93" "3" "8" "2" "7"} type)
+  (#{91 92 93 3 8 2 7} type))
 
 (defn new-table-with-fields [import-form data dest-error]
   (let [data-types (atom nil)]
@@ -45,6 +47,7 @@
                                               [:columns i] assoc
                                               :type_name (let [elem (.-target %)]
                                                            (-> elem .-options (.item (.-selectedIndex elem)) .-text)))
+                           :value-fn js/parseInt
                            :options (for [t @data-types] [(t "data_type") (t "type_name")])}]]
                     [:td (if (size-required? (get-in @import-form [:columns i :type]))
                            [bare-input {:type "text" :model [import-form :columns i :size] :size 5}])]
@@ -141,7 +144,8 @@
                     (let [dest (if (:newTable @import-form)
                                  (let [cols (:columns @import-form)]
                                    (update @import-form
-                                           :mappings #(into {} (for [[i d] %] [(-> cols (get i) :column_name) d])))) @import-form)]
+                                           :mappings #(into {} (for [[i d] % :let [{:keys[column_name type]} (-> cols (get i))]]
+                                                                 [column_name (assoc d :type type)])))) @import-form)]
                       (POST (str "/ds/" (:database @import-form) "/import-data")
                             :format :json
                             :params (merge @upload-params
@@ -167,4 +171,4 @@
           [:button.btn.btn-primary {:on-click import-fn} "Import now"]
           (if @alert-data
             [alert {:bsStyle (:type @alert-data)}
-            (:message @alert-data)])])])))
+             (:message @alert-data)])])])))

@@ -42,15 +42,15 @@
 
 (defn bind [attrs model type]
   (if-let [[doc & path] model]
-    (let [on-change (:on-change attrs)]
-      (apply assoc (dissoc attrs :model :options)
+    (let [{:keys [on-change value-fn] :or {value-fn identity}} attrs]
+      (apply assoc (dissoc attrs :model :options :value-fn)
              (if (= type "file")
                [:on-change (fn [e]
                              (swap! doc assoc-in path (-> e .-target .-files (aget 0)))
                              (if (fn? on-change) (on-change e)))]
                [:value (get-in @doc path)
                 :on-change (fn [e]
-                             (swap! doc assoc-in path (-> e .-target .-value))
+                             (swap! doc assoc-in path (-> e .-target .-value value-fn))
                              (if (fn? on-change) (on-change e)))])))
     attrs))
 

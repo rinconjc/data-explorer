@@ -214,19 +214,22 @@
     (execute ds (str "CREATE TABLE " name "(" (s/join "," col-defs) pk-def ")"))
     name))
 
+(defn- value-converter [type format]
+  (cond
+    (sql-date-types type) (fn [val] (-> (SimpleDateFormat. format)
+                                        (.parse val)
+                                        .getTime
+                                        (Date.)))
+    (sql-number-types type) (if (s/blank? format)
+                              (fn [val] (-> (NumberFormat/getNumberInstance) (.parse val)))
+                              (fn [val] (-> (DecimalFormat. format) (.parse val))))
+    true identity))
+
 (defn load-data [ds table {header :header rows :rows} mappings]
-  (defn param-setter [{source :source format :format type :type} i]
+  (defn param-setter [{:keys [source format type]} i]
     (let [pos (.indexOf header source)
           _ (if (< pos 0) (throw (Exception. (str "source " source " not found in header " (s/join "," header)))))
-          val-fn (cond
-                   (sql-date-types type) (fn [val] (-> (SimpleDateFormat. format)
-                                                       (.parse val)
-                                                       .getTime
-                                                       (Date.)))
-                   (sql-number-types type) (if (s/blank? format)
-                                             (fn [val] (-> (NumberFormat/getNumberInstance) (.parse val)))
-                                             (fn [val] (-> (DecimalFormat. format) (.parse val))))
-                   true identity)]
+          val-fn (value-converter type format)]
       (fn [ps row]
         (let [val (nth row pos)]
           (try
@@ -239,11 +242,15 @@
 
   (let [valid-mappings (filter #(contains? (second %) :source)  mappings)
         cols (keys valid-mappings)
+        row-mapper (for [col cols :let [{:keys [source format type]} (valid-mappings col)
+                                        i (.indexOf header source)
+                                        val-fn (value-converter type format)]]
+                     (fn [row] (val-fn (nth row i))))
         param-setters (doall (into {} (for [[col mapping] valid-mappings]
                                         [col (param-setter mapping (.indexOf cols col))])))
         insert-sql (str "INSERT INTO " table "(" (s/join "," (map name cols)) ") VALUES("
                         (s/join "," (repeat (count cols) "?")) ")")]
-    ;; (jdbc/insert! ds table (map name cols) )
+    ;; (apply jdbc/insert! ds table cols (map row-mapper rows))
     (with-open [con (.getConnection (:datasource ds))]
       (let [ps (.prepareStatement con insert-sql)
             errors (doall (for [row rows]
