@@ -12,11 +12,9 @@
         :error-handler #(reset! error (error-text %))))
 
 (defn size-required? [type]
-  ;; (#{"2" "3" "1" "12"} type)
   (#{2 3 1 12} type))
 
 (defn format-required? [type]
-  ;; (#{"91" "92" "93" "3" "8" "2" "7"} type)
   (#{91 92 93 3 8 2 7} type))
 
 (defn new-table-with-fields [import-form data dest-error]
