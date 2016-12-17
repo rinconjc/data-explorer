@@ -35,8 +35,8 @@
                     [:td [button
                           {:on-click #(doto import-form
                                         (swap! :columns (fn [form] (remove-nth (:columns form) i)))
-                                        (swap! :mappings (fn [form] (remove-nth (:mappings form) i))))
-                           :title "Remove" :bsStyle "primary"}
+                                        (swap! :mappings dissoc i))
+                           :title "Remove" :bsStyle "default"}
                           [:i.fa.fa-minus]]]
                     [:td [bare-input {:type "text" :model [import-form :columns i :column_name] :size 20}]]
                     [:td [bare-input
