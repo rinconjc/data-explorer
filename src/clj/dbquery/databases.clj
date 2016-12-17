@@ -2,10 +2,9 @@
   (:require [clojure.java.jdbc :refer :all]
             [clojure.string :as s]
             [clojure.tools.logging :as log]
-            [dbquery.utils :refer :all]
-            [clojure.java.jdbc :as jdbc])
+            [dbquery.utils :refer :all])
   (:import com.zaxxer.hikari.HikariDataSource
-           [java.sql Date ResultSet Types]
+           [java.sql ResultSet Timestamp Types]
            [java.text DecimalFormat NumberFormat SimpleDateFormat]))
 
 (def ^:private result-extractors
@@ -219,7 +218,7 @@
     (sql-date-types type) (fn [val] (-> (SimpleDateFormat. format)
                                         (.parse val)
                                         .getTime
-                                        (Date.)))
+                                        (Timestamp.)))
     (sql-number-types type) (if (s/blank? format)
                               (fn [val] (-> (NumberFormat/getNumberInstance) (.parse val)))
                               (fn [val] (-> (DecimalFormat. format) (.parse val))))
