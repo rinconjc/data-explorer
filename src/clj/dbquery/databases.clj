@@ -86,6 +86,7 @@
     (fn [e] {:error (.getMessage e)})))
 
 (defn table-data
+  "retrieves table data"
   ([ds table limit]
    (db-query-with-resultset ds [(str "SELECT * FROM " table)] #(read-rs % {:limit limit})))
   ([ds table] (table-data ds table 100)))
@@ -96,17 +97,21 @@
     (read-as-map rs {:fields [["TABLE_NAME" :name] ["TABLE_TYPE" :type]] :limit 1000})))
 
 (defn get-tables
+  "retrieves the tables in the given or (current) schema"
   ([ds] (get-tables ds (:schema ds)))
   ([ds schema]
    (with-db-metadata [meta ds]
      (get-db-tables meta schema))))
 
 (defn data-types [ds]
+  "retrieves the data types supported by the datasource"
   (with-db-metadata [meta ds]
     (with-open [rs (.getTypeInfo meta)]
       (read-as-map rs {:fields ["TYPE_NAME", "DATA_TYPE"]}))))
 
 (defn execute
+  "executes the given sql statement returning the resulting rows or the number
+  of rows affected by the statement"
   ([ds sql {:keys [rs-reader args] :or {rs-reader read-rs} :as opts}]
    (with-open [con (.getConnection (:datasource ds))]
      (let [sqlv (if (coll? sql) sql [sql])]
@@ -150,6 +155,7 @@
                   (assoc m :is_fk false)))))) cols))
 
 (defn table-cols [ds name]
+  "retrieves the columns of the given table"
   (with-db-metadata [meta ds]
     (let [cols  (future (table-columns meta nil name))
           pks (future (table-pks meta name))
@@ -157,6 +163,7 @@
       (merge-col-keys @cols @pks @fks))))
 
 (defn db-meta [ds]
+  "retrieves all the tables and columns in the current schema"
   (with-db-metadata [meta ds]
     (let [tables (future (get-db-tables meta (:schema ds)))
           cols (future (group-by #(:table_name %) (table-columns meta (:schema ds) "%")))

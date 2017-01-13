@@ -45,6 +45,7 @@
             [lein-cljsasset "0.2.0"]]
   :resource-paths ["lib/*" "resources"]
   :source-paths ["src/clj" "src/cljc"]
+  :hooks [leiningen.cljsbuild]
   :minify-assets
   {:assets
    {"resources/public/css/main.min.css" "resources/public/css/main.css"}}
