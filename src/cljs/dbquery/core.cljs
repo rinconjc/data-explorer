@@ -125,8 +125,8 @@
   (let [login-data (r/atom {})
         error (subscribe [:state :error])]
     (fn []
-      [:div.col-md-offset-4.col-md-3
-       [:form {:on-submit #(dispatch [:login @login-data])}
+      [:div.col-md-offset-4.col-md-3.col-sm-5.col-sm-offset-4
+       [:form.form {:on-submit #(dispatch [:login @login-data])}
         [:h2 "Sign in"
          [:a.btn-link.btn.btn-lg {:href "#/register"} "or register as new user"]]
         [:div (if @error [alert {:bsStyle "danger"} @error])]
