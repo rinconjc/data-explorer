@@ -34,8 +34,6 @@
                                (swap! active-box #(case % :distinct nil :distinct)))
                    :title "Distinct Values"}
          [:i.fa.fa-list-alt]]
-        [c/button [:i.fa.fa-minus]]
-        [c/button [:i.fa.fa-plus]]
         [c/button {:on-click #(dispatch [:set-sort i :up]) :title "Sort Asc"} [:i.fa.fa-sort-up]]
         [c/button {:on-click #(dispatch [:set-sort i :down]) :title "Sort Desc"} [:i.fa.fa-sort-down]]
         [c/button {:on-click #(dispatch [:set-sort i nil]) :title "No Sort"} [:i.fa.fa-sort]]]

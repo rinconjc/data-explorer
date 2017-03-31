@@ -47,7 +47,7 @@
     (fn[instance config value]
       (if @instance
         (.setValue @instance value))
-      [:textarea.mousetrap {:style {:width "100%" :height "100%"}}])
+      [:textarea.mousetrap {:rows 10 :style {:width "100%" :height "100%"}} " "])
     :component-did-mount
     (fn[c]
       (let [cm (.fromTextArea js/CodeMirror (r/dom-node c) (clj->js config))]
@@ -133,9 +133,9 @@
           [:span (:name @query)]]]]
        [:div.panel-body {:style {:padding "0px" :overflow "scroll" :height "calc(100% - 46px)"}}
         [code-mirror cm {:mode "text/x-sql"
-                         :tabindex 2
+                         :tabindex 2 :autofocus true
                          :extraKeys {:Ctrl-Enter exec-sql :Alt-S save-fn}}
-         (or (:sql @query) "")]]])))
+         (or (:sql @query) "  ")]]])))
 
 (defn metadata-table [db-id {:keys [table] :as model}]
   (let [data (subscribe [:metadata db-id table])]

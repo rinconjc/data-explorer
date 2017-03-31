@@ -30,7 +30,7 @@
           db)))))
 
 (def common-middlewares [trim-v (if ^boolean goog.DEBUG log-ex)
-                         ;; (when ^boolean goog.DEBUG debug)
+                         ;;(when ^boolean goog.DEBUG debug)
                          ])
 
 ;; add ajax interceptor
@@ -82,7 +82,7 @@
  :init-db
  common-middlewares
  (fn [state []]
-   (or state {:db-tabs {}})))
+   (or state {:db-tabs (array-map)})))
 
 (register-handler
  :save-db
@@ -129,7 +129,7 @@
    (or (when-let [id (:id db)]
          (dispatch [:activate-db id])
          (if (get-in state [:db-tabs id]) state
-             (update state :db-tabs assoc id {:db db :name (:name db)})))
+             (update state :db-tabs assoc id {:db db :name (:name db) :resultsets (array-map)})))
        state)))
 
 (register-handler
