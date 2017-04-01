@@ -18,6 +18,7 @@
 
 (defn db-objects [tab-id]
   (let [model (subscribe [:db-objects-model tab-id])
+        selected (atom nil)
         icons {"TABLE" "fa-table fa-fw"
                "VIEW" "fa-copy fa-fw"}]
     (fn [tab-id]
@@ -26,20 +27,29 @@
         [c/button-group {:bsSize "small"}
          [c/button {:on-click #(dispatch [:load-db-objects true])}
           [:i.fa.fa-refresh {:title "Refresh Objects"}]]
-         [c/button {:on-click #(dispatch [:preview-table])}
+         [c/button {:on-click #(if @selected
+                                 (dispatch [:preview-table (-> @model :items (nth @selected) :name)]))}
           [:i.fa.fa-list-alt {:title "Preview Data"}]]
-         [c/button {:on-click #(dispatch [:table-meta])}
+         [c/button {:on-click #(if @selected
+                                 (dispatch [:table-meta (-> @model :items (nth @selected) :name)]))}
           [:i.fa.fa-info {:title "Show metadata"}]]]]
        [:div.panel-body {:style {:padding "4px 4px"}}
         (if (:q @model)
           [search-box #(dispatch [:filter-objects %])])
-        [:ul {:class "list-unstyled list" :style {:height "100%" :cursor "pointer"}}
-         (doall (for [{:keys[type name] :as tb} (:items @model)]
-                  ^{:key name}
-                  [:li {:class (if (= tb (:selected @model)) "selected" "") :tabIndex 101
-                        :on-click #(dispatch [:set-in-active-db :selected tb])
-                        :on-double-click #(dispatch [:preview-table])}
-                   [:i.fa {:class (icons type)}] name]))]]])))
+        [:ul {:class "list-unstyled list" :style {:height "100%" :cursor "pointer"}
+              :on-key-down #(some-> % .-key {"ArrowDown" inc "ArrowUp" dec
+                                             "Enter" (fn[s] (dispatch [:preview-table (-> @model :items (nth s) :name)]))}
+                                    (apply @selected nil)
+                                    (max 0) (min (dec (count (:items @model))))
+                                    ((partial reset! selected)))}
+         (doall
+          (map-indexed
+           (fn [i {:keys[type name]}] ^{:key name}
+             [:li {:class (if (= i @selected) "selected" "")
+                   :tabIndex 101
+                   :on-click #(reset! selected i)
+                   :on-double-click #(dispatch [:preview-table name])}
+              [:i.fa {:class (icons type)}] name]) (:items @model)))]]])))
 
 (defn code-mirror [instance config value]
   (r/create-class

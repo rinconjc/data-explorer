@@ -340,23 +340,21 @@
  :exec-done
  [common-middlewares tab-path]
  (fn [state [db-id qid q offset resp error]]
-   (let [state
-         (update state :execution
-                 (fn[xs](map #(if (= (:id %) qid)
-                                (assoc % :status :done :error error
-                                       :time (/ (- (. js/Date now) (:start %)) 1000.0)
-                                       :update-count (and (not error) (:rowsAffected resp)))
-                                %) xs)))]
-     (if error
-       (assoc state :in-queue nil :active-table :exec-log)
-       (if-let [data (:data resp)]
-         (update-result q state data offset)
-         state)))))
+   (cond-> state
+     true (update :execution
+             (fn[xs](map #(if (= (:id %) qid)
+                            (assoc % :status :done :error error
+                                   :time (/ (- (. js/Date now) (:start %)) 1000.0)
+                                   :update-count (and (not error) (:rowsAffected resp)))
+                            %) xs)))
+     error (assoc :in-queue nil :active-table :exec-log)
+     (map? q) (update-in [:resultsets (:id q)] assoc :loading false)
+     (:data resp) (#(update-result q % (:data resp) offset)))))
 
 (register-handler
  :preview-table
- [common-middlewares in-active-db with-selected-table]
- (fn [state [table tab-id]]
+ [common-middlewares in-active-db]
+ (fn [state [tab-id table]]
    (if (get-in state [:resultsets table])
      (assoc state :active-table table)
      (do (dispatch [:exec-query tab-id {:id table :type :preview
@@ -366,8 +364,8 @@
 
 (register-handler
  :table-meta
- [debug common-middlewares in-active-db with-selected-table]
- (fn [state [table tab-id reload?]]
+ [debug common-middlewares in-active-db]
+ (fn [state [tab-id table reload?]]
    (let [id (str table "*")
          rs (get-in state [:resultsets id])]
      (if (or reload? (not rs))
