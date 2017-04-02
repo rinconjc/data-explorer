@@ -4,6 +4,9 @@
             [re-frame.core :refer [dispatch subscribe]]
             [reagent.core :as r :refer [atom]]))
 
+(defn toggle [x y]
+  (if-not (= x y) y))
+
 (defn filter-box [query col]
   (let [condition (atom {:value (-> query :conditions (get col))})]
     (fn [query col]
@@ -78,18 +81,20 @@
         [:table.table.table-hover.table-bordered.summary
          [:thead
           [:tr [:th {:style {:width "1px" :padding-left "2px" :padding-right "2px"}}
-                [c/split-button {:style {:display "flex"}
-                                 :title (r/as-element [:i.fa.fa-refresh])
-                                 :on-click #(dispatch [:reload]) :bsSize "xsmall"}
-                 [c/menu-item {:eventKey 1} "Join with..."]
-                 [c/menu-item {:eventKey 2} "Row Count"]]]
+                [c/button-group {:bsSize "xsmall" :style {:display "flex"}}
+                 [c/button {:title "refresh" :on-click #(dispatch [:reload])} [:i.fa.fa-refresh]]
+                 [c/button {:title "more options"
+                            :on-click #(swap! col-toolbar-on toggle -1)} "..."]]
+                (if (= @col-toolbar-on -1)
+                  [:div.my-popover
+                   [c/button-group {:bsSize "xsmall" :style {:display "flex"}}
+                    [c/button {:title "Filters:"} "filters"]]])]
            (doall
             (map-indexed
              (fn[i c]
                ^{:key i}
                [:th {:on-mouse-leave #(reset! col-toolbar-on nil)}
-                [:a.btn-link {:on-mouse-over #(swap! col-toolbar-on
-                                                     (fn[i*] (if-not (= i i*) i)))} c]
+                [:a.btn-link {:on-mouse-over #(swap! col-toolbar-on toggle i)} c]
                 [:a.btn-link {:on-click #(dispatch [:roll-sort i])}
                  [:i.fa.btn-sort {:class (sort-icons (some #(if (= i (first %)) (second %))
                                                            (-> model :query :order)))}]]
