@@ -270,7 +270,7 @@
                          [PUT (str "/queries/" id)] [POST "/queries"])]
      (method path :params query :format :json :response-format :json :keywords? true
              :handler #(do (dispatch [:change [:db-tabs tab-id :query] % :modal nil])
-                           (if-not (:id query) (dispatch [:assign-query % tab-id])))
+                           (if-not (:id query) (dispatch [:assign-query (:id %) #{tab-id}])))
              :error-handler #(do
                                (js/console.log (str "failure saving:" (error-text %)))
                                (dispatch [:change :modal nil])))
@@ -437,7 +437,7 @@
  [debug common-middlewares in-active-table]
  (fn [resultset [tab-id]]
    (case (:type resultset)
-     :metadata (dispatch [:table-meta true])
+     :metadata (dispatch [:table-meta (:table resultset) true])
      (dispatch [:exec-query tab-id resultset 0 (-> resultset :data :rows count)]))
    resultset))
 
