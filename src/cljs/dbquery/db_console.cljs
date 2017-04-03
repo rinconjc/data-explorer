@@ -44,7 +44,7 @@
                                     ((partial reset! selected)))}
          (doall
           (map-indexed
-           (fn [i {:keys[type name]}] ^{:key name}
+           (fn [i {:keys[type name]}] ^{:key i}
              [:li {:class (if (= i @selected) "selected" "")
                    :tabIndex 101
                    :on-click #(reset! selected i)

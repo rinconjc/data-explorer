@@ -267,6 +267,8 @@
       (wrap-defaults (assoc site-defaults :security {:anti-forgery false}))))
 ;;
 
-(defn -main []
-  (sync-db "dev")
-  (run-server (reload/wrap-reload #'all-routes) {:port 3001}))
+(defn -main
+  ([] (-main "3001"))
+  ([port]
+   (sync-db "dev")
+   (run-server (reload/wrap-reload #'all-routes) {:port (Integer/parseInt port)})))

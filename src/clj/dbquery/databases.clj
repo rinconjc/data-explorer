@@ -66,17 +66,20 @@
           "H2" ["org.h2.jdbcx.JdbcDataSource" (str "jdbc:h2:" url)]
           "ORACLE" ["oracle.jdbc.pool.OracleDataSource" (str "jdbc:oracle:thin:@" url)]
           "POSTGRES" ["org.postgresql.ds.PGSimpleDataSource" (str "jdbc:postgresql:" url)]
+          "MS-SQL" ["net.sourceforge.jtds.jdbcx.JtdsDataSource" (str "jdbc:jtds:sqlserver://" url)]
           (throw (Exception. (format "DBMS %s not supported." dbms))))
         ds (doto (HikariDataSource.)
              (.setJdbcUrl jdbc-url)
              (.setUsername user_name)
              (.setPassword password)
-             (.setLoginTimeout 10000)
-             (.setConnectionTimeout 1000)
+             (.setLoginTimeout 20000)
+             (.setConnectionTimeout 5000)
              (.setMinimumIdle 0)
              (.setMaximumPoolSize 4)
              (.setIdleTimeout 180000)
              (.setMaxLifetime 300000))]
+    (if (= dbms "MS-SQL")
+      (.setConnectionTestQuery ds "SELECT GETDATE()"))
     (with-open [con (.getConnection ds)]
       ds)))
 
