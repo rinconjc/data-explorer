@@ -57,7 +57,7 @@
     (fn[instance config value]
       (if @instance
         (.setValue @instance value))
-      [:textarea.mousetrap {:rows 10 :style {:width "100%" :height "100%"}} " "])
+      [:textarea.mousetrap {:rows 10 :style {:width "100%" :height "100%"} :default-value ""}])
     :component-did-mount
     (fn[c]
       (let [cm (.fromTextArea js/CodeMirror (r/dom-node c) (clj->js config))]
@@ -201,7 +201,8 @@
          (if-let [exec-rows (:execution @db-tab)]
            [c/tab {:event-key :exec-log
                    :title (r/as-element
-                           [:span "SQL Execution"
+                           [:span (if (some #(= :executing (:status %)) exec-rows)
+                                    [:i.fa.fa-spinner.fa-spin]) "SQL Execution"
                             [c/close-button #(dispatch [:set-in-active-db id :execution nil])]])}
             [:div {:style {:height "100%" :overflow-y "scroll"}}
              [:ul.list-group

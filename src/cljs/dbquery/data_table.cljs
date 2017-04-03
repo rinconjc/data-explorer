@@ -29,7 +29,7 @@
   (let [active-box (atom nil)]
     (fn [model i col]
       [:div.my-popover
-       [c/button-group {:bsSize "xsmall"}
+       [c/button-group {:bsSize "xsmall" :style {:display "flex"}}
         [c/button {:on-click (fn[](swap! active-box #(case % :filter nil :filter)))}
          [:i.fa.fa-filter]]
         [c/button {:on-click (fn[]
@@ -44,6 +44,13 @@
          :filter [filter-box (:query model) col]
          :distinct [dist-values model col]
          "")])))
+
+(defn more-toolbar [model]
+  (r/with-let [active (atom nil)]
+    [:div.my-popover
+     [c/button-group {:bsSize "xsmall" :style {:display "flex"}}
+      [c/button {:title "Filters:"} [:i.fa.fa-filter]]
+      [c/button {:title "SQL"} [:i.fa.fa-paste]]]]))
 
 (defn scroll-bottom? [e]
   (let [elem (.-target e)
@@ -86,9 +93,7 @@
                  [c/button {:title "more options"
                             :on-click #(swap! col-toolbar-on toggle -1)} "..."]]
                 (if (= @col-toolbar-on -1)
-                  [:div.my-popover
-                   [c/button-group {:bsSize "xsmall" :style {:display "flex"}}
-                    [c/button {:title "Filters:"} "filters"]]])]
+                  [more-toolbar model])]
            (doall
             (map-indexed
              (fn[i c]
