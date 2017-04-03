@@ -270,7 +270,7 @@
                          [PUT (str "/queries/" id)] [POST "/queries"])]
      (method path :params query :format :json :response-format :json :keywords? true
              :handler #(do (dispatch [:change [:db-tabs tab-id :query] % :modal nil])
-                           (if (= method POST) (dispatch [:assign-query % tab-id])))
+                           (if-not (:id query) (dispatch [:assign-query % tab-id])))
              :error-handler #(do
                                (js/console.log (str "failure saving:" (error-text %)))
                                (dispatch [:change :modal nil])))
