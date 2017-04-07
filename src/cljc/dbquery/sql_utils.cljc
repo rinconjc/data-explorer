@@ -1,5 +1,6 @@
 (ns dbquery.sql-utils
-  (:require [clojure.string :as s]))
+  (:require [clojure.string :as s]
+            [clojure.string :as str]))
 
 (def ^:const sort-icons {:up "fa-sort-up" :down "fa-sort-down" nil "fa-sort"})
 (def ^:const next-order {nil :up :up :down :down nil})
@@ -50,50 +51,9 @@
 
 ;; sql parsing
 
-(defn inline-comment [text i]
-  (if (= "--" (subs text i (+ i 2)))
-    (let [end (.indexOf text "\n" i)]
-      (if (>= end 0) (inc end) (count text)))))
-
-(defn block-comment [text i]
-  (if (= "/*" (subs text i (+ i 2)))
-    (let [end (.indexOf text "*/" i)]
-      (if (>= end 0) (+ end 2)
-          #?(:clj (throw (Exception. "Unclosed block comment"))
-             :cljs (throw (js/Error. "Unclosed block comment")))))))
-
-(defn skip-comments [text i]
-  (if-let [offset (or (and (< (+ i 2) (count text))
-                           (or (inline-comment text i) (block-comment text i)))
-                      (and (< i (count text)) (blanks (.charAt text i))
-                           (loop [j (inc i)]
-                             (if (blanks (.charAt text j)) (recur (inc j)) j))))]
-    (skip-comments text offset)
-    i))
-
-(defn end-of-block [text i]
-  (if-let [[_ begin] (re-find #"(?i)^\s*(DECLARE|BEGIN)\W" (subs text i))]
-    (loop [offset (+ i (count begin))]
-      (if-let [eob (re-find #"^;\s*/" (subs text offset))]
-        (+ offset (count eob))
-        (recur (inc (skip-comments (subs text offset) offset)))))))
-
-(defn end-of-stmt [text offset]
-  (let [pos (skip-comments text offset)]
-    (if (or (>= pos (count text)) (= \; (.charAt text pos)))
-      pos
-      (end-of-stmt text (inc pos)))))
-
-(defn next-stmt [text offset]
-  (if (< offset (count text))
-    (let [start (skip-comments text offset)
-          end (or (end-of-block text start) (end-of-stmt text start))]
-      (if (and (> end start) (<= end (count text)))
-        [(subs text start end) (inc end)]))))
-
-(defn sql-statements [text]
-  (loop [start 0
-         stmts []]
-    (let [[sql offset] (next-stmt text start)]
-      (if sql (recur offset (conj stmts sql))
-          stmts))))
+(defn sql-statements
+  ([text] (sql-statements text (cond (re-find #"/\s*(\n|$)" text) "/" :else ";")))
+  ([text sep]
+   (->> (str/split text (re-pattern (str sep "\\s*(\\n|$)")))
+        (map str/trim)
+        (filter (complement str/blank?)))))
