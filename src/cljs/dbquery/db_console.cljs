@@ -213,8 +213,7 @@
                         (:error x) [:span.red (:error x)]
                         (:update-count x) (str (:update-count x) " rows " (:time x) "s")
                         :else (str (:time x) "s"))] (:sql x)])]]])
-         (for [[rs-id rs] (:resultsets @db-tab)]
-           ^{:key rs-id}
+         (for [[rs-id rs] (:resultsets @db-tab)] ^{:key rs-id}
            [c/tab {:event-key rs-id
                    :title (r/as-element
                            [:span {:title rs-id} rs-id
