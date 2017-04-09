@@ -45,12 +45,22 @@
          :distinct [dist-values model col]
          "")])))
 
+(defn filters [model]
+  [:div
+   [:ul.list-unstyled
+    (for [[col pred] (get-in model [:query :conditions])]
+                       ^{:key col} [:li (str col pred) [:button.btn.btn-xs "x"]])]
+   ])
+
 (defn more-toolbar [model]
   (r/with-let [active (atom nil)]
     [:div.my-popover
      [c/button-group {:bsSize "xsmall" :style {:display "flex"}}
-      [c/button {:title "Filters:"} [:i.fa.fa-filter]]
-      [c/button {:title "SQL"} [:i.fa.fa-paste]]]]))
+      [c/button {:title "Filters:" :on-click #(reset! active :filters)} [:i.fa.fa-filter]]
+      [c/button {:title "SQL"} [:i.fa.fa-paste]]]
+     (case @active
+       :filters [filters model]
+       "")]))
 
 (defn scroll-bottom? [e]
   (let [elem (.-target e)
