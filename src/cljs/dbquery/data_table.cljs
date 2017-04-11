@@ -2,7 +2,8 @@
   (:require [dbquery.commons :as c :refer [button input]]
             [dbquery.sql-utils :refer [sort-icons]]
             [re-frame.core :refer [dispatch subscribe]]
-            [reagent.core :as r :refer [atom]]))
+            [reagent.core :as r :refer [atom]]
+            [clojure.string :as str]))
 
 (defn toggle [x y]
   (if-not (= x y) y))
@@ -29,7 +30,7 @@
   (let [active-box (atom nil)]
     (fn [model i col]
       [:div.my-popover
-       [c/button-group {:bsSize "xsmall" :style {:display "flex"}}
+       [c/button-group {:bsSize "small" :style {:display "flex"}}
         [c/button {:on-click (fn[](swap! active-box #(case % :filter nil :filter)))}
          [:i.fa.fa-filter]]
         [c/button {:on-click (fn[]
@@ -46,16 +47,29 @@
          "")])))
 
 (defn filters [model]
-  [:div
-   [:ul.list-unstyled
-    (for [[col pred] (get-in model [:query :conditions])]
-                       ^{:key col} [:li (str col pred) [:button.btn.btn-xs "x"]])]
-   ])
+  (r/with-let [pred (atom nil)]
+    [:div.panel.panel-default
+     [:div.panel-heading "Filters"]
+     [:ul.list-group
+      (for [[col pred] (get-in model [:query :conditions])]
+        ^{:key col} [:li.list-group-item (str col " " pred)
+                     [:span.badge {:on-click #(dispatch [:set-filter col nil])} "x"]])
+      [:li.list-group-item
+       [:form.form-inline
+        {:on-submit #(do (.preventDefault %)
+                         (dispatch [:set-filter (:col @pred)
+                                    (str/replace-first (:value @pred) (:col @pred) "")])
+                         (reset! pred nil))}
+        [input {:type "typeahead" :model [pred :value] :data-source #(-> model :data :columns)
+                :choice-fn #(swap! pred assoc :col %)
+                :placeholder "more filters..."}]
+        [button {:bs-style "default" :type "submit"} "+"]]]]
+     ]))
 
 (defn more-toolbar [model]
   (r/with-let [active (atom nil)]
     [:div.my-popover
-     [c/button-group {:bsSize "xsmall" :style {:display "flex"}}
+     [c/button-group {:bsSize "small" :style {:display "flex"}}
       [c/button {:title "Filters:" :on-click #(reset! active :filters)} [:i.fa.fa-filter]]
       [c/button {:title "SQL"} [:i.fa.fa-paste]]]
      (case @active
@@ -101,7 +115,7 @@
                 [c/button-group {:bsSize "xsmall" :style {:display "flex"}}
                  [c/button {:title "refresh" :on-click #(dispatch [:reload])} [:i.fa.fa-refresh]]
                  [c/button {:title "more options"
-                            :on-click #(swap! col-toolbar-on toggle -1)} "..."]]
+                            :on-mouse-over #(swap! col-toolbar-on toggle -1)} "..."]]
                 (if (= @col-toolbar-on -1)
                   [more-toolbar model])]
            (doall
