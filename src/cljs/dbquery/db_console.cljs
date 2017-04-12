@@ -141,7 +141,7 @@
             [share-query @query-assocs (:id @query)])]
          [c/button-group
           [:span (:name @query)]]]]
-       [:div.panel-body {:style {:padding "0px" :overflow "scroll" :height "calc(100% - 46px)"}}
+       [:div.panel-body {:style {:padding "0px" :overflow "hidden" :height "calc(100% - 46px)"}}
         [code-mirror cm {:mode "text/x-sql"
                          :tabindex 2 :autofocus true
                          :extraKeys {:Ctrl-Enter exec-sql :Alt-S save-fn}}
