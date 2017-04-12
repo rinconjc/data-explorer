@@ -61,7 +61,7 @@ body > div > div {
   padding:4px !important;
 }
 .CodeMirror {
-  height:auto !important;
+  height:100% !important;
 }
 /* .navbar { min-height:28px; height: 28px; } */
 /* .navbar .navbar-brand{ padding: 0px 12px;font-size: 16px;line-height: 28px; } */
