@@ -347,9 +347,10 @@
                                    :time (/ (- (. js/Date now) (:start %)) 1000.0)
                                    :update-count (and (not error) (:rowsAffected resp)))
                             %) xs)))
-     error (assoc :in-queue nil :active-table :exec-log)
+     error (assoc :in-queue nil)
      (map? q) (update-in [:resultsets (:id q)] assoc :loading false)
-     (:data resp) (#(update-result q % (:data resp) offset)))))
+     (:data resp) (#(update-result q % (:data resp) offset))
+     (nil? (:data resp)) (assoc :active-table :exec-log))))
 
 (register-handler
  :preview-table

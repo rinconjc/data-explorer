@@ -1,11 +1,10 @@
 (ns dbquery.db-console
   (:require [dbquery.commons :as c :refer [input]]
             [dbquery.data-table :as dt]
+            [dbquery.sql-utils :as u]
             [re-frame.core :refer [dispatch subscribe]]
             [reagent.core :as r :refer [atom]]
-            [widgets.splitter :as st]
-            [reagent.ratom :refer-macros [reaction]]
-            [cljsjs.codemirror]))
+            [widgets.splitter :as st]))
 
 (defn search-box [f]
   (r/create-class
@@ -216,8 +215,9 @@
          (for [[rs-id rs] (:resultsets @db-tab)] ^{:key rs-id}
            [c/tab {:event-key rs-id
                    :title (r/as-element
-                           [:span {:title rs-id} rs-id
+                           [:span {:title (or (:table rs) (-> rs :query u/sql-select))} rs-id
                             [c/close-button #(dispatch [:kill-table id rs-id])]])}
+            (js/console.log "tab:" rs-id ":" (clj->js rs))
             (case (:type rs)
               :metadata [metadata-table id rs]
               :preview [preview-table id rs]
