@@ -4,7 +4,8 @@
             [dbquery.sql-utils :as u]
             [re-frame.core :refer [dispatch subscribe]]
             [reagent.core :as r :refer [atom]]
-            [widgets.splitter :as st]))
+            [widgets.splitter :as st]
+            [cljsjs.codemirror]))
 
 (defn search-box [f]
   (r/create-class
