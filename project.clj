@@ -35,7 +35,7 @@
                  [org.jasypt/jasypt "1.9.2"]
                  ;; [com.oracle/ojdbc16 "11.2.0.3"]
                  [ojdbc/ojdbc "14"]
-                 [cljsjs/react-bootstrap "0.30.7-0" :exclusions [org.webjars.bower/jquery]]
+                 [cljsjs/react-bootstrap "0.27.3-0" :exclusions [org.webjars.bower/jquery]]
                  [cljsjs/mousetrap "1.5.3-0"]
                  [cljsjs/codemirror "5.7.0-1"]
                  [com.zaxxer/HikariCP "2.5.1"]
