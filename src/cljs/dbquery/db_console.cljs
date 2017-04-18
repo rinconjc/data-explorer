@@ -5,7 +5,13 @@
             [re-frame.core :refer [dispatch subscribe]]
             [reagent.core :as r :refer [atom]]
             [widgets.splitter :as st]
-            [cljsjs.codemirror]))
+            [cljsjs.codemirror]
+            [clojure.string :as str]))
+
+
+(def ^:const expansions {"sf" "select * from "
+                         "up" "update "
+                         "de" "delete from "})
 
 (defn search-box [f]
   (r/create-class
@@ -97,6 +103,15 @@
         [c/button {:bsStyle "primary"
                    :on-click #(dispatch [:assign-query q-id @ids])} "Save"]]])))
 
+(defn- autocomplete [cm]
+  (let [cur (.getCursor cm)
+        text (-> cm (.getRange #js{:line (.-line cur) :ch 0} cur)
+                 (str/split #"\s+") reverse first)
+        repl (some-> text expansions)]
+    (if repl
+      (.replaceRange cm repl #js{:line (.-line cur) :ch (- (.-ch cur) (.-length text))} cur)
+      (.-Pass js/CodeMirror))))
+
 (defn sql-panel [id]
   (let [cm (atom nil)
         query (subscribe [:query id])
@@ -142,9 +157,10 @@
          [c/button-group
           [:span (:name @query)]]]]
        [:div.panel-body {:style {:padding "0px" :overflow "hidden" :height "calc(100% - 46px)"}}
-        [code-mirror cm {:mode "text/x-sql"
+        [code-mirror cm {:mode "text/x-sql" :profile "xml"
                          :tabindex 2 :autofocus true
-                         :extraKeys {:Ctrl-Enter exec-sql :Alt-S save-fn}}
+                         :extraKeys {:Ctrl-Enter exec-sql :Alt-S save-fn
+                                     :Tab autocomplete}}
          (or (:sql @query) "")]]])))
 
 (defn metadata-table [db-id {:keys [table] :as model}]

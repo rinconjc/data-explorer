@@ -103,22 +103,7 @@
                (case id
                  :import-data [import-data-tab]
                  :admin [admin-tab]
-                 [db-console id])]))
-           ;; (doall (for [id @tab-ids]
-           ;;    ^{:key id} [db-tab id]))
-           ;; (if (:import-data @special-tabs)
-           ;;   [tab {:eventKey :import-data
-           ;;         :title (r/as-element
-           ;;                 [:span "Import Data"
-           ;;                  [close-button #(swap! special-tabs disj :import-data)]])}
-           ;;    [import-data-tab]])
-           ;; (if (:admin @special-tabs)
-           ;;   [tab {:eventKey :admin
-           ;;         :title (r/as-element
-           ;;                 [:span "Admin"
-           ;;                  [close-button #(swap! special-tabs disj :admin)]])}
-           ;;    [admin-tab]])
-           ]
+                 [db-console id])]))]
           [:h3 "Welcome to Data Explorer. Open a DB ..."])]])))
 
 (defn login-page []

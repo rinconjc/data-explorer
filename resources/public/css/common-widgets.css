@@ -71,7 +71,8 @@
     background-color: white;
     overflow-y: scroll;
     max-height: 300px;
-    width: 445px}
+    min-width: 220px;
+    max-width: 445px;}
 
 
 .typeahead-item {
