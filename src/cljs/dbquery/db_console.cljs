@@ -145,7 +145,7 @@
         [code-mirror cm {:mode "text/x-sql"
                          :tabindex 2 :autofocus true
                          :extraKeys {:Ctrl-Enter exec-sql :Alt-S save-fn}}
-         (or (:sql @query) "  ")]]])))
+         (or (:sql @query) "")]]])))
 
 (defn metadata-table [db-id {:keys [table] :as model}]
   (let [data (subscribe [:metadata db-id table])]
