@@ -51,8 +51,10 @@
     [:div.panel.panel-default
      [:div.panel-heading "Filters"]
      [:ul.list-group
-      (for [[col pred] (get-in model [:query :conditions])]
-        ^{:key col} [:li.list-group-item (str col " " pred)
+      (for [[col pre] (get-in model [:query :conditions])]
+        ^{:key col} [:li.list-group-item
+                     {:on-click #(swap! pred assoc :col col :value (str col " " pre))}
+                     (str col " " pre)
                      [:span.badge {:on-click #(dispatch [:set-filter col nil])} "x"]])
       [:li.list-group-item
        [:form.form-inline
@@ -60,7 +62,9 @@
                          (dispatch [:set-filter (:col @pred)
                                     (str/replace-first (:value @pred) (:col @pred) "")])
                          (reset! pred nil))}
-        [input {:type "typeahead" :model [pred :value] :data-source #(-> model :data :columns)
+        [input {:type "typeahead" :model [pred :value]
+                :data-source #(filter (fn[s] (str/includes? s (.toUpperCase %)))
+                                      (get-in model [:data :columns]))
                 :choice-fn #(swap! pred assoc :col %)
                 :placeholder "more filters..."}]
         [button {:bs-style "default" :type "submit"} "+"]]]]

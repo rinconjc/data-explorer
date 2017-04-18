@@ -80,7 +80,7 @@
       [:span
        [:input.form-control
         (assoc attrs
-               :on-focus    #(save! nil)
+               ;; :on-focus    #(save! nil)
                :on-blur     #(when-not @mouse-on-list?
                                (reset! typeahead-hidden? true)
                                (reset! selected-index -1))
