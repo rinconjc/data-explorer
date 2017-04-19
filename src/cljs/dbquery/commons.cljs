@@ -6,7 +6,7 @@
             [reagent.core :as reagent]))
 
 (def navbar (r/adapt-react-class js/ReactBootstrap.Navbar))
-(def nav-brand (r/adapt-react-class js/ReactBootstrap.NavBrand))
+(def nav-brand (r/adapt-react-class js/ReactBootstrap.Navbar.Brand))
 (def nav (r/adapt-react-class js/ReactBootstrap.Nav))
 (def nav-item (r/adapt-react-class js/ReactBootstrap.NavItem))
 (def nav-dropdown (r/adapt-react-class js/ReactBootstrap.NavDropdown))
@@ -16,7 +16,7 @@
 (def modal-body (r/adapt-react-class js/ReactBootstrap.Modal.Body))
 (def modal-footer (r/adapt-react-class js/ReactBootstrap.Modal.Footer))
 (def button (r/adapt-react-class js/ReactBootstrap.Button))
-(def rb-input (r/adapt-react-class js/ReactBootstrap.Input))
+;; (def rb-input (r/adapt-react-class js/ReactBootstrap.Input))
 (def alert (r/adapt-react-class js/ReactBootstrap.Alert))
 (def tabs (r/adapt-react-class js/ReactBootstrap.Tabs))
 (def tab (r/adapt-react-class js/ReactBootstrap.Tab))
@@ -143,7 +143,8 @@
     (case type
       "text" [:input.form-control attrs]
       "password" [:input.form-control attrs]
-      "select" [:select.form-control (assoc attrs :default-value (or (:value attrs)  "")) children]
+      "select" [:select.form-control (-> attrs (assoc :default-value (or (:value attrs)  ""))
+                                         (dissoc :value)) children]
       "textarea" [:textarea.form-control attrs]
       "file" [:input attrs]
       "typeahead" [typeahead (assoc attrs :model model)]

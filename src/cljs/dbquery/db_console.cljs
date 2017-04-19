@@ -161,7 +161,7 @@
                          :tabindex 2 :autofocus true
                          :extraKeys {:Ctrl-Enter exec-sql :Alt-S save-fn
                                      :Tab autocomplete}}
-         (or (:sql @query) "")]]])))
+         (or (:sql @query) " ")]]])))
 
 (defn metadata-table [db-id {:keys [table] :as model}]
   (let [data (subscribe [:metadata db-id table])]
@@ -211,7 +211,7 @@
        [db-objects id]
        [st/vertical-splitter {:split-at 200}
         [sql-panel id]
-        [c/tabs {:active-key (:active-table @db-tab)
+        [c/tabs {:active-key (:active-table @db-tab) :animation false :id "query-tabs"
                  :on-select #(dispatch [:activate-table id %])
                  :class "small-tabs full-height"}
          (if-let [exec-rows (:execution @db-tab)]
