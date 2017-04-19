@@ -93,7 +93,7 @@
        [:div.container-fluid {:style {:height "calc(100% - 90px)"}}
         (if (seq @db-tabs)
           [tabs {:activeKey @active-tab :on-select #(dispatch [:activate-db %])
-                 :class "small-tabs full-height"}
+                 :class "small-tabs full-height" :id "db-tabs"}
            (doall
             (for [[id a-tab] @db-tabs] ^{:key id}
               [tab {:eventKey id :class "full-height"
