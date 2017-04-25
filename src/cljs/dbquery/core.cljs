@@ -13,7 +13,8 @@
             [cljsjs.mousetrap]
             [dbquery.subs]
             [dbquery.handlers]
-            [dbquery.data-import :refer[import-data-tab]])
+            [dbquery.data-import :refer[import-data-tab]]
+            [dbquery.commons :as c])
   (:import goog.History))
 
 (register-handler
@@ -71,7 +72,6 @@
        [navbar {:class "navbar-inverse" :fluid true}
         [nav-brand [:i.fa.fa-database.fa-5x]]
         [nav
-         [nav-item {:href "#/"} "Home"]
          [nav-dropdown {:title "Databases" :id "db-dropdown"}
           [menu-item {:on-select #(dispatch [:edit-db nil] open-modal )}
            "Add ..." ]
@@ -86,7 +86,7 @@
                                                     [:span [:i.fa.fa-user]
                                                      (get @user "nick")])}
           [menu-item "Profile"]
-          [menu-item {:on-click #(dispatch [:logout])}
+          [menu-item {:href "logout"}
            "Logout"]]]]
        (if @modal
          [:div {:id "modals"} @modal])
@@ -111,17 +111,18 @@
         error (subscribe [:state :error])]
     (fn []
       [:div.col-md-offset-4.col-md-3.col-sm-5.col-sm-offset-4
-       [:form.form {:on-submit #(dispatch [:login @login-data])}
+       {:style {:border-radius "15px" :background-color "#eee" :margin-top "80px"}}
+       [:h1 [:i.fa.fa-database] " Data Explorer"]
+       [:form.form-signin {:style {:max-width "330px"}
+                           :on-submit #(do (.preventDefault %) (dispatch [:login @login-data]))}
         [:h2 "Sign in"
-         [:a.btn-link.btn.btn-lg {:href "#/register"} "or register as new user"]]
+         [:a.btn-link.btn.btn-lg {:href "#/register"} "or register"]]
         [:div (if @error [alert {:bsStyle "danger"} @error])]
-        [input {:model [login-data :userName] :type "text"
-                :placeholder "User Name"}]
-        [input {:model [login-data :password] :type "password"
-                :placeholder "Password"}]
-        [:div {:style {:text-align "right"}}
-         [button {:bsStyle "primary"
-                  :on-click #(dispatch [:login @login-data])} "Sign in"]]]])))
+        [c/bare-input {:model [login-data :userName] :type "text"
+                       :placeholder "User Name"}]
+        [c/bare-input {:model [login-data :password] :type "password"
+                       :placeholder "Password"}]
+        [:button.btn.btn-lg.btn-block.btn-primary "Sign in"]]])))
 
 (defn about-page []
   [:div [:h2 "About dbquery"]
@@ -132,6 +133,7 @@
         error (subscribe [:state :error])]
     (fn []
       [:div.col-md-offset-3.col-md-4
+       [:h1 [:i.fa.fa-database] " Data Explorer"]
        [:h2 "Register new user"]
        [:form.form-horizontal
         [:div (if @error [alert {:bsStyle "danger"} @error])]
@@ -181,6 +183,7 @@
   (dispatch [:change-page #'register-page false]))
 
 (secretary/defroute "/logout" []
+
   (dispatch [:change-page #'logout-page false]))
 ;; -------------------------
 ;; History
