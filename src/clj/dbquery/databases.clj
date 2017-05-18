@@ -59,7 +59,7 @@
      (rs-rows rs row-reader offset limit)))
   ([rs] (read-as-map rs {})))
 
-(defn mk-ds [{:keys [dbms url user_name password]}]
+(defn mk-ds [{:keys [dbms url user_name password] :as params}]
   "Creates a datasource"
   (let [[driver jdbc-url]
         (case dbms
@@ -78,8 +78,10 @@
              (.setMaximumPoolSize 4)
              (.setIdleTimeout 180000)
              (.setMaxLifetime 300000))]
-    (if (= dbms "MS-SQL")
-      (.setConnectionTestQuery ds "SELECT GETDATE()"))
+    (case  dbms
+      "MS-SQL" (.setConnectionTestQuery ds "SELECT GETDATE()")
+      "ORACLE" (.setConnectionInitSql
+                ds (str "ALTER SESSION SET CURRENT_SCHEMA=" (or (:schema params) (:user_name params)))))
     (with-open [con (.getConnection ds)]
       ds)))
 
