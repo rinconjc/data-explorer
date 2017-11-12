@@ -42,11 +42,11 @@
                  [net.sourceforge.jtds/jtds "1.3.1"]]
   :plugins [[lein-ring "0.9.7"]
             [lein-environ "1.0.1"]
+            [lein-cljsbuild "1.1.5" :exclusions [[org.clojure/clojure]]]
             [lein-asset-minifier "0.2.2"]
             [lein-cljsasset "0.2.0"]]
   :resource-paths ["lib/*" "resources"]
-  :source-paths ["src/clj" "src/cljc"]
-  :hooks [leiningen.cljsbuild]
+  :source-paths ["src/clj" "src/cljc" "src/cljs"]
   :minify-assets
   {:assets
    {"resources/public/css/main.min.css" "resources/public/css/main.css"}}
@@ -66,9 +66,8 @@
                                     [:cljsbuild :builds :app :compiler :output-to]]
 
   :profiles {:dev
-             {:repl-options
-              {:init-ns          dbquery.repl
-               :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
+             {:repl-options {:init-ns          dbquery.repl
+                             :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
 
               :dependencies [[figwheel-sidecar "0.5.4-3"]
                              [org.clojure/tools.namespace "0.2.11"]
