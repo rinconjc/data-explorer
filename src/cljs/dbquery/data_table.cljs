@@ -76,7 +76,7 @@
      [c/button-group {:bsSize "small" :style {:display "flex"}}
       [c/button {:title "Filters:" :on-click #(reset! active :filters)} [:i.fa.fa-filter]]
       [c/button {:title "SQL"} [:i.fa.fa-paste]]
-      [c/button {:title "Download" :on-click #(dispatch [:download])} [:i.fa.fa-download]]]
+      [c/button {:title "Download" :on-click #(dispatch [:download (:query model)])} [:i.fa.fa-download]]]
      (case @active
        :filters [filters model]
        "")]))
