@@ -24,7 +24,8 @@
             [clojure.tools.logging :as log]
             [clojure.data.csv :as csv]
             [cheshire.generate :refer [add-encoder]]
-            [crypto.password.bcrypt :as password]))
+            [crypto.password.bcrypt :as password]
+            [dbquery.databases :as db]))
 
 ;; custom json encoder for dates
 (defn- date-time-encoder [fmt]
@@ -145,6 +146,19 @@
         result (load-data ds table data (dest :mappings))]
     {:body result}))
 
+(defn handle-download [ds-id query]
+  (let [ds (get-ds ds-id)
+        os (java.io.PipedOutputStream.)
+        is (java.io.PipedInputStream. os)
+        writer (java.io.OutputStreamWriter. os)]
+    (future
+      (try
+        (db/execute ds query {:rs-reader #(db/rs-to-csv %1 writer %2)})
+        (catch Exception e (log/error "failed exporting to CSV" e)))
+      (.close writer))
+    {:body is
+     :headers {"Content-Disposition" "attachment; filename='data.csv'"} }))
+
 (defn with-body [b]
   (cond
     (or (instance? Number b) (instance? Boolean b)) {:body {:result b}}
@@ -257,7 +271,7 @@
            (POST "/import-data" req (handle-data-import ds-id req))
            (GET "/queries" req (with-body (ds-queries ds-id)))
            ;; (GET "/related/:tables" [tables] (with-body (get-related-tables ds-id (s/split tables #",\s*"))))
-           ))
+           (GET "/download" req (handle-download ds-id (get-in req [:params :query])))))
 
 (defroutes all-routes
   static

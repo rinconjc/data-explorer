@@ -2,7 +2,8 @@
   (:require [clojure.java.jdbc :refer :all]
             [clojure.string :as s]
             [clojure.tools.logging :as log]
-            [dbquery.utils :refer :all])
+            [dbquery.utils :refer :all]
+            [clojure.data.csv :as csv])
   (:import com.zaxxer.hikari.HikariDataSource
            [java.sql ResultSet Timestamp Types]
            [java.text DecimalFormat NumberFormat SimpleDateFormat]))
@@ -58,6 +59,17 @@
                                        (assoc row col (apply reader [rs i]))) {} col-and-readers))]
      (rs-rows rs row-reader offset limit)))
   ([rs] (read-as-map rs {})))
+
+(defn rs-to-csv [rs writer {:keys[limit] :or {limit 1000000}}]
+  (let [meta (.getMetaData rs)
+        col-indexes (range 1 (inc (.getColumnCount meta)))
+        headers (for [i col-indexes] (.getColumnLabel meta i))
+        readers (into {} (for [i col-indexes] [i (col-reader (.getColumnType meta i))]))
+        rows (->> (repeatedly #(if (.next rs)
+                                 (for [i col-indexes] (apply (readers i) [rs i]))))
+                  (take-while some?) (take limit))]
+    (csv/write-csv writer [headers])
+    (csv/write-csv writer rows)))
 
 (defn mk-ds [{:keys [dbms url user_name password] :as params}]
   "Creates a datasource"

@@ -475,3 +475,10 @@
  (fn [state [tab-id tab-name]]
    (dispatch [:activate-db tab-id])
    (update state :db-tabs assoc tab-id {:id tab-id :name tab-name})))
+
+(register-handler
+ :download
+ [common-middlewares in-active-db]
+ (fn [state [db-id query]]
+   (window.open (str "/ds/" db-id "/download?query=" (sql-select query)))
+   state))
