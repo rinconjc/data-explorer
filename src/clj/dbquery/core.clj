@@ -37,6 +37,8 @@
 (add-encoder java.util.Date (date-time-encoder "dd/MM/yyyy"))
 (add-encoder java.sql.Date (date-time-encoder "dd/MM/yyyy"))
 (add-encoder java.sql.Timestamp (date-time-encoder "dd/MM/yyyy HH:mm:ss"))
+(add-encoder java.sql.RowId #(.writeString %2 %1))
+(add-encoder oracle.sql.ROWID #(.writeString %2 (.stringValue %1)))
 
 (def ds-cache (atom (cache/lru-cache-factory {})))
 
