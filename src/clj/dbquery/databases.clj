@@ -11,7 +11,7 @@
   {Types/BIT (fn [rs i] (.getBoolean rs i))
    Types/TIMESTAMP (fn [rs i] (.getTimestamp rs i))
    -101 (fn [rs i] (.getTimestamp rs i))
-   Types/CLOB (fn [rs i] (-> (.getClob rs i) .getCharacterStream slurp))})
+   Types/CLOB (fn [rs i] (some-> (.getClob rs i) .getCharacterStream slurp))})
 
 (def ^:private sql-date-types #{Types/DATE Types/TIMESTAMP Types/TIME})
 (def ^:private sql-number-types #{Types/NUMERIC Types/DECIMAL Types/INTEGER Types/DOUBLE})
@@ -81,7 +81,8 @@
     (case  dbms
       "MS-SQL" (.setConnectionTestQuery ds "SELECT GETDATE()")
       "ORACLE" (.setConnectionInitSql
-                ds (str "ALTER SESSION SET CURRENT_SCHEMA=" (or (:schema params) (:user_name params)))))
+                ds (str "ALTER SESSION SET CURRENT_SCHEMA=" (or (:schema params) (:user_name params))))
+      nil)
     (with-open [con (.getConnection ds)]
       ds)))
 
