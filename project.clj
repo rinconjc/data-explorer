@@ -34,7 +34,7 @@
                  [org.clojure/data.csv "0.1.2"]
                  [org.jasypt/jasypt "1.9.2"]
                  ;; [com.oracle/ojdbc16 "11.2.0.3"]
-                 [ojdbc/ojdbc "14"]
+                 ;; [ojdbc/ojdbc "14"]
                  [cljsjs/react-bootstrap "0.30.7-0" :exclusions [org.webjars.bower/jquery]]
                  [cljsjs/mousetrap "1.5.3-0"]
                  [cljsjs/codemirror "5.7.0-1"]
@@ -86,8 +86,8 @@
                              (pjstadig.humane-test-output/activate!)]
 
               :figwheel     {:http-server-root "public"
-                             :server-port      3449
-                             :nrepl-port       7002
+                             :server-port      3450
+                             :nrepl-port       7003
                              :css-dirs         ["resources/public/css"]
                              :ring-handler     dbquery.core/all-routes}
 

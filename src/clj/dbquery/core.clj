@@ -285,4 +285,5 @@
   ([] (-main "3001"))
   ([port]
    (sync-db "dev")
-   (run-server (reload/wrap-reload #'all-routes) {:port (Integer/parseInt port)})))
+   (run-server (reload/wrap-reload #'all-routes)
+               {:port (Integer/parseInt port) :thread 50})))
