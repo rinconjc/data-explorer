@@ -84,7 +84,7 @@ body > div > div {
   border: 1px solid rgba(0,0,0,.2);
   box-shadow: 0 5px 10px rgba(0,0,0,.2);
   z-index: 1060;
-  background-color:#fff;
+  /* background-color:#fff; */
   font-weight:normal;
 }
 
