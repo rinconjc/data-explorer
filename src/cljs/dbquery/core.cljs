@@ -69,7 +69,7 @@
     (fn[]
       [:div {:style {:height "100%"}}
        [alerts-box]
-       [navbar {:class "navbar-inverse" :fluid true}
+       [navbar {:fluid true}
         [nav-brand [:i.fa.fa-database.fa-5x]]
         [nav
          [nav-dropdown {:title "Databases" :id "db-dropdown"}

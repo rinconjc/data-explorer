@@ -158,7 +158,7 @@
           [:span (:name @query)]]]]
        [:div.panel-body {:style {:padding "0px" :overflow "hidden" :height "calc(100% - 46px)"}}
         [code-mirror cm {:mode "text/x-sql" :profile "xml"
-                         :tabindex 2 :autofocus true
+                         :tabindex 2 :autofocus true :theme "zenburn"
                          :extraKeys {:Ctrl-Enter exec-sql :Alt-S save-fn
                                      :Tab autocomplete}}
          (or (:sql @query) " ")]]])))
