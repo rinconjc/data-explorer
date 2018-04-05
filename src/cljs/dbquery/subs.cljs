@@ -1,7 +1,7 @@
 (ns dbquery.subs
   (:require [ajax.core :refer [GET]]
             [clojure.string :as str]
-            [re-frame.core :refer [dispatch register-sub subscribe]]
+            [re-frame.core :refer [dispatch reg-sub-raw subscribe]]
             [reagent.ratom :refer-macros [reaction]]))
 
 ;; model
@@ -15,14 +15,14 @@
 ;;  :active-db 1 :db-details {} :db-list [] :user {} :modal []}
 
 ;; register subscriptions
-(register-sub
+(reg-sub-raw
  :state
  (fn [state [_ path]]
    (if (vector? path)
      (reaction (get-in @state path))
      (reaction (get @state path)))))
 
-(register-sub
+(reg-sub-raw
  :db-list
  (fn [state [_]]
    (let [dbs (reaction (@state :db-list))]
@@ -32,24 +32,24 @@
             :error-handler #(js/console.log "failed retrieving dbs..." %)))
      dbs)))
 
-(register-sub
+(reg-sub-raw
  :db-tabs
  (fn [state [_]]
    (reaction (@state :db-tabs))))
 
-(register-sub
+(reg-sub-raw
  :db-tab/ids
  (fn [state [_]]
    (let [db-tabs (subscribe [:db-tabs])]
      (reaction (keys @db-tabs)))))
 
-(register-sub
+(reg-sub-raw
  :db-tab/by-id
  (fn [state [_ tab-id]]
    (let [db-tabs (subscribe [:db-tabs])]
      (reaction (get @db-tabs tab-id)))))
 
-(register-sub
+(reg-sub-raw
  :db-objects
  (fn [state [_ tab-id]]
    (let [db-tab (subscribe [:db-tab/by-id tab-id])
@@ -58,7 +58,7 @@
        (dispatch [:load-db-objects tab-id false]))
      dbobjects)))
 
-(register-sub
+(reg-sub-raw
  :db-objects-model
  (fn [state [_ tab-id]]
    (let [db-tab (subscribe [:db-tab/by-id tab-id])
@@ -70,7 +70,7 @@
                                (filter #(re-find (-> @model :q str/upper-case re-pattern)
                                                  (% :name)) @db-objects)))))))
 
-(register-sub
+(reg-sub-raw
  :db-queries
  (fn [state [_ db-id]]
    (let [db-tab (subscribe [:db-tab/by-id db-id])
@@ -79,37 +79,37 @@
        (dispatch [:load-db-queries db-id]))
      queries)))
 
-(register-sub
+(reg-sub-raw
  :query
  (fn [state [_ tab-id]]
    (let [db-tab (subscribe [:db-tab/by-id tab-id])]
      (reaction (:query @db-tab)))))
 
-(register-sub
+(reg-sub-raw
  :resultsets
  (fn [state [_ tab-id]]
    (let [db-tab (subscribe [:db-tab/by-id tab-id])]
      (reaction (:resultsets @db-tab)))))
 
-(register-sub
+(reg-sub-raw
  :resultset/ids
  (fn [state [_ tab-id]]
    (let [resultsets (subscribe [:resultsets tab-id])]
-     (reaction (keys @resultsets)))))
+     (reaction (->> @resultsets vals (sort-by :pos) (map :id))))))
 
-(register-sub
+(reg-sub-raw
  :resultset/by-id
  (fn [state [_ tab-id q-id]]
    (let [resultsets (subscribe [:resultsets tab-id])]
      (reaction (get @resultsets q-id)))))
 
-(register-sub
+(reg-sub-raw
  :metadata
  (fn [state [_ db-id table]]
    (let [dbsubs (subscribe [:db-tab/by-id db-id])]
      (reaction (get-in @dbsubs [:meta-tables table])))))
 
-(register-sub
+(reg-sub-raw
  :col-meta
  (fn [state [_ db-id table]]
    (let [metadata (subscribe [:metadata db-id table])]
@@ -123,7 +123,7 @@
                           :db-id db-id}]
                    [name {:type type_name}])))))))
 
-(register-sub
+(reg-sub-raw
  :active-record
  (fn [state [_ db-id]]
    (let [db-state (subscribe [:db-tab/by-id db-id])]

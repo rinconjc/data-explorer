@@ -1,23 +1,43 @@
 (ns dbquery.core
   (:require [ajax.core :refer [GET]]
-            [dbquery.commons :refer [alert button close-button error-text input
-                                     menu-item nav nav-brand nav-dropdown
-                                     nav-item navbar open-modal tab tabs]]
+            cljsjs.mousetrap
+            [dbquery.commons
+             :as
+             c
+             :refer
+             [alert
+              button
+              close-button
+              error-text
+              input
+              menu-item
+              nav
+              nav-brand
+              nav-dropdown
+              nav-item
+              navbar
+              open-modal
+              tab
+              tabs]]
+            [dbquery.data-import :refer [import-data-tab]]
             [dbquery.db-admin :as dba]
             [dbquery.db-console :refer [db-console]]
+            dbquery.handlers
+            dbquery.subs
             [goog.events :as events]
             [goog.history.EventType :as EventType]
-            [re-frame.core :refer [dispatch register-handler subscribe trim-v]]
+            [re-frame.core :refer [dispatch reg-event-db subscribe trim-v]]
             [reagent.core :as r :refer [atom]]
-            [secretary.core :as secretary :include-macros true]
-            [cljsjs.mousetrap]
-            [dbquery.subs]
-            [dbquery.handlers]
-            [dbquery.data-import :refer[import-data-tab]]
-            [dbquery.commons :as c])
+            [secretary.core :as secretary :include-macros true])
   (:import goog.History))
 
-(register-handler
+(when (exists? js/Symbol)
+  (extend-protocol IPrintWithWriter
+    js/Symbol
+    (-pr-writer [sym writer _]
+      (-write writer (str "\"" (.toString sym) "\"")))))
+
+(reg-event-db
  :edit-db
  [trim-v]
  (fn [state [db-id]]
@@ -27,14 +47,14 @@
           :error-handler #(dispatch [:change [:edit-db :error] (error-text %)])))
    (if db-id state (assoc state :modal [dba/database-window {}]))))
 
-(register-handler
+(reg-event-db
  :db-saved
  [trim-v]
  (fn [state [db]]
    (dispatch [:open-db db])
    (dissoc state :modal :edit-db)))
 
-(register-handler
+(reg-event-db
  :select-db
  trim-v
  (fn [state []]
@@ -111,18 +131,19 @@
         error (subscribe [:state :error])]
     (fn []
       [:div.col-md-offset-4.col-md-3.col-sm-5.col-sm-offset-4
-       {:style {:border-radius "15px" :background-color "#eee" :margin-top "80px"}}
+       {:style {:border-radius "15px"  :margin-top "80px"}}
        [:h1 [:i.fa.fa-database] " Data Explorer"]
-       [:form.form-signin {:style {:max-width "330px"}
-                           :on-submit #(do (.preventDefault %) (dispatch [:login @login-data]))}
-        [:h2 "Sign in"
-         [:a.btn-link.btn.btn-lg {:href "#/register"} "or register"]]
-        [:div (if @error [alert {:bsStyle "danger"} @error])]
-        [c/bare-input {:model [login-data :userName] :type "text"
-                       :placeholder "User Name"}]
-        [c/bare-input {:model [login-data :password] :type "password"
-                       :placeholder "Password"}]
-        [:button.btn.btn-lg.btn-block.btn-primary "Sign in"]]])))
+       [:div.panel
+        [:form.form-signin {:style {:max-width "330px"}
+                            :on-submit #(do (.preventDefault %) (dispatch [:login @login-data]))}
+         [:h2 "Sign in"
+          [:a.btn-link.btn.btn-lg {:href "#/register"} "or register"]]
+         [:div (if @error [alert {:bsStyle "danger"} @error])]
+         [c/bare-input {:model [login-data :userName] :type "text"
+                        :placeholder "User Name"}]
+         [c/bare-input {:model [login-data :password] :type "password"
+                        :placeholder "Password"}]
+         [:button.btn.btn-lg.btn-block.btn-primary "Sign in"]]]])))
 
 (defn about-page []
   [:div [:h2 "About dbquery"]
