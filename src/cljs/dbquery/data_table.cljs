@@ -14,12 +14,12 @@
       [:form.form-inline {:style {:padding "4px"}
                           :on-submit #(do (dispatch [:set-filter col (:value @condition)])
                                           (.preventDefault %))}
-       [input {:model [condition :value] :type "text" :id "value" :focus true}]
+       [input {:model [condition :value] :type "text" :id "value" :auto-focus true}]
        [button {:bs-style "default" :type "submit"}
         "OK"]])))
 
 (defn dist-values [model col]
-  [:div {:style {:padding "5px"}}
+  [:div.panel {:style {:padding "5px"}}
    [:ul.list-unstyled.list {:cursor "pointer"}
     (map-indexed
      (fn[i v] ^{:key i}
@@ -103,7 +103,7 @@
     [:tr [:td (inc i)]
      (doall (map-indexed
              (fn[j v] ^{:key j}
-               [:td {:title v}
+               [:td {:title v :on-mouse-down #(js/console.log "mouse down:" j i)}
                 (table-cell (nth metadata j) v)]) row))]))
 
 (defn data-table [model col-meta]

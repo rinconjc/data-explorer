@@ -1,10 +1,11 @@
 (ns dbquery.handlers
   (:require [ajax.core
              :refer
-             [default-interceptors DELETE GET POST PUT success? to-interceptor]]
+             [default-interceptors DELETE GET POST PUT to-interceptor]]
             [ajax.protocols :refer [-body -status]]
+            [clojure.set :as set]
             [clojure.string :as str]
-            [dbquery.commons :refer [error-text dispatch-all]]
+            [dbquery.commons :refer [error-text]]
             [dbquery.sql-utils
              :refer
              [next-order
@@ -14,9 +15,12 @@
               sql-distinct
               sql-select
               sql-statements]]
-            [re-frame.core :as rf :refer [debug dispatch register-handler trim-v]]
-            [secretary.core :as secretary :include-macros true]
-            [clojure.set :as set]))
+            [re-frame.core
+             :as
+             rf
+             :refer
+             [->interceptor debug dispatch reg-event-db trim-v]]
+            [secretary.core :as secretary :include-macros true]))
 
 (defn log-ex
   [handler]
@@ -29,15 +33,15 @@
           (.error js/console e.stack)   ;; print a sane stacktrace
           db)))))
 
-(def common-middlewares [trim-v (if ^boolean goog.DEBUG log-ex)
+(def common-middlewares [trim-v ;; (if ^boolean goog.DEBUG debug)
                          ;;(when ^boolean goog.DEBUG debug)
                          ])
 
 ;; add ajax interceptor
 (defn empty-means-nil [response]
-  (if-not (str/blank? (-body response))
-    response
-    (reduced [(-> response -status success?) nil])))
+  (if (empty? (ajax.protocols/-body response))
+    (reduced [ajax.protocols/-status nil])
+    response))
 
 (def treat-nil-as-empty
   (to-interceptor {:name "JSON special case nil"
@@ -48,43 +52,61 @@
 (defn error-handler [res]
   (dispatch [:change :status [:error (error-text res)]]))
 
-(defn tab-path
-  [handler]
-  (fn tab-handler
-    [state [tab-id :as v]]
-    (update-in state [:db-tabs tab-id] handler v)))
+(defn path-interceptor [f]
+  (->interceptor
+   :before (fn [ctx]
+             (let [{:keys [db event]} (:coeffects ctx)
+                   [path event] (f db event)]
+               (-> ctx
+                   (update :path-args conj [path db])
+                   (update :coeffects update :db get-in path)
+                   (update :coeffects assoc :event event))))
+   :after (fn [ctx]
+            (let [[path original-db] (peek (:path-args ctx))]
+              (-> ctx
+                  (update :path-args pop)
+                  (update :effects update :db #(assoc-in original-db path %)))))))
 
-(defn in-active-db
-  [handler]
-  (fn [state v]
-    (if-let [active-tab (:active-tab state)]
-      (update-in state [:db-tabs active-tab] handler (cons active-tab v))
-      state)))
+(defn enrich-event [f]
+  (->interceptor
+   :before (fn [ctx]
+             (let [{:keys [db event]} (:coeffects ctx)]
+               (assoc-in ctx [:coeffects :event] (f db event))))))
 
-(defn in-active-table
-  [handler]
-  (in-active-db
+(def tab-path
+  (path-interceptor
+   (fn [state [tab-id :as v]] [[:db-tabs tab-id] v])))
+
+(def in-active-db
+  (path-interceptor
    (fn [state v]
-     (if-let [active-table (:active-table state)]
-       (update-in state [:resultsets active-table] handler v)
-       state))))
+     (if-let [active-tab (:active-tab state)]
+       [[:db-tabs active-tab] (cons active-tab v)]
+       [nil v]))))
 
-(defn with-selected-table
-  [handler]
-  (fn [state v]
-    (js/console.log "state:" (-> state :selected ))
-    (if-let [selected-table (-> state :selected :name)]
-      (handler state (cons selected-table v))
-      state)))
+(def in-active-table
+  (path-interceptor
+   (fn [{:keys [active-tab] :as state} v]
+     (if-let [active-table (if active-tab (-> state (get-in [:db-tabs active-tab :active-table])))]
+       [[:db-tabs active-tab :resultsets active-table] (cons active-tab v)]
+       [nil v]))))
+
+(def with-selected-table
+  (enrich-event
+   (fn [state v]
+     (if-let [selected-table (-> state :selected :name)]
+       (cons selected-table v)
+       v))))
+
 
 ;; register handlers
-(register-handler
+(reg-event-db
  :init-db
  common-middlewares
  (fn [state []]
    (or state {:db-tabs (array-map)})))
 
-(register-handler
+(reg-event-db
  :save-db
  [common-middlewares]
  (fn [state [db-details]]
@@ -97,7 +119,7 @@
        (apply POST "/data-sources" params )))
    state))
 
-(register-handler
+(reg-event-db
  :load-db-objects
  [common-middlewares in-active-db]
  (fn [state [tab-id reload?]]
@@ -107,13 +129,13 @@
         :error-handler #(dispatch [:change [:db-tabs tab-id :error] (error-text %)]))
    state))
 
-(register-handler
+(reg-event-db
  :filter-objects
  [common-middlewares in-active-db]
  (fn [state [tab-id q]]
    (assoc state :q q)))
 
-(register-handler
+(reg-event-db
  :activate-db
  common-middlewares
  (fn [state [tab-id]]
@@ -122,7 +144,7 @@
        (assoc state :active-tab tab-id)
        state))))
 
-(register-handler
+(reg-event-db
  :open-db
  common-middlewares
  (fn [state [db]]
@@ -132,14 +154,14 @@
              (update state :db-tabs assoc id {:db db :name (:name db) :resultsets (array-map)})))
        state)))
 
-(register-handler
+(reg-event-db
  :kill-db
  common-middlewares
  (fn [state [tab-id]]
    (let [new-state (update state :db-tabs dissoc tab-id)]
      (update new-state :active-tab #(if (= % tab-id) (first (keys (:db-tabs state))) %)))))
 
-(register-handler
+(reg-event-db
  :activate-table
  [common-middlewares debug tab-path]
  (fn [state [db-id q-id]]
@@ -149,7 +171,7 @@
      (if (or (= current q-id) (< (- now last-change) 1000)) state
          (assoc state :active-table q-id :last-change now)))))
 
-(register-handler
+(reg-event-db
  :kill-table
  [common-middlewares tab-path]
  (fn [state [db-id q-id]]
@@ -159,7 +181,7 @@
        new-state))))
 
 ;; event handlers
-(register-handler
+(reg-event-db
  :login
  (fn [state [_ login-data]]
    (POST "/login" :format :json
@@ -168,18 +190,18 @@
          :error-handler #(dispatch [:server-error %]))
    state))
 
-(register-handler
+(reg-event-db
  :login-ok
  (fn [state [_ user-info]]
    (secretary/dispatch! "/")
    (assoc state :user user-info)))
 
-(register-handler
+(reg-event-db
  :server-error
  (fn [state [_ resp]]
    (assoc state :error (error-text resp))))
 
-(register-handler
+(reg-event-db
  :register-user
  (fn [state [_ user-data]]
    (POST "/users" :format :json :params user-data
@@ -187,19 +209,19 @@
          :error-handler #(dispatch [:server-error %]))
    state))
 
-(register-handler
+(reg-event-db
  :user-register-ok
  (fn [state [_ _]]
    (secretary/dispatch! "/login")
    state))
 
-(register-handler
+(reg-event-db
  :logout
  (fn [state _]
    (secretary/dispatch! "/logout")
    (dissoc state :user)))
 
-(register-handler
+(reg-event-db
  :change
  common-middlewares
  (fn [state [key value & kvs]]
@@ -209,7 +231,7 @@
        (vector? k) (recur (take 2 kvs) (drop 2 kvs) (assoc-in s k v))
        :else (recur (take 2 kvs) (drop 2 kvs) (assoc s k v))))))
 
-(register-handler
+(reg-event-db
  :change-page
  (fn [state [_ page auth-required?]]
    (if (or (not auth-required?) (:user state))
@@ -219,19 +241,19 @@
             :error-handler #(secretary/dispatch! "/login"))
        state))))
 
-(register-handler
+(reg-event-db
  :update
  [common-middlewares tab-path]
  (fn [state [tab-id keys f & args]]
    (update-in state (if (vector? keys) keys [keys]) #(apply f % args))))
 
-(register-handler
+(reg-event-db
  :set-in-active-db
  [debug common-middlewares in-active-db]
  (fn [state [_ key val]]
    (assoc state key val)))
 
-(register-handler
+(reg-event-db
  :load-db-queries
  [common-middlewares in-active-db]
  (fn [state [db-id]]
@@ -241,7 +263,7 @@
         :error-handler #(js/console.log %))
    state))
 
-(register-handler
+(reg-event-db
  :assign-query
  [common-middlewares]
  (fn [state [q-id ds-ids]]
@@ -262,7 +284,7 @@
                :error-handler #(js/console.log "failed assigning query " %))))
    state))
 
-(register-handler
+(reg-event-db
  :save-query
  [trim-v in-active-db]
  (fn [state [tab-id query]]
@@ -276,7 +298,7 @@
                                (dispatch [:change :modal nil])))
      state)))
 
-(register-handler
+(reg-event-db
  :submit-sql
  [common-middlewares tab-path]
  (fn [state [db-id sql]]
@@ -285,7 +307,7 @@
    (dispatch [:exec-queries db-id])
    state))
 
-(register-handler
+(reg-event-db
  :exec-queries
  [common-middlewares debug tab-path]
  (fn [state [db-id]]
@@ -295,7 +317,7 @@
                (dispatch [:exec-query db-id q]))
              more))))
 
-(register-handler
+(reg-event-db
  :exec-query
  [common-middlewares tab-path]
  (fn [state [db-id q offset limit]]
@@ -317,13 +339,12 @@
          (assoc :exec-count qid)))))
 
 (defmulti update-result (fn [q & _]
-                          (js/console.log "multi of " q)
                           (cond (string? q) :string :else :default) ))
 
 (defmethod update-result :string [q state data offset]
-  (let [qnum (inc (or (state :result-count) 0))
+  (let [qnum (inc (state :result-count 0))
         q {:id (str "Result #" qnum) :data data
-           :query (query-from-sql q)}]
+           :query (query-from-sql q) :pos qnum}]
     (-> state (update :resultsets assoc (:id q) q)
         (assoc :result-count qnum)
         ((if (seq (:in-queue state)) identity
@@ -336,23 +357,23 @@
                         :loading false})
       (assoc :active-table (:id q))))
 
-(register-handler
+(reg-event-db
  :exec-done
  [common-middlewares tab-path]
  (fn [state [db-id qid q offset resp error]]
    (cond-> state
      true (update :execution
-             (fn[xs](map #(if (= (:id %) qid)
-                            (assoc % :status :done :error error
-                                   :time (/ (- (. js/Date now) (:start %)) 1000.0)
-                                   :update-count (and (not error) (:rowsAffected resp)))
-                            %) xs)))
+                  (fn[xs](map #(if (= (:id %) qid)
+                                 (assoc % :status :done :error error
+                                        :time (/ (- (. js/Date now) (:start %)) 1000.0)
+                                        :update-count (and (not error) (:rowsAffected resp)))
+                                 %) xs)))
      error (assoc :in-queue nil)
      (map? q) (update-in [:resultsets (:id q)] assoc :loading false)
      (:data resp) (#(update-result q % (:data resp) offset))
      (nil? (:data resp)) (assoc :active-table :exec-log))))
 
-(register-handler
+(reg-event-db
  :preview-table
  [common-middlewares in-active-db]
  (fn [state [tab-id table]]
@@ -360,10 +381,10 @@
      (assoc state :active-table table)
      (do (dispatch [:exec-query tab-id {:id table :type :preview
                                         :query (query-from-table table)
-                                        :table table}])
-         state))))
+                                        :table table :pos (inc (:result-count state))}])
+         (update state :result-count inc)))))
 
-(register-handler
+(reg-event-db
  :table-meta
  [debug common-middlewares in-active-db]
  (fn [state [tab-id table reload?]]
@@ -376,7 +397,7 @@
                  (if-not rs {:id id :type :metadata :table table :loading true}
                          (assoc rs :loading true)))))))
 
-(register-handler
+(reg-event-db
  :load-meta-table
  [debug common-middlewares]
  (fn [state [db-id table reload?]]
@@ -386,7 +407,7 @@
         :error-handler #(.log js/console %))
    state))
 
-(register-handler
+(reg-event-db
  :next-page
  [common-middlewares in-active-table]
  (fn [resultset [tab-id]]
@@ -394,7 +415,7 @@
      (dispatch [:exec-query tab-id resultset (-> resultset :data :rows count)]))
    resultset))
 
-(register-handler
+(reg-event-db
  :set-sort
  [common-middlewares in-active-table]
  (fn [resultset [tab-id col-index ord]]
@@ -402,7 +423,7 @@
      (dispatch [:exec-query tab-id new-rs 0 (-> resultset :data :rows count)])
      new-rs)))
 
-(register-handler
+(reg-event-db
  :roll-sort
  [common-middlewares in-active-table]
  (fn [resultset [tab-id col-index]]
@@ -410,7 +431,7 @@
      (dispatch [:exec-query tab-id new-rs 0 (-> resultset :data :rows count)])
      new-rs)))
 
-(register-handler
+(reg-event-db
  :set-filter
  [common-middlewares in-active-table]
  (fn [resultset [tab-id col condition]]
@@ -420,7 +441,7 @@
      (dispatch [:exec-query tab-id new-rs])
      new-rs)))
 
-(register-handler
+(reg-event-db
  :query-dist-values
  [common-middlewares in-active-table]
  (fn [resultset [tab-id col]]
@@ -433,7 +454,7 @@
            :error-handler #(.log js/console %)))
    resultset))
 
-(register-handler
+(reg-event-db
  :reload
  [debug common-middlewares in-active-table]
  (fn [resultset [tab-id]]
@@ -442,7 +463,7 @@
      (dispatch [:exec-query tab-id resultset 0 (-> resultset :data :rows count)]))
    resultset))
 
-(register-handler
+(reg-event-db
  :query-sharings
  [common-middlewares]
  (fn [state [q-id]]
@@ -452,7 +473,7 @@
         :error-handler #(.log js/console %))
    state))
 
-(register-handler
+(reg-event-db
  :load-record
  [common-middlewares in-active-db]
  (fn load-record [state [db-id {:keys [fk_table fk_column value] :as key}]]
@@ -469,14 +490,14 @@
        (dissoc state :active-record))
      state)))
 
-(register-handler
+(reg-event-db
  :show-tab
  [debug common-middlewares]
  (fn [state [tab-id tab-name]]
    (dispatch [:activate-db tab-id])
    (update state :db-tabs assoc tab-id {:id tab-id :name tab-name})))
 
-(register-handler
+(reg-event-db
  :download
  [common-middlewares in-active-db]
  (fn [state [db-id query]]
