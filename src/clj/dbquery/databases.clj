@@ -79,6 +79,7 @@
           "ORACLE" ["oracle.jdbc.pool.OracleDataSource" (str "jdbc:oracle:thin:@" url)]
           "POSTGRES" ["org.postgresql.ds.PGSimpleDataSource" (str "jdbc:postgresql:" url)]
           "MS-SQL" ["net.sourceforge.jtds.jdbcx.JtdsDataSource" (str "jdbc:jtds:sqlserver://" url)]
+          "Sybase" ["net.sourceforge.jtds.jdbcx.JtdsDataSource" (str "jdbc:jtds:sybase://" url)]
           (throw (Exception. (format "DBMS %s not supported." dbms))))
         ds (doto (HikariDataSource.)
              (.setJdbcUrl jdbc-url)
@@ -92,6 +93,7 @@
              (.setMaxLifetime 300000))]
     (case  dbms
       "MS-SQL" (.setConnectionTestQuery ds "SELECT GETDATE()")
+      "Sybase" (.setConnectionTestQuery ds "SELECT GETDATE()")
       "ORACLE" (.setConnectionInitSql
                 ds (str "ALTER SESSION SET CURRENT_SCHEMA=" (or (:schema params) (:user_name params))))
       nil)
