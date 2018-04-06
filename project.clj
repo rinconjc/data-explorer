@@ -45,7 +45,7 @@
             [lein-cljsbuild "1.1.5" :exclusions [[org.clojure/clojure]]]
             [lein-asset-minifier "0.2.2"]
             [lein-cljsasset "0.2.0"]]
-  :resource-paths ["lib/*" "resources"]
+  :resource-paths ["lib/ojdbc6.jar" "resources"]
   :source-paths ["src/clj" "src/cljc" "src/cljs"]
   :minify-assets
   {:assets
