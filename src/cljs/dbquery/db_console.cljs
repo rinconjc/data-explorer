@@ -215,6 +215,7 @@
                  :on-select #(dispatch [:activate-table id %])
                  :class "small-tabs full-height"}
          (if-let [exec-rows (:execution @db-tab)]
+           ^{:key :exec-log}
            [c/tab {:event-key :exec-log
                    :title (r/as-element
                            [:span (if (some #(= :executing (:status %)) exec-rows)
@@ -229,13 +230,15 @@
                         (:error x) [:span.red (:error x)]
                         (:update-count x) (str (:update-count x) " rows " (:time x) "s")
                         :else (str (:time x) "s"))] (:sql x)])]]])
-         (for [[rs-id rs] (:resultsets @db-tab)] ^{:key rs-id}
-           [c/tab {:event-key rs-id
-                   :title (r/as-element
-                           [:span {:title (or (:table rs) (-> rs :query u/sql-select))} rs-id
-                            [c/close-button #(dispatch [:kill-table id rs-id])]])}
-            (js/console.log "tab:" rs-id ":" (clj->js rs))
-            (case (:type rs)
-              :metadata [metadata-table id rs]
-              :preview [preview-table id rs]
-              [dt/data-table rs])])]]])))
+         (doall
+          (for [rs-id @(subscribe [:resultset/ids id])
+                :while rs-id
+                :let [rs @(subscribe [:resultset/by-id id rs-id])]] ^{:key rs-id}
+            [c/tab {:event-key rs-id
+                    :title (r/as-element
+                            [:span {:title (or (:table rs) (-> rs :query u/sql-select))} rs-id
+                             [c/close-button #(dispatch [:kill-table id rs-id])]])}
+             (case (:type rs)
+               :metadata [metadata-table id rs]
+               :preview [preview-table id rs]
+               [dt/data-table rs])]))]]])))

@@ -79,34 +79,36 @@
     (fn [attrs]
       [:span
        [:input.form-control
-        (assoc attrs
-               ;; :on-focus    #(save! nil)
-               :on-blur     #(when-not @mouse-on-list?
-                               (reset! typeahead-hidden? true)
-                               (reset! selected-index -1))
-               :on-change   #(when-let [value (str/trim (value-of %))]
-                               (reset! selections (data-source (.toLowerCase value)))
-                               (save! (value-of %))
-                               (reset! typeahead-hidden? false)
-                               (reset! selected-index -1))
-               :on-key-down #(do
-                               (case (.-which %)
-                                 38 (do
-                                      (.preventDefault %)
-                                      (when-not (= @selected-index 0)
-                                        (swap! selected-index dec)
-                                        (choose-selected false)))
-                                 40 (do
-                                      (.preventDefault %)
-                                      (when-not (= @selected-index (dec (count @selections)))
-                                        (save! (value-of %))
-                                        (swap! selected-index inc)
-                                        (choose-selected false)))
-                                 9  (choose-selected true)
-                                 13 (choose-selected true)
-                                 27 (do (reset! typeahead-hidden? true)
-                                        (reset! selected-index 0))
-                                 "default")))]
+        (-> attrs
+            (dissoc :model :choice-fn :result-fn :data-source)
+            (assoc
+             ;; :on-focus    #(save! nil)
+             :on-blur     #(when-not @mouse-on-list?
+                             (reset! typeahead-hidden? true)
+                             (reset! selected-index -1))
+             :on-change   #(when-let [value (str/trim (value-of %))]
+                             (reset! selections (data-source (.toLowerCase value)))
+                             (save! (value-of %))
+                             (reset! typeahead-hidden? false)
+                             (reset! selected-index -1))
+             :on-key-down #(do
+                             (case (.-which %)
+                               38 (do
+                                    (.preventDefault %)
+                                    (when-not (= @selected-index 0)
+                                      (swap! selected-index dec)
+                                      (choose-selected false)))
+                               40 (do
+                                    (.preventDefault %)
+                                    (when-not (= @selected-index (dec (count @selections)))
+                                      (save! (value-of %))
+                                      (swap! selected-index inc)
+                                      (choose-selected false)))
+                               9  (choose-selected true)
+                               13 (choose-selected true)
+                               27 (do (reset! typeahead-hidden? true)
+                                      (reset! selected-index 0))
+                               "default"))))]
 
        [:ul {:style {:display (if (or (empty? @selections) @typeahead-hidden?) :none :block) }
              :class "typeahead-list"
@@ -165,7 +167,8 @@
         attrs (if validator
                 (assoc attrs :on-change
                        (wrap-validator validator
-                                       #(reset! valid-class (str "has-" (name %))))) attrs)]
+                                       #(reset! valid-class (str "has-" (name %))))) attrs)
+        attrs (dissoc attrs :wrapper-class-name :label-class-name :validator)]
     (fn [{:keys[type label wrapper-class-name label-class-name validator] :as attrs} & children]
       [:div.form-group {:class @valid-class}
        [:label.control-label {:class label-class-name} label]
