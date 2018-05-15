@@ -3,6 +3,8 @@
             [dbquery.model :refer :all]
             [korma.core :as k]))
 
+(System/setProperty "conf" "./sample-conf.edn")
+
 (def ds-ref (atom nil))
 
 (defn dummy-ds []

@@ -16,30 +16,28 @@
 
 (defn encrypt [str]
   (-> (doto (BasicTextEncryptor.)
-        (.setPassword (conf :secret-key)))
+        (.setPassword (@conf :secret-key)))
       (.encrypt str)))
 
 (defn decrypt [str]
   (-> (doto (BasicTextEncryptor.)
-        (.setPassword (conf :secret-key)))
+        (.setPassword (@conf :secret-key)))
       (.decrypt str)))
 ;;(password/encrypt "admin")
 
 (def ds (delay (doto (JdbcDataSource.)
-                 (.setUrl (str "jdbc:h2:" (db-conf :db)))
-                 (.setUser (db-conf :user))
-                 (.setPassword (db-conf :password)))))
+                 (.setUrl (str "jdbc:h2:" (@db-conf :db)))
+                 (.setUser (@db-conf :user))
+                 (.setPassword (@db-conf :password)))))
 
 (defn sync-db
   ([version env]
-   (do
-     (log/info "starting db upgrade:" version env)
-     (-> (DbUpgrader. (force ds) env)
-         (.syncToVersion version false false))
-     (log/info "db upgrade complete")))
+   (log/info "starting db upgrade:" version env)
+   (-> (DbUpgrader. (force ds) env)
+       (.syncToVersion version false false))
+   (log/info "db upgrade complete")
+   (defdb appdb (h2 @db-conf)))
   ([env] (sync-db 7 env)))
-
-(defdb appdb (h2 db-conf))
 
 (declare data_source app_user query query_params)
 
