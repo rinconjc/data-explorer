@@ -9,7 +9,7 @@
   @ds-ref)
 
 (defn fixture [f]
-  (let [db (safe-mk-ds {:dbms "H2" :url  "mem:test2;DB_CLOSE_DELAY=0" :user_name  "sa" :password "sa"})]
+  (let [db (safe-mk-ds {:dbms "H2" :url  "mem:test2;DB_CLOSE_DELAY=-1" :user_name  "sa" :password "sa"})]
     (reset! ds-ref db)
     (println "dummy ds connection active")
     (try

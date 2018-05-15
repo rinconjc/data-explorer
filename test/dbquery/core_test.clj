@@ -12,7 +12,7 @@
     (is (some? (:body res)))
     )
   (testing "handle table list"
-    (def res (handle-list-tables 1))
+    (def res (handle-list-tables {} 1))
     (println "result:" res)
     (is (nil? (:status res)))
     (is (some? (:body res)))
