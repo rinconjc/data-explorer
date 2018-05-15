@@ -33,13 +33,12 @@
     (let [sdf (SimpleDateFormat. fmt)]
       (.writeString jsonGenerator (.format sdf d)))))
 
-(add-encoder (Class/forName "[B") #(.writeString %2 "<binary>"))
-(add-encoder java.sql.Blob #(.writeString %2 "<binary>"))
-(add-encoder java.util.Date (date-time-encoder "dd/MM/yyyy"))
-(add-encoder java.sql.Date (date-time-encoder "dd/MM/yyyy"))
-(add-encoder java.sql.Timestamp (date-time-encoder "dd/MM/yyyy HH:mm:ss"))
-(add-encoder java.sql.RowId #(.writeString %2 %1))
-(add-encoder oracle.sql.ROWID #(.writeString %2 (.stringValue %1)))
+(defn- add-encoders []
+  (add-encoder (Class/forName "[B") #(.writeString %2 "<binary>"))
+  (add-encoder java.sql.Blob #(.writeString %2 "<binary>"))
+  (add-encoder java.util.Date (date-time-encoder "dd/MM/yyyy"))
+  (add-encoder java.sql.Date (date-time-encoder "dd/MM/yyyy"))
+  (add-encoder java.sql.Timestamp (date-time-encoder "dd/MM/yyyy HH:mm:ss")))
 
 (def ds-cache (atom (cache/lru-cache-factory {})))
 
@@ -287,5 +286,6 @@
   ([] (-main "3001"))
   ([port]
    (sync-db "dev")
+   (add-encoders)
    (run-server (reload/wrap-reload #'all-routes)
                {:port (Integer/parseInt port) :thread 50})))
