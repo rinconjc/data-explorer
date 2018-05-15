@@ -3,7 +3,8 @@
             [clojure.java.io :as io]
             [clojure.string :as str]
             [clojure.tools.logging :as log])
-  (:import java.io.File))
+  (:import java.io.File
+           java.lang.Exception))
 
 (defn- rand-str [len]
   (->> (repeatedly len #(rand-int 61))
@@ -34,8 +35,8 @@
      (load-conf (java.io.File. conf-file))
      (load-conf (default-conf)))))
 
-(def conf (load-conf))
+(def conf (delay (load-conf)))
 
-(def db-conf  (merge (conf :db) {:delimiters ["" ""]
-                                 :naming {:keys str/lower-case :fields str/lower-case}
-                                 :version 1}))
+(def db-conf  (delay (merge (@conf :db) {:delimiters ["" ""]
+                                  :naming {:keys str/lower-case :fields str/lower-case}
+                                  :version 1})))
