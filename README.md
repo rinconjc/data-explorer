@@ -10,8 +10,8 @@ Download from https://github.com/rinconjc/data-explorer/releases/download/0.8-sn
 
     $ java -jar dbquery-0.8-SNAPSHOT-standalone.jar [port-number]
 If using to connect to Oracle databases, add the Oracle JDBC library in the classpath. e.g.
-
-    $ java -cp path/to/ojdbc6.jar -jar dbquery-0.8-SNAPSHOT-standalone.jar [port-number]
+    
+    $ java -cp path/to/ojdbc6.jar:dbquery-0.8-SNAPSHOT-standalone.jar dbquery.core [port-number]
 
         
 Point browser at http://localhost:port 
