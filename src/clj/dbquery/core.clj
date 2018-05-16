@@ -1,31 +1,30 @@
 (ns dbquery.core
   (:gen-class)
-  (:import [java.util Date]
-           [java.text SimpleDateFormat]
-           [java.io FileReader])
-  (:require [compojure.core :refer :all]
-            [compojure.route :as route]
-            ;; [compojure.handler :refer [site]]
-            [ring.middleware.json :refer :all]
-            [ring.util.response :refer [response redirect]]
-            [ring.middleware.defaults :refer :all]
-            [ring.middleware.reload :as reload]
-            [ring.middleware.multipart-params :as mp]
-            [org.httpkit.server :refer [run-server]]
-            [dbquery.databases :refer :all]
-            [dbquery.utils :refer :all]
-            [clojure.java.io :as io]
-            [clojure.string :as s]
-            [korma.core :as k]
-            [dbquery.model :refer :all]
+  (:require [cheshire.generate :refer [add-encoder]]
             [clojure.core.cache :as cache]
-            [liberator.core :refer [defresource resource]]
-            [liberator.dev :refer [wrap-trace]]
-            [clojure.tools.logging :as log]
             [clojure.data.csv :as csv]
-            [cheshire.generate :refer [add-encoder]]
+            [clojure.java.io :as io]
+            [clojure.tools.logging :as log]
+            [compojure.core :refer :all]
+            [compojure.route :as route]
             [crypto.password.bcrypt :as password]
-            [dbquery.databases :as db]))
+            [dbquery.databases :as db :refer :all]
+            [dbquery.model :refer :all]
+            [dbquery.utils :refer :all]
+            [korma.core :as k]
+            [liberator.core :refer [defresource]]
+            [liberator.dev :refer [wrap-trace]]
+            [org.httpkit.server :refer [run-server]]
+            [ring.middleware.defaults :refer :all]
+            [ring.middleware.json :refer :all]
+            [ring.middleware.multipart-params :as mp]
+            [ring.middleware.reload :as reload]
+            [ring.util.response :refer [redirect]])
+  (:import java.awt.Desktop
+           java.io.FileReader
+           java.net.URI
+           java.text.SimpleDateFormat
+           java.util.Date))
 
 ;; custom json encoder for dates
 (defn- date-time-encoder [fmt]
@@ -40,7 +39,10 @@
   (add-encoder java.sql.Date (date-time-encoder "dd/MM/yyyy"))
   (add-encoder java.sql.Timestamp (date-time-encoder "dd/MM/yyyy HH:mm:ss"))
   (add-encoder java.sql.RowId #(.writeString %2 %1))
-  (add-encoder (Class/forName "oracle.sql.ROWID") #(.writeString %2 (.stringValue %1))))
+  (try
+    (add-encoder (Class/forName "oracle.sql.ROWID") #(.writeString %2 (.stringValue %1)))
+    (catch Exception e
+      (log/warn "failed registering encoder for oracle.sql.ROWID. Add Oracle JDBC driver to the classpath if using Oracle DB"))))
 
 (def ds-cache (atom (cache/lru-cache-factory {})))
 
@@ -289,4 +291,10 @@
     (sync-db "dev")
     (add-encoders)
     (run-server (reload/wrap-reload #'all-routes)
-                {:port (Integer/parseInt port) :thread 50})))
+                {:port (Integer/parseInt port) :thread 50})
+    (if (Desktop/isDesktopSupported)
+      (try
+        (doto (Desktop/getDesktop)
+          (.browse (URI. (str "http://localhost:" port))))
+        (catch Exception e
+          (log/warn "failed to open browser" e))))))
