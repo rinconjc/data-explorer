@@ -4,24 +4,16 @@ A multi-user web-based database query tool.
 
 ## Installation
 
-Download from https://github.com/rinconjc/data-explorer/releases/download/alpha/data-explorer-0.1.jar
+Download from https://github.com/rinconjc/data-explorer/releases/download/0.8-snapshot/dbquery-0.8-SNAPSHOT-standalone.jar
 
 ## Usage
 
-    $ java -Dconf=<path-to-config> -jar data-explorer-0.1.jar [port-number]
-    
- Sample configuration:
- 
- ```
- {:app-env "test"
- :db {
-      :db "/tmp/data-explorer"
-      :user "sa"
-      :password "sa"
-      }
- :secret-key "replace-this-with-custom-key"
- }
-```
+    $ java -jar dbquery-0.8-SNAPSHOT-standalone.jar [port-number]
+If using to connect to Oracle databases, add the Oracle JDBC library in the classpath. e.g.
+
+    $ java -cp path/to/ojdbc6.jar -jar dbquery-0.8-SNAPSHOT-standalone.jar [port-number]
+
+        
 Point browser at http://localhost:port 
 Register a new account and login!
 
