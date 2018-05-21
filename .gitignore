@@ -21,3 +21,4 @@ resources/public/js/out/
 /resources/public/js/assets.js
 .*
 !.travis.yml
+/resources/public/css/main.min.css
