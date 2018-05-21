@@ -1,4 +1,4 @@
-(defproject dbquery "0.8.0-SNAPSHOT"
+(defproject dbquery "0.8.0"
   :description "A simple platform for maintaining and running db queries"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
