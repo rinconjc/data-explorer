@@ -1,11 +1,11 @@
-(defproject dbquery "0.8.0"
+(defproject dbquery "0.8.2-SNAPSHOT"
   :description "A simple platform for maintaining and running db queries"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
   :ring {:handler dbquery.core/all-routes}
-  :repositories [["jitpack" {:url "https://jitpack.io" :snapshots false}]
-                 ["snapshots" {:url "file:///tmp/"}]]
+  :repositories [["jitpack" {:url "https://jitpack.io" :snapshots false}]]
+  :deploy-repositories [["releases" {:url "file:///tmp/"}]]
   :dependencies [[compojure "1.6.0"]
                  [ring "1.6.3"]
                  [ring/ring-json "0.4.0"]
