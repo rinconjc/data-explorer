@@ -218,7 +218,7 @@
            ^{:key :exec-log}
            [c/tab {:event-key :exec-log
                    :title (r/as-element
-                           [:span (if (some #(= :executing (:status %)) exec-rows)
+                           [:span (when (some #(= :executing (:status %)) exec-rows)
                                     [:i.fa.fa-spinner.fa-spin]) "SQL Execution"
                             [c/close-button #(dispatch [:set-in-active-db id :execution nil])]])}
             [:div {:style {:height "100%" :overflow-y "scroll"}}
@@ -226,7 +226,11 @@
               (for [x exec-rows] ^{:key (:id x)}
                 [:li.list-group-item
                  [:span.pull-right.small
-                  (cond (= :executing (:status x)) [:i.fa.fa-spinner.fa-spin]
+                  (cond (= :executing (:status x))
+                        [:div
+                         [:i.fa.fa-spinner.fa-spin]
+                         [:span.glyphicon.glyphicon-stop
+                          {:on-click #(dispatch [:stop-query (:id x)])}]]
                         (:error x) [:span.red (:error x)]
                         (:update-count x) (str (:update-count x) " rows " (:time x) "s")
                         :else (str (:time x) "s"))] (:sql x)])]]])
