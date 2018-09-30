@@ -328,7 +328,7 @@
          qid (inc (state :exec-count 0))
          sql (if (string? q) q (sql-select (:query q)))]
      (POST (str "/ds/" db-id "/exec-sql")
-           :params {:sql sql :offset offset :limit limit}
+           :params {:sql sql :offset offset :limit limit :id qid}
            :response-format :json :format :json :keywords? true
            :handler #(do
                        (dispatch [:exec-done db-id qid q offset % nil])

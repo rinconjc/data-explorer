@@ -46,6 +46,8 @@
 
 (def ds-cache (atom (cache/lru-cache-factory {})))
 
+(def session-count (atom 0))
+
 (defn with-cache [cref item value-fn]
   (cache/lookup (if (cache/has? @cref item)
                   (swap! cref #(cache/hit % item))
@@ -87,7 +89,9 @@
         session (:session req)]
     (try-let [user (login user-name pass)]
              (if (some? user)
-               {:body user :session (assoc session :user user)}
+               {:body user
+                :session (assoc session
+                                :user (assoc user :session-id (swap! session-count inc)))}
                {:status 401 :body "invalid user or password"})
              (fn [e] {:status 500 :body (.getMessage e)}))))
 
@@ -103,10 +107,13 @@
   (let [{header :header rows :rows} (read-csv (file :tempfile) (.charAt separator 0) (some? has-header))]
     {:body {:header header :rows (take 4 rows) :file (.getName (file :tempfile))}}))
 
+(defn query-id [q-id ds-id req]
+  (str q-id  "/" ds-id "/" (get-in req [:session :user :session-id])))
+
 (defn handle-exec-sql [req ds-id]
   (let [{:keys [sql] :as opts} (:body req)
         ds (get-ds ds-id)
-        r (execute ds sql opts)]
+        r (execute ds sql (update opts :id query-id ds-id req))]
     (if (number? r)
       {:body {:rowsAffected r}}
       {:body {:data  r}})))
@@ -265,8 +272,11 @@
 
   (context "/ds/:ds-id" [ds-id]
            (POST "/exec-sql" req (handle-exec-sql req ds-id))
-           (POST "/exec-query" req (handle-exec-query req ds-id))
-           (POST "/exec-query/:id" [id] (handle-exec-query-by-id id))
+           (POST "/cancel-sql/:id" [id] (fn[req]
+                                          (cancel-query (query-id id ds-id req))
+                                          {:status 201}))
+           (POST "/exec-query" req (handle-exec-query req ds-id)) ;not used
+           (POST "/exec-query/:id" [id] (handle-exec-query-by-id id)) ;not used
            (GET "/tables" req (with-body (handle-list-tables req ds-id)))
            (GET "/tables/:name" [name] (fn [req]
                                          (with-body (handle-table-meta req ds-id name))))
