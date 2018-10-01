@@ -267,6 +267,7 @@
            (POST "/exec-sql" req (handle-exec-sql req ds-id))
            (POST "/exec-query" req (handle-exec-query req ds-id))
            (POST "/exec-query/:id" [id] (handle-exec-query-by-id id))
+           (POST "/cancel-query/:id" [id] (handle-exec-query-by-id id))
            (GET "/tables" req (with-body (handle-list-tables req ds-id)))
            (GET "/tables/:name" [name] (fn [req]
                                          (with-body (handle-table-meta req ds-id name))))

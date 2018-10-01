@@ -80,6 +80,7 @@
           "POSTGRES" ["org.postgresql.ds.PGSimpleDataSource" (str "jdbc:postgresql:" url)]
           "MS-SQL" ["net.sourceforge.jtds.jdbcx.JtdsDataSource" (str "jdbc:jtds:sqlserver://" url)]
           "Sybase" ["net.sourceforge.jtds.jdbcx.JtdsDataSource" (str "jdbc:jtds:sybase://" url)]
+          "MySQL" ["com.mysql.cj.jdbc.Driver" (str "jdbc:mysql://" url)]
           (throw (Exception. (format "DBMS %s not supported." dbms))))
         ds (doto (HikariDataSource.)
              (.setJdbcUrl jdbc-url)
