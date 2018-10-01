@@ -227,7 +227,7 @@
 
   (doto js/Mousetrap
     (.bind "alt+d" #(dispatch [:preview-table]))
-    (.bind "/" #(dispatch [:set-in-active-db :q ""]))
+    (.bind "ctrl+/" #(dispatch [:set-in-active-db :q ""]))
     (.bind "esc" #(dispatch [:set-in-active-db :q nil])))
   (hook-browser-navigation!)
   (mount-root))

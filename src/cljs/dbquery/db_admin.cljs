@@ -31,7 +31,8 @@
            ^{:key 2}[:option {:value "H2"} "H2"]
            ^{:key 3}[:option {:value "POSTGRES"} "PostgreSQL"]
            ^{:key 4}[:option {:value "Sybase"} "Sybase"]
-           ^{:key 5}[:option {:value "MS-SQL"} "MS SQL"]]
+           ^{:key 5}[:option {:value "MS-SQL"} "MS SQL"]
+           ^{:key 6}[:option {:value "MySQL"} "MySQL"]]
           [input {:model [db-spec :url]
                   :type "text" :label "URL"
                   :placeholder "<server>:<port>..."

@@ -501,5 +501,8 @@
  :download
  [common-middlewares in-active-db]
  (fn [state [db-id query]]
-   (window.open (str "/ds/" db-id "/download?query=" (sql-select query)))
+   (let [sql (if (string? query) query (sql-select query))]
+     (when-not (empty? sql)
+       (window.open (str "/ds/" db-id "/download?query="
+                                         (js/encodeURIComponent sql)))))
    state))

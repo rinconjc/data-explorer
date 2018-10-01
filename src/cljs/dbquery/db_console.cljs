@@ -124,8 +124,10 @@
         query-filter (fn[text]
                        (let [re (re-pattern text)]
                          (filter #(re-find re (or (:name %) "")) @suggestions)))
-        exec-sql #(dispatch [:submit-sql id (if (empty? (.getSelection @cm))
-                                              (.getValue @cm) (.getSelection @cm))])
+        sql-query (fn []
+                    (if (empty? (.getSelection @cm))
+                      (.getValue @cm) (.getSelection @cm)))
+        exec-sql #(dispatch [:submit-sql id (sql-query)])
         reset-fn #(do
                     (dispatch [:set-in-active-db :query nil])
                     (.setValue @cm ""))]
@@ -138,6 +140,8 @@
          [c/button-group
           [c/button {:title "Execute" :on-click exec-sql}
            [:i.fa.fa-play]]
+          [c/button {:title "Download" :on-click #(dispatch [:download (sql-query)])}
+           [:i.fa.fa-download]]
           [c/button {:title "Save" :on-click save-fn}
            [:i.fa.fa-save]]
           [c/button {:on-click reset-fn}
@@ -176,7 +180,7 @@
 (defn record-view [db-id]
   (let [data (subscribe [:active-record db-id])]
     (fn [db-id]
-      [:div.my-popover {:style {:padding "10px"}}
+      [:div.my-popover.panel {:style {:padding "10px"}}
        (if @data
          [:div
           [:h4.center-block.bg-default (-> @data :key :fk_table)]
