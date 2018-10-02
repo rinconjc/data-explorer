@@ -233,8 +233,9 @@
                   (cond (= :executing (:status x))
                         [:div
                          [:i.fa.fa-spinner.fa-spin]
-                         [:span.glyphicon.glyphicon-stop
-                          {:on-click #(dispatch [:stop-query (:id x)])}]]
+                         [:a.btn.btn-link
+                          [:span.glyphicon.glyphicon-stop
+                           {:on-click #(dispatch [:stop-query (:id x)])}]]]
                         (:error x) [:span.red (:error x)]
                         (:update-count x) (str (:update-count x) " rows " (:time x) "s")
                         :else (str (:time x) "s"))] (:sql x)])]]])

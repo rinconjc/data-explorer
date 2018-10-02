@@ -36,14 +36,14 @@
                  [cljsjs/react-bootstrap "0.30.7-0" :exclusions [[org.webjars.bower/jquery] [cljsjs/react]]]
                  [cljsjs/mousetrap "1.5.3-0"]
                  [cljsjs/codemirror "5.7.0-1"]
-                 [com.zaxxer/HikariCP "2.5.1"]
+                 [com.zaxxer/HikariCP "2.7.2"]
                  [net.sourceforge.jtds/jtds "1.3.1"]
                  [com.mysql/connectorj "5.1.12"]]
   :plugins [[lein-environ "1.0.1"]
             [lein-cljsbuild "1.1.7" :exclusions [[org.clojure/clojure]]]
             [lein-asset-minifier "0.2.7" :exclusions [org.clojure/clojure]]
             [lein-cljsasset "0.2.0"]]
-  :resource-paths ["lib/ojdbc6.jar" "resources"]
+  :resource-paths ["lib/ojdbc.jar" "resources"]
   :source-paths ["src/clj" "src/cljc" "src/cljs"]
   :minify-assets
   {:assets
