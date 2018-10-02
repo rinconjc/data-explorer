@@ -506,3 +506,13 @@
        (window.open (str "/ds/" db-id "/download?query="
                                          (js/encodeURIComponent sql)))))
    state))
+
+(reg-event-db
+ :stop-query
+ [common-middlewares in-active-db]
+ (fn [state [db-id query-id]]
+   (POST (str "/ds/" db-id "/cancel-sql/" query-id)
+         :format :json :response-format :json
+         :handler #(js/console.log "cancel completed:" %)
+         :error-handler #(js/console.log "failed query cancellation:" %))
+   state))

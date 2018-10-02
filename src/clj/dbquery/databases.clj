@@ -135,7 +135,7 @@
 (defn execute
   "executes the given sql statement returning the resulting rows or the number
   of rows affected by the statement"
-  ([ds sql {:keys [rs-reader args query-id] :or {rs-reader read-rs} :as opts}]
+  ([ds sql {:keys [rs-reader args id] :or {rs-reader read-rs} :as opts}]
    (with-open [con (.getConnection (:datasource ds))]
      (let [sqlv (if (coll? sql) sql [sql])]
        (loop [sql (first sqlv)
@@ -144,11 +144,11 @@
                                        ResultSet/CONCUR_READ_ONLY)
                _ (if (some? args) (reduce #(do (.setObject stmt %1 %2)
                                                (inc %1)) 1 args))
-               _ (when query-id (swap! executing-queries assoc query-id stmt))
+               _ (when id (swap! executing-queries assoc id stmt))
                has-rs (try
                         (.execute stmt)
                         (finally
-                          (when query-id (swap! executing-queries dissoc query-id))))]
+                          (when id (swap! executing-queries dissoc id))))]
            (if (empty? sqls)
              (if has-rs
                (rs-reader (.getResultSet stmt) opts)
@@ -157,8 +157,10 @@
   ([ds sql] (execute ds sql {})))
 
 (defn cancel-query [query-id]
+  (log/info "stmts:" @executing-queries)
   (when-let [stmt (@executing-queries query-id)]
     (try
+      (log/info "cancelling stmt")
       (.cancel stmt)
       (catch Exception e
         (log/error e "failed cancelling query " query-id)))))
