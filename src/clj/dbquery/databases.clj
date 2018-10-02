@@ -17,6 +17,8 @@
 (def ^:private sql-date-types #{Types/DATE Types/TIMESTAMP Types/TIME})
 (def ^:private sql-number-types #{Types/NUMERIC Types/DECIMAL Types/INTEGER Types/DOUBLE})
 
+(def ^:private executing-queries (atom {}))
+
 (defn- col-reader [sql-type]
   (get result-extractors sql-type (fn [rs i] (.getObject rs i))))
 
@@ -133,7 +135,7 @@
 (defn execute
   "executes the given sql statement returning the resulting rows or the number
   of rows affected by the statement"
-  ([ds sql {:keys [rs-reader args] :or {rs-reader read-rs} :as opts}]
+  ([ds sql {:keys [rs-reader args query-id] :or {rs-reader read-rs} :as opts}]
    (with-open [con (.getConnection (:datasource ds))]
      (let [sqlv (if (coll? sql) sql [sql])]
        (loop [sql (first sqlv)
@@ -142,13 +144,24 @@
                                        ResultSet/CONCUR_READ_ONLY)
                _ (if (some? args) (reduce #(do (.setObject stmt %1 %2)
                                                (inc %1)) 1 args))
-               has-rs (.execute stmt)]
+               _ (when query-id (swap! executing-queries assoc query-id stmt))
+               has-rs (try
+                        (.execute stmt)
+                        (finally
+                          (when query-id (swap! executing-queries dissoc query-id))))]
            (if (empty? sqls)
              (if has-rs
                (rs-reader (.getResultSet stmt) opts)
                (.getUpdateCount stmt))
              (recur (first sqls) (rest sqls))))))))
   ([ds sql] (execute ds sql {})))
+
+(defn cancel-query [query-id]
+  (when-let [stmt (@executing-queries query-id)]
+    (try
+      (.cancel stmt)
+      (catch Exception e
+        (log/error e "failed cancelling query " query-id)))))
 
 (defn- table-columns [meta schema table]
   (with-open [rs (.getColumns meta nil schema table "%")]
