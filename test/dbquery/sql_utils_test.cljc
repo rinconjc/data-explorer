@@ -1,6 +1,6 @@
 (ns dbquery.sql-utils-test
-  (:require [clojure.test :refer :all]
-            [dbquery.sql-utils :refer :all]))
+  (:require [clojure.test :refer [deftest testing is]]
+            [dbquery.sql-utils :refer [sql-statements set-order next-order]]))
 
 (deftest parse-sql-stmts
   (testing "simple parse"

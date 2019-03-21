@@ -1,0 +1,6 @@
+^{:watch-dirs ["test" "src/cljs" "src/cljc"]
+  :css-dirs ["resources/public/css"]
+  :auto-testing true
+  :open-file-command "emacsclient"
+  :open-url "http://localhost:3001"}
+{:main dbquery.core}
