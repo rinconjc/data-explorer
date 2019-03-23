@@ -3,25 +3,20 @@
 ;; [splitter :vertical panes]
 ;;
 
-(defn- splitter-attrs [orientation pos]
+(defn- pane1-style [orientation pos]
   (let [css-pos (if (string? pos) pos (str pos "px"))]
     (if (= orientation :vertical)
-     {:handler {:top css-pos}
-      :pane1 {:height css-pos}
-      :pane2 {:top css-pos}
-      :css-class "split-panes vertical"}
-     {:handler {:left css-pos}
-      :pane1 {:width css-pos}
-      :pane2 {:left css-pos}
-      :css-class "split-panes horizontal"})))
+      {:height css-pos}
+      {:width css-pos})))
+
 
 (defn splitter [{:keys [orientation min-size split-at] :or {split-at "50%" min-size [0 0]}} pane1 pane2]
   (let [elem (atom nil)
-        split-pos (atom split-at)
-        styles (atom (splitter-attrs orientation split-at))
+        collapsed (atom false)
+        styles (atom (pane1-style orientation split-at))
         update-pos (fn [full-size pos]
                      (when-not (or (< pos (min-size 0)) (< (- full-size pos) (min-size 1)))
-                       (reset! styles (splitter-attrs orientation pos))))
+                       (reset! styles (pane1-style orientation pos))))
         mouse-move (fn[e]
                      (when-let [bounds (and @elem (-> @elem .getBoundingClientRect))]
                        (if (= :vertical orientation)
@@ -34,11 +29,16 @@
     (.addEventListener js/document "mouseup" #(reset! elem nil))
 
     (fn[{:keys [orientation min-size split-at] :or {split-at "50%" min-size [0 0]}} pane1 pane2]
-      [:div {:class (:css-class @styles) :on-mouse-move mouse-move}
-       [:div {:class "split-pane1" :style (:pane1 @styles)} pane1]
-       [:div {:class "split-handler" :style (:handler @styles)
-              :on-mouse-down (fn[e] (reset! elem (-> e .-target .-parentElement))
-                               (.preventDefault e))}]
+      [:div.split-panes {:class (conj [(name orientation)] (when @collapsed "collapsed"))
+                         :on-mouse-move mouse-move}
+       [:div.split-pane1 {:style @styles} pane1]
+       [:div.split-handler {:on-mouse-down (fn[e] (reset! elem (-> e .-target .-parentElement))
+                               (.preventDefault e))}
+        (if (= orientation :vertical)
+          [:a.btn-link.btn-lg {:on-click #(swap! collapsed not)}
+           [:i.fa {:class (if @collapsed "fa-angle-double-down" "fa-angle-double-up")}]]
+          [:a.btn-link.btn-lg {:on-click #(swap! collapsed not)}
+           [:i.fa {:class (if @collapsed "fa-angle-double-right" "fa-angle-double-left")}]])]
        [:div {:class "split-pane2" :style (:pane2 @styles)} pane2]])))
 
 (defn vertical-splitter [opts pane1 pane2]
