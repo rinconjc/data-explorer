@@ -7,6 +7,10 @@
   display:flex;
 }
 
+.split-pane2, split-pane1{
+  overflow:hidden;
+}
+
 .split-panes > .split-handler
 {
   background: transparent;
