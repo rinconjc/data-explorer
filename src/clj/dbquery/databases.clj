@@ -78,7 +78,7 @@
   (let [[driver jdbc-url]
         (case dbms
           "H2" ["org.h2.jdbcx.JdbcDataSource" (str "jdbc:h2:" url)]
-          "ORACLE" ["oracle.jdbc.pool.OracleDataSource" (str "jdbc:oracle:thin:@" url)]
+          "ORACLE" ["oracle.jdbc.OracleDriver" (str "jdbc:oracle:thin:@" url)]
           "POSTGRES" ["org.postgresql.ds.PGSimpleDataSource" (str "jdbc:postgresql:" url)]
           "MS-SQL" ["net.sourceforge.jtds.jdbcx.JtdsDataSource" (str "jdbc:jtds:sqlserver://" url)]
           "Sybase" ["net.sourceforge.jtds.jdbcx.JtdsDataSource" (str "jdbc:jtds:sybase://" url)]
@@ -96,7 +96,8 @@
              (.setMaxLifetime 300000))]
     (case  dbms
       "MS-SQL" (.setConnectionTestQuery ds "SELECT GETDATE()")
-      "Sybase" (.setConnectionTestQuery ds "SELECT GETDATE()")
+      "Sybase" (doto ds (.setConnectionTestQuery "SELECT GETDATE()")
+                     (.setConnectionInitSql (str "USE " (or (:schema params) (:user_name params)))))
       "ORACLE" (.setConnectionInitSql
                 ds (str "ALTER SESSION SET CURRENT_SCHEMA=" (or (:schema params) (:user_name params))))
       nil)
@@ -158,10 +159,10 @@
 
 (defn cancel-query [query-id]
   (log/info "stmts:" @executing-queries)
-  (when-let [stmt (@executing-queries query-id)]
+  (when-let [stmt (.unwrap (@executing-queries query-id) java.sql.Statement)]
     (try
-      (log/info "cancelling stmt")
-      (.cancel stmt)
+      (log/infof "cancelling stmt %s" stmt)
+      (log/spyf :info "cancelled: %s" (.cancel stmt))
       (catch Exception e
         (log/error e "failed cancelling query " query-id)))))
 
