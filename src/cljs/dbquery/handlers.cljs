@@ -321,7 +321,7 @@
  :exec-query
  [common-middlewares tab-path]
  (fn [state [db-id q offset limit]]
-   (if (map? q)
+   (when (and (map? q) (some? (get-in state [:resultsets (:id q)])))
      (dispatch [:update db-id [:resultsets (:id q)] assoc :loading true]))
    (let [offset (or offset 0)
          limit (or limit 40)
@@ -369,7 +369,8 @@
                                         :update-count (and (not error) (:rowsAffected resp)))
                                  %) xs)))
      error (assoc :in-queue nil)
-     (map? q) (update-in [:resultsets (:id q)] assoc :loading false)
+     (and (map? q) (some? (get-in state [:resultsets (:id q)]))) (update-in [:resultsets (:id q)]
+                                                                            assoc :loading false)
      (:data resp) (#(update-result q % (:data resp) offset))
      (nil? (:data resp)) (assoc :active-table :exec-log))))
 
@@ -504,7 +505,7 @@
    (let [sql (if (string? query) query (sql-select query))]
      (when-not (empty? sql)
        (window.open (str "/ds/" db-id "/download?query="
-                                         (js/encodeURIComponent sql)))))
+                         (js/encodeURIComponent sql)))))
    state))
 
 (reg-event-db

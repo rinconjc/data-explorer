@@ -1,4 +1,4 @@
-(ns dbquery.core
+(ns ^:figwheel-hooks dbquery.core
   (:require [ajax.core :refer [GET]]
             cljsjs.mousetrap
             [dbquery.commons
@@ -31,11 +31,11 @@
             [secretary.core :as secretary :include-macros true])
   (:import goog.History))
 
-(when (exists? js/Symbol)
-  (extend-protocol IPrintWithWriter
-    js/Symbol
-    (-pr-writer [sym writer _]
-      (-write writer (str "\"" (.toString sym) "\"")))))
+;; (when (exists? js/Symbol)
+;;   (extend-protocol IPrintWithWriter
+;;     js/Symbol
+;;     (-pr-writer [sym writer _]
+;;       (-write writer (str "\"" (.toString sym) "\"")))))
 
 (reg-event-db
  :edit-db
@@ -132,7 +132,7 @@
     (fn []
       [:div.col-md-offset-4.col-md-3.col-sm-5.col-sm-offset-4
        {:style {:border-radius "15px"  :margin-top "80px"}}
-       [:h1 [:i.fa.fa-database] " Data Explorer"]
+       [:h1 [:i.fa.fa-database] " Data Explorer..."]
        [:div.panel
         [:form.form-signin {:style {:max-width "330px"}
                             :on-submit #(do (.preventDefault %) (dispatch [:login @login-data]))}
@@ -227,7 +227,17 @@
 
   (doto js/Mousetrap
     (.bind "alt+d" #(dispatch [:preview-table]))
-    (.bind "ctrl+/" #(dispatch [:set-in-active-db :q ""]))
+    (.bind #js["/" "ctrl+s"] #(do (dispatch [:set-in-active-db :q ""]) false))
     (.bind "esc" #(dispatch [:set-in-active-db :q nil])))
   (hook-browser-navigation!)
   (mount-root))
+
+(init!)
+
+;; specify reload hook with ^;after-load metadata
+(defn ^:after-load on-reload []
+  (mount-root)
+  ;; optionally touch your app-state to force rerendering depending on
+  ;; your application
+  ;; (swap! app-state update-in [:__figwheel_counter] inc)
+  )
