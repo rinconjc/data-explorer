@@ -55,12 +55,11 @@
     attrs))
 
 (defn to-options [opts children]
-  (if (or children opts)
-    (concat [^{:key ""}[:option {:value "" :disabled true} "Select"]]
-            children
-            (map-indexed
-             (fn [i [k v]]
-               ^{:key i} [:option {:value k} v]) opts))))
+  (concat [^{:key ""}[:option {:value "" :disabled true} "Select"]]
+          children
+          (map-indexed
+           (fn [i [k v]]
+             ^{:key i} [:option {:value k} v]) opts)))
 
 (defn typeahead [{:keys [model choice-fn result-fn data-source] :as attrs
                   :or {choice-fn identity result-fn identity}}]
@@ -110,10 +109,10 @@
                                       (reset! selected-index 0))
                                "default"))))]
 
-       [:ul {:style {:display (if (or (empty? @selections) @typeahead-hidden?) :none :block) }
-             :class "typeahead-list"
-             :on-mouse-enter #(reset! mouse-on-list? true)
-             :on-mouse-leave #(reset! mouse-on-list? false)}
+       [:ul.typeahead-list.text-primary
+        {:style {:display (if (or (empty? @selections) @typeahead-hidden?) :none :block) }
+         :on-mouse-enter #(reset! mouse-on-list? true)
+         :on-mouse-leave #(reset! mouse-on-list? false)}
         (doall
          (map-indexed
           (fn [index result]

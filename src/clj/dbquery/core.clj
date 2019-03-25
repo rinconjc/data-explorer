@@ -245,7 +245,7 @@
   (route/resources "/")
   (GET "/ping" [] (fn [req] (format "replied at %s" (Date.)))))
 
-(defroutes app
+(defroutes api
   (GET "/" [] (slurp (io/resource "public/index.html")))
 
   (POST "/login" req (handle-login req))
@@ -286,22 +286,24 @@
            ;; (GET "/related/:tables" [tables] (with-body (get-related-tables ds-id (s/split tables #",\s*"))))
            (GET "/download" req (handle-download ds-id (get-in req [:params :query])))))
 
-(defroutes all-routes
+(defroutes app
   static
-  (-> app
+  (-> api
       (wrap-exception)
       (wrap-json-response)
       (wrap-json-body {:keywords? true})
       (wrap-trace :header :ui)
       (wrap-defaults (assoc site-defaults :security {:anti-forgery false}))))
 ;;
+(defn start-server [port]
+  (sync-db "dev")
+  (add-encoders)
+  (run-server (reload/wrap-reload #'app)
+              {:port port :thread 50}))
 
 (defn -main [& args]
-  (let [port (or (first args) "3001")]
-    (sync-db "dev")
-    (add-encoders)
-    (run-server (reload/wrap-reload #'all-routes)
-                {:port (Integer/parseInt port) :thread 50})
+  (let [port (or (some-> args first Integer/parseInt) 3001)]
+    (start-server port)
     (if (Desktop/isDesktopSupported)
       (try
         (doto (Desktop/getDesktop)
