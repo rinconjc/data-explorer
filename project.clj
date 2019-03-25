@@ -30,7 +30,7 @@
                  [org.clojure/java.jdbc "0.3.6"]
                  [crypto-password "0.1.3"]
                  [org.clojure/core.cache "0.6.4"]
-                 [liberator "0.13"]
+                 [liberator "0.15.2"]
                  [org.clojure/data.csv "0.1.2"]
                  [org.jasypt/jasypt "1.9.2"]
                  [cljsjs/react-bootstrap "0.30.7-0" :exclusions [[org.webjars.bower/jquery] [cljsjs/react]]]

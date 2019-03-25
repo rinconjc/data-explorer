@@ -167,7 +167,7 @@
         (catch Exception e (log/error "failed exporting to CSV" e)))
       (.close writer))
     {:body is
-     :headers {"Content-Disposition" "attachment; filename='data.csv'"} }))
+     :headers {"Content-Disposition" "attachment; filename=data.csv"} }))
 
 (defn with-body [b]
   (cond
