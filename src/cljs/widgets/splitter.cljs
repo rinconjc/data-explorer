@@ -32,8 +32,9 @@
       [:div.split-panes {:class (conj [(name orientation)] (when @collapsed "collapsed"))
                          :on-mouse-move mouse-move}
        [:div.split-pane1 {:style @styles} pane1]
-       [:div.split-handler {:on-mouse-down (fn[e] (reset! elem (-> e .-target .-parentElement))
-                               (.preventDefault e))}
+       [:div.split-handler (when-not @collapsed
+                             {:on-mouse-down (fn[e] (reset! elem (-> e .-target .-parentElement))
+                                               (.preventDefault e))})
         (if (= orientation :vertical)
           [:a.btn-link.btn-lg {:on-click #(swap! collapsed not)}
            [:i.fa {:class (if @collapsed "fa-angle-double-down" "fa-angle-double-up")}]]
