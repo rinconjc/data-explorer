@@ -164,7 +164,8 @@
         [code-mirror cm {:mode "text/x-sql" :profile "xml"
                          :tabindex 2 :autofocus true :theme "zenburn"
                          :extraKeys {:Ctrl-Enter exec-sql :Alt-S save-fn
-                                     :Tab autocomplete}}
+                                     :Tab autocomplete}
+                         :lineNumbers true}
          (or (:sql @query) " ")]]])))
 
 (defn metadata-table [db-id {:keys [table] :as model}]
