@@ -58,8 +58,8 @@
             "fig:test"  ["run" "-m" "figwheel.main" "-co" "test.cljs.edn" "-m" dbquery.test-runner]}
 
   :profiles {:dev
-             {:repl-options {:init (start-server 3001)}
-              :dependencies [[com.bhauman/figwheel-main "0.1.9"]
+             {;; :repl-options {:init (start-server 3001)}
+              :dependencies [[com.bhauman/figwheel-main "0.2.0"]
                              [com.bhauman/rebel-readline-cljs "0.1.4"]]
 
               }

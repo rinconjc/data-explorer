@@ -163,7 +163,7 @@
 
 (reg-event-db
  :activate-table
- [common-middlewares debug tab-path]
+ [common-middlewares tab-path]
  (fn [state [db-id q-id]]
    (let [current (:active-table state)
          now (.getTime (js/Date.))
@@ -249,7 +249,7 @@
 
 (reg-event-db
  :set-in-active-db
- [debug common-middlewares in-active-db]
+ [common-middlewares in-active-db]
  (fn [state [_ key val]]
    (assoc state key val)))
 
@@ -309,7 +309,7 @@
 
 (reg-event-db
  :exec-queries
- [common-middlewares debug tab-path]
+ [common-middlewares tab-path]
  (fn [state [db-id]]
    (update state :in-queue
            (fn [[q & more]]
@@ -333,7 +333,7 @@
            :handler #(do
                        (dispatch [:exec-done db-id qid q offset % nil])
                        (dispatch [:exec-queries db-id]))
-           :error-handler #(dispatch [:exec-done db-id qid q offset nil (error-text %)]))
+           :error-handler #(dispatch [:exec-done db-id qid q offset (:response %) (error-text %)]))
      (-> state (update :execution conj {:sql sql :id qid :status :executing
                                         :start (. js/Date now)})
          (assoc :exec-count qid)))))
@@ -366,7 +366,8 @@
                   (fn[xs](map #(if (= (:id %) qid)
                                  (assoc % :status :done :error error
                                         :time (/ (- (. js/Date now) (:start %)) 1000.0)
-                                        :update-count (and (not error) (:rowsAffected resp)))
+                                        :update-count (and (not error) (:rowsAffected resp))
+                                        :output (:output resp))
                                  %) xs)))
      error (assoc :in-queue nil)
      (and (map? q) (some? (get-in state [:resultsets (:id q)]))) (update-in [:resultsets (:id q)]
@@ -387,7 +388,7 @@
 
 (reg-event-db
  :table-meta
- [debug common-middlewares in-active-db]
+ [common-middlewares in-active-db]
  (fn [state [tab-id table reload?]]
    (let [id (str table "*")
          rs (get-in state [:resultsets id])]
@@ -400,7 +401,7 @@
 
 (reg-event-db
  :load-meta-table
- [debug common-middlewares]
+ [common-middlewares]
  (fn [state [db-id table reload?]]
    (GET (str "/ds/" db-id "/tables/" table) :response-format :json
         :params {:refresh reload?}
@@ -457,7 +458,7 @@
 
 (reg-event-db
  :reload
- [debug common-middlewares in-active-table]
+ [common-middlewares in-active-table]
  (fn [resultset [tab-id]]
    (case (:type resultset)
      :metadata (dispatch [:table-meta (:table resultset) true])
@@ -493,7 +494,7 @@
 
 (reg-event-db
  :show-tab
- [debug common-middlewares]
+ [common-middlewares]
  (fn [state [tab-id tab-name]]
    (dispatch [:activate-db tab-id])
    (update state :db-tabs assoc tab-id {:id tab-id :name tab-name})))

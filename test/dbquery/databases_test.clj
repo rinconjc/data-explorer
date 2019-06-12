@@ -13,7 +13,7 @@
                                          :user_name "sa" :password "sa"})))))
   (testing "get tables"
     (let [ds (dummy-ds)]
-      (execute ds "create table tablex(id int, name varchar(10))")
+      (execute ds "create table tablet(id int, name varchar(10))")
       (def result (get-tables ds))
       (println "db tables :" result)
       (is (= 1 (count result)))
