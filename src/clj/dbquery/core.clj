@@ -64,7 +64,8 @@
   (with-cache ds-cache ds-id
     #(let [ds-details (first (k/select data_source (k/fields [:password]) (k/where {:id %})))]
        {:datasource (mk-ds ds-details)
-        :schema (:schema ds-details)})))
+        :schema (:schema ds-details)
+        :dbms (:dbms ds-details)})))
 
 (def common-opts {:available-media-types ["application/json"]})
 
@@ -74,7 +75,8 @@
       (handler req)
       (catch Exception e
         (log/error e "Exception handling request")
-        {:status 500 :body (or (re-find #"^.+" (or (.getMessage e) "")) "Unknown internal error")}))))
+        {:status 500 :body (assoc (ex-data e )
+                                  :error (or (.getMessage e) "Unknown internal error"))}))))
 ;; ds checker middleware
 
 ;; handlers
@@ -114,16 +116,12 @@
   (let [{:keys [sql] :as opts} (:body req)
         ds (get-ds ds-id)
         r (execute ds sql (update opts :id query-id ds-id req))]
-    (if (number? r)
-      {:body {:rowsAffected r}}
-      {:body {:data  r}})))
+    {:body r}))
 
 (defn handle-exec-query-by-id [id ds-id]
   (if-let [q (first (k/select query (k/fields [:sql]) (k/where {:id id})))]
     (let [r (execute (get-ds ds-id) (:sql q))]
-      (if (number? r)
-        {:body {:rowsAffected r}}
-        {:body r}))
+      {:body r})
     {:status 404 :body "no such query exists!"}))
 
 (defn handle-list-tables [req ds-id]

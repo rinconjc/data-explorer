@@ -107,3 +107,7 @@ a {
 .form-signin .form-control:focus {
   z-index: 2;
 }
+.inherit{
+  background-color: inherit;
+  color: inherit;
+}
