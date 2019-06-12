@@ -77,6 +77,15 @@ body > div > div {
   line-height:0.6 !important;
 }
 
+.data-row > td > a {
+  display:none;
+  padding:0px;
+}
+
+.data-row > td:hover a {
+  display:block !important;
+}
+
 .my-popover{
   position:absolute;
   float:right;
