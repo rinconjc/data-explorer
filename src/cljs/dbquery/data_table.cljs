@@ -100,10 +100,11 @@
   (if (map? row)
     [:tr [:td (inc i)]
      (for [c (data :columns)] ^{:key c}[:td (str (row c))])]
-    [:tr [:td (inc i)]
+    [:tr.data-row [:td (inc i)]
      (doall (map-indexed
              (fn[j v] ^{:key j}
-               [:td {:title v :on-mouse-down #(js/console.log "mouse down:" j i)}
+               [:td {:title v}
+                [:a.btn-link [:i.fa.fa-clone.pull-right]]
                 (table-cell (nth metadata j) v)]) row))]))
 
 (defn data-table [model col-meta]
