@@ -104,7 +104,7 @@
      (doall (map-indexed
              (fn[j v] ^{:key j}
                [:td {:title v}
-                [:a.btn-link [:i.fa.fa-clone.pull-right]]
+                ;; [:a.btn-link [:i.fa.fa-clone.pull-right]]
                 (table-cell (nth metadata j) v)]) row))]))
 
 (defn data-table [model col-meta]

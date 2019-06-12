@@ -90,14 +90,16 @@ WHERE ud.DATA_SOURCE_ID=d.ID AND ud.APP_USER_ID=?)" [user-id user-id]] :results)
           first))))
 
 (defn ds-queries [db-id]
-  (db/execute {:datasource (force ds)} "select q.* from query q
+  (-> (db/execute {:datasource (force ds)} "select q.* from query q
 join data_source_query dq on dq.query_id = q.id where dq.data_source_id =?"
-              {:rs-reader db/read-as-map :args [db-id]}))
+                  {:rs-reader db/read-as-map :args [db-id]})
+      :data))
 
 (defn query-assocs [qid]
-  (db/execute {:datasource (force ds)} "select ds.id, ds.name, q.query_id
+  (-> (db/execute {:datasource (force ds)} "select ds.id, ds.name, q.query_id
 from data_source ds left join data_source_query q on q.data_source_id = ds.id
-and q.query_id = ?" {:rs-reader db/read-as-map :args [qid]}))
+and q.query_id = ?" {:rs-reader db/read-as-map :args [qid]})
+      :data))
 
 (defn assoc-query-datasource [q-id ds-ids]
   (apply jdbc/insert! {:datasource (force ds)}
