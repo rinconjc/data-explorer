@@ -1,9 +1,10 @@
 (ns dbquery.data-table
-  (:require [dbquery.commons :as c :refer [button input]]
+  (:require [clojure.string :as str]
+            [dbquery.commons :as c :refer [button input]]
+            [dbquery.data-viz :as dv]
             [dbquery.sql-utils :refer [sort-icons]]
-            [re-frame.core :refer [dispatch subscribe]]
-            [reagent.core :as r :refer [atom]]
-            [clojure.string :as str]))
+            [re-frame.core :refer [dispatch]]
+            [reagent.core :as r :refer [atom]]))
 
 (defn toggle [x y]
   (if-not (= x y) y))
@@ -70,15 +71,32 @@
         [button {:bs-style "default" :type "submit"} "+"]]]]
      ]))
 
+(defn chart-options [model]
+  (let [cols (->> model :data :columns (map (partial repeat 2)))]
+    [:div.panel.panel-default {:style {:min-width "300px"}}
+     [:div.panel-heading "Chart Options"]
+     [:div.container-fluid
+      [:form.form-horizontal
+       [input {:type "select" :label "Type" :label-class-name "col-sm-4" :wrapper-class-name "col-sm-8"
+               :options [[:bar "Bar"] [:line "Line"]]}]
+       [input {:type "select" :label "X-Value" :label-class-name "col-sm-4" :wrapper-class-name "col-sm-8"
+               :options cols}]
+       [input {:type "select" :label "Y-Value" :label-class-name "col-sm-4" :wrapper-class-name "col-sm-8"
+               :options cols}]]]]))
+
 (defn more-toolbar [model]
   (r/with-let [active (atom nil)]
     [:div.my-popover
      [c/button-group {:bsSize "small" :style {:display "flex"}}
       [c/button {:title "Filters:" :on-click #(reset! active :filters)} [:i.fa.fa-filter]]
       [c/button {:title "SQL"} [:i.fa.fa-paste]]
-      [c/button {:title "Download" :on-click #(dispatch [:download (:query model)])} [:i.fa.fa-download]]]
+      [c/button {:title "Download" :on-click #(dispatch [:download (:query model)])}
+       [:i.fa.fa-download]]
+      [c/button {:title "Chart" :on-click #(reset! active :chart)}
+       [:i.fa.fa-bar-chart]]]
      (case @active
        :filters [filters model]
+       :chart [chart-options model]
        "")]))
 
 (defn scroll-bottom? [e]
@@ -104,7 +122,6 @@
      (doall (map-indexed
              (fn[j v] ^{:key j}
                [:td {:title v}
-                [:a.btn-link [:i.fa.fa-clone.pull-right]]
                 (table-cell (nth metadata j) v)]) row))]))
 
 (defn data-table [model col-meta]
@@ -149,5 +166,7 @@
                 (if-not (:last-page? model)
                   [c/button {:on-click #(dispatch [:next-page])}
                    [:i.fa.fa-chevron-down]])]]]]]
-       (if (:loading model)
-         [c/progress-overlay])])))
+       (when (:loading model)
+         [c/progress-overlay])
+       [c/floating-panel {:title "Sample Chart" :style {:top 50}}
+        [dv/chart-of [] {}]]])))

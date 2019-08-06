@@ -1,9 +1,9 @@
 (ns dbquery.commons
   (:require [clojure.string :as str]
+            [goog.dom :as gdom]
             [cljsjs.react-bootstrap]
             [re-frame.core :refer [dispatch]]
-            [reagent.core :as r :refer [atom]]
-            [reagent.core :as reagent]))
+            [reagent.core :as r :refer [atom]]))
 
 (def navbar (r/adapt-react-class js/ReactBootstrap.Navbar))
 (def nav-brand (r/adapt-react-class js/ReactBootstrap.Navbar.Brand))
@@ -130,7 +130,7 @@
 
 (def focus-wrapper
   (with-meta identity
-    {:component-did-mount #(.focus (reagent/dom-node %))}))
+    {:component-did-mount #(.focus (r/dom-node %))}))
 
 (defn focus-aware [focus? e]
   (if focus?
@@ -205,3 +205,30 @@
 
 (defn error-text [e]
   (or (:response e) (get-in e [:parse-error :original-text])))
+
+(declare move-off)
+
+(defn floating-panel [props & children]
+  (r/with-let [moving-start (atom nil)
+               pos (atom (-> props :style (select-keys [:top :left])))
+               move-fn (fn[e]
+                         (when-let [[x y] @moving-start]
+                           (reset! pos {:left (max 0 (+ x (.-clientX e)))
+                                        :top (max 0 (+ y (.-clientY e)))})
+                           (-> js/window (.getSelection) (.removeAllRanges))))
+               move-off (fn[e]
+                          (reset! moving-start nil)
+                          (doto (.-target e)
+                            (.removeEventListener "mousemove" move-fn)
+                            (.removeEventListener "mouseup" move-off)))]
+    [:div.panel.panel-default.draggable.resizable (update props :style merge @pos)
+     [:div.panel-heading.compact.handler
+      {:on-mouse-down #(do
+                         (reset! moving-start [(- (:left @pos) (.-clientX %))
+                                               (- (:top @pos) (.-clientY %))])
+                         (doto (.item (gdom/getElementsByTagName "body") 0)
+                           (.addEventListener "mousemove" move-fn)
+                           (.addEventListener "mouseup" move-off)))}
+      (:title props)
+      [:button.close {:type "button"} [:i.fa.fa-times]]]
+     [:div.panel-body children]]))
