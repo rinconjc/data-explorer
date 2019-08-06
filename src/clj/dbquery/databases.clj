@@ -1,11 +1,12 @@
 (ns dbquery.databases
-  (:require [clojure.java.jdbc :refer :all]
+  (:require [clojure.data.csv :as csv]
+            [clojure.java.jdbc :refer :all]
             [clojure.string :as s]
             [clojure.tools.logging :as log]
-            [dbquery.utils :refer :all]
-            [clojure.data.csv :as csv])
+            [dbquery.utils :refer :all])
   (:import com.zaxxer.hikari.HikariDataSource
-           [java.sql ResultSet Timestamp Types]
+           java.lang.StringBuilder
+           [java.sql Connection PreparedStatement ResultSet Timestamp Types]
            [java.text DecimalFormat NumberFormat SimpleDateFormat]))
 
 (def ^:private result-extractors
@@ -96,7 +97,8 @@
              (.setMaxLifetime 300000))]
     (case  dbms
       "MS-SQL" (.setConnectionTestQuery ds "SELECT GETDATE()")
-      "Sybase" (.setConnectionTestQuery ds "SELECT GETDATE()")
+      "Sybase" (doto ds (.setConnectionTestQuery "SELECT GETDATE()")
+                     (.setConnectionInitSql (str "USE " (or (:schema params) (:user_name params)))))
       "ORACLE" (.setConnectionInitSql
                 ds (str "ALTER SESSION SET CURRENT_SCHEMA=" (or (:schema params) (:user_name params))))
       nil)
@@ -132,36 +134,73 @@
     (with-open [rs (.getTypeInfo meta)]
       (read-as-map rs {:fields ["TYPE_NAME", "DATA_TYPE"]}))))
 
+(defmulti fetch-db-output first)
+(defmethod fetch-db-output :default [_] nil)
+(defmethod fetch-db-output "ORACLE" [[_ ^Connection con]]
+  (try
+    (let [buffer (StringBuilder.)
+          stmt (doto (.prepareCall con "
+declare
+line varchar2(255);
+done number;
+buffer long;
+begin
+        loop
+                exit when length(buffer)+255>:maxbytes OR done=1;
+                dbms_output.get_line(line, done);
+                if line is not null then
+                        buffer:=buffer||line||chr(10);
+                end if;
+        end loop;
+:done:=done;
+:buffer:=buffer;
+end;
+")
+                 (.registerOutParameter 2 Types/INTEGER)
+                 (.registerOutParameter 3 Types/VARCHAR))]
+      (loop []
+        (doto stmt (.setInt 1 32000) (.executeUpdate))
+        (some->> (.getString stmt 3) (.append buffer))
+        (when-not (= 1 (.getInt stmt 2))
+          (recur)))
+      (str buffer))
+    (catch Exception e
+      (log/error e "failed retrieving db output"))))
+
 (defn execute
   "executes the given sql statement returning the resulting rows or the number
   of rows affected by the statement"
-  ([ds sql {:keys [rs-reader args id] :or {rs-reader read-rs} :as opts}]
-   (with-open [con (.getConnection (:datasource ds))]
+  ([{:keys [datasource dbms] :as ds} sql {:keys [rs-reader args id] :or {rs-reader read-rs} :as opts}]
+   (with-open [con (.getConnection datasource)]
      (let [sqlv (if (coll? sql) sql [sql])]
        (loop [sql (first sqlv)
               sqls (rest sqlv)]
-         (let [stmt (.prepareStatement con sql ResultSet/TYPE_SCROLL_INSENSITIVE
-                                       ResultSet/CONCUR_READ_ONLY)
+         (let [^PreparedStatement stmt (.prepareStatement con sql ResultSet/TYPE_SCROLL_INSENSITIVE
+                                                          ResultSet/CONCUR_READ_ONLY)
                _ (if (some? args) (reduce #(do (.setObject stmt %1 %2)
                                                (inc %1)) 1 args))
                _ (when id (swap! executing-queries assoc id stmt))
                has-rs (try
                         (.execute stmt)
+                        (catch Exception e
+                          (throw (ex-info (.getMessage e)
+                                          {:output (fetch-db-output [dbms con])} e)))
                         (finally
                           (when id (swap! executing-queries dissoc id))))]
            (if (empty? sqls)
              (if has-rs
-               (rs-reader (.getResultSet stmt) opts)
-               (.getUpdateCount stmt))
+               {:data (rs-reader (.getResultSet stmt) opts)}
+               {:rowsAffected (.getUpdateCount stmt)
+                :output (fetch-db-output [dbms con])})
              (recur (first sqls) (rest sqls))))))))
   ([ds sql] (execute ds sql {})))
 
 (defn cancel-query [query-id]
   (log/info "stmts:" @executing-queries)
-  (when-let [stmt (@executing-queries query-id)]
+  (when-let [stmt (.unwrap (@executing-queries query-id) java.sql.Statement)]
     (try
-      (log/info "cancelling stmt")
-      (.cancel stmt)
+      (log/infof "cancelling stmt %s" stmt)
+      (log/spyf :info "cancelled: %s" (.cancel stmt))
       (catch Exception e
         (log/error e "failed cancelling query " query-id)))))
 
