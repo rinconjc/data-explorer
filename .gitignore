@@ -22,3 +22,5 @@ resources/public/js/out/
 .*
 !.travis.yml
 /resources/public/css/main.min.css
+/resources/public/cljs-out
+/resources/public/js/lib
