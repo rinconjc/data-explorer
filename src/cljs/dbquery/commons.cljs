@@ -204,7 +204,8 @@
    [:i.fa.fa-spinner.fa-spin.fa-3x {:style {:margin-top "10%"}}]])
 
 (defn error-text [e]
-  (or (:response e) (get-in e [:parse-error :original-text])))
+  (println "error:" e)
+  (or (get-in e [:response :error]) (:response e) (get-in e [:parse-error :original-text])))
 
 (declare move-off)
 

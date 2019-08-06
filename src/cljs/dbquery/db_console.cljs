@@ -9,7 +9,7 @@
             [clojure.string :as str]))
 
 
-(def ^:const expansions {"sf" "select * from "
+(defonce expansions {"sf" "select * from "
                          "up" "update "
                          "de" "delete from "})
 
@@ -238,7 +238,8 @@
                            {:on-click #(dispatch [:stop-query (:id x)])}]]]
                         (:error x) [:span.red (:error x)]
                         (:update-count x) (str (:update-count x) " rows " (:time x) "s")
-                        :else (str (:time x) "s"))] (:sql x)])]]])
+                        :else (str (:time x) "s"))] (:sql x)
+                 (some->> (:output x) not-empty (vector :pre.inherit))])]]])
          (doall
           (for [rs-id @(subscribe [:resultset/ids id])
                 :while rs-id
