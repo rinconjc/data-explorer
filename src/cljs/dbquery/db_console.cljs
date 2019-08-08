@@ -10,8 +10,8 @@
 
 
 (defonce expansions {"sf" "select * from "
-                         "up" "update "
-                         "de" "delete from "})
+                     "up" "update "
+                     "de" "delete from "})
 
 (defn search-box [f]
   (r/create-class
@@ -131,7 +131,7 @@
         reset-fn #(do
                     (dispatch [:set-in-active-db :query nil])
                     (.setValue @cm ""))]
-
+    (println "panel for  " id)
     (fn[id]
       [:div.panel.panel-default.full-height {:style {:padding "0px" :margin "0px" :height "100%"}}
        [:div.panel-heading.compact
@@ -162,11 +162,11 @@
           [:span (:name @query)]]]]
        [:div.panel-body {:style {:padding "0px" :overflow "hidden" :height "calc(100% - 46px)"}}
         [code-mirror cm {:mode "text/x-sql" :profile "xml"
-                         :tabindex 2 :autofocus true :theme "zenburn"
+                         :tabindex 2 :theme "zenburn"
                          :extraKeys {:Ctrl-Enter exec-sql :Alt-S save-fn
                                      :Tab autocomplete}
                          :lineNumbers true}
-         (or (:sql @query) " ")]]])))
+         (or (:sql @query) "")]]])))
 
 (defn metadata-table [db-id {:keys [table] :as model}]
   (let [data (subscribe [:metadata db-id table])]
