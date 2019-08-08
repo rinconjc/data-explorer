@@ -86,6 +86,16 @@
         res (exec-query ds params)]
     {:body res}))
 
+(def download-jobs (atom {}))
+
+(defn create-download [req ds-id]
+  (let [id (rand-int 10000)]
+    (swap! download-jobs assoc id (future (handle-exec-query req ds-id)))
+    {:body {:download-id id}}))
+
+(defn handle-download [id]
+  )
+
 (defn handle-login [req]
   (let [{user-name :userName pass :password} (:body req)
         session (:session req)]
@@ -270,6 +280,7 @@
 
   (context "/ds/:ds-id" [ds-id]
            (POST "/exec-sql" req (handle-exec-sql req ds-id))
+           (POST "/download" req (create-download req ds-id))
            (POST "/cancel-sql/:id" [id] (fn[req]
                                           (cancel-query (query-id id ds-id req))
                                           {:status 201}))
