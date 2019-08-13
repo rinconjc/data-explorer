@@ -79,8 +79,8 @@
   (let [[driver jdbc-url]
         (case dbms
           "H2" ["org.h2.jdbcx.JdbcDataSource" (str "jdbc:h2:" url)]
-          "ORACLE" ["oracle.jdbc.OracleDriver" (str "jdbc:oracle:thin:@" url)]
-          "POSTGRES" ["org.postgresql.ds.PGSimpleDataSource" (str "jdbc:postgresql:" url)]
+          "ORACLE" ["oracle.jdbc.pool.OracleDataSource" (str "jdbc:oracle:thin:@" url)]
+          "POSTGRES" ["org.postgresql.Driver" (str "jdbc:postgresql:" url)]
           "MS-SQL" ["net.sourceforge.jtds.jdbcx.JtdsDataSource" (str "jdbc:jtds:sqlserver://" url)]
           "Sybase" ["net.sourceforge.jtds.jdbcx.JtdsDataSource" (str "jdbc:jtds:sybase://" url)]
           "MySQL" ["com.mysql.cj.jdbc.Driver" (str "jdbc:mysql://" url)]

@@ -79,7 +79,7 @@ body > div > div {
 
 .data-row > td > a {
   display:none;
-  padding:0px;
+  padding:0px !important;
 }
 
 .data-row > td:hover a {
@@ -92,16 +92,16 @@ body > div > div {
   -webkit-box-shadow: 0 5px 10px rgba(0,0,0,.2);
   border: 1px solid rgba(0,0,0,.2);
   box-shadow: 0 5px 10px rgba(0,0,0,.2);
-  z-index: 1060;
+  z-index: 990;
   /* background-color:#fff; */
   font-weight:normal;
 }
 
 .red {
-    color:#d44950;
+  color:#d44950;
 }
 a {
-    cursor:pointer;
+  cursor:pointer;
 }
 
 .form-signin .form-control {
@@ -119,4 +119,21 @@ a {
 .inherit{
   background-color: inherit;
   color: inherit;
+}
+
+.resizable {
+  overflow: hidden;
+  resize: both;
+  box-shadow: 0 0 30px black;
+}
+
+.draggable {
+  position:absolute;
+  z-index:999;
+}
+.draggable .handler {
+  cursor: pointer;
+}
+.dragging{
+  cursor:move;
 }

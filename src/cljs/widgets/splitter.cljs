@@ -23,8 +23,8 @@
                          (update-pos (- (.-bottom bounds) (.-top bounds))
                                      (- (.-clientY e) (.-top bounds)))
                          (update-pos (- (.-right bounds) (.-left bounds))
-                                     (- (.-clientX e) (.-left bounds)))))
-                     (.preventDefault e))]
+                                     (- (.-clientX e) (.-left bounds))))
+                       (.preventDefault e)))]
 
     (.addEventListener js/document "mouseup" #(reset! elem nil))
 
