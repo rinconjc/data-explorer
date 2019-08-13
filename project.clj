@@ -39,7 +39,8 @@
                  [com.zaxxer/HikariCP "2.7.2"]
                  [net.sourceforge.jtds/jtds "1.3.1"]
                  [com.mysql/connectorj "5.1.12"]
-                 [thi.ng/geom "1.0.0-RC3"]]
+                 [thi.ng/geom "1.0.0-RC3"]
+                 [binaryage/oops "0.7.0"]]
   :plugins [[lein-environ "1.0.1"]
             [lein-asset-minifier "0.2.7" :exclusions [org.clojure/clojure]]
             [lein-cljsasset "0.2.0"]]
@@ -59,7 +60,7 @@
             "fig:test"  ["run" "-m" "figwheel.main" "-co" "test.cljs.edn" "-m" dbquery.test-runner]}
 
   :profiles {:dev
-             {;; :repl-options {:init (start-server 3001)}
+             {:repl-options {:init (start-server 3001)}
               :dependencies [[com.bhauman/figwheel-main "0.2.0"]
                              [com.bhauman/rebel-readline-cljs "0.1.4"]]
 
