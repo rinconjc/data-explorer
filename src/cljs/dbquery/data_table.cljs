@@ -168,5 +168,6 @@
                    [:i.fa.fa-chevron-down]])]]]]]
        (when (:loading model)
          [c/progress-overlay])
-       [c/floating-panel {:title "Sample Chart" :style {:top 50}}
-        [dv/chart-of [] {}]]])))
+       ;; [c/floating-panel {:title "Sample Chart" :style {:top 50}}
+       ;;  [dv/chart-of [] {}]]
+       ])))

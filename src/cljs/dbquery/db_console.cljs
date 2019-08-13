@@ -13,31 +13,38 @@
 (defonce expansions {"sf" "select * from "
                      "up" "update "
                      "de" "delete from "})
-(defn code-editor [content config]
-  (let [binder (fn [editor content config]
-                 (when editor
-                   (when (and @content (not= @content (ocall editor "getValue")))
-                     (ocall editor "setValue" @content -1))
-                   (-> editor (oget "session") (ocall "setMode" (str "ace/mode/" (or (:mode config) "json"))))
-                   (ocall editor "on" "change" #(reset! content (ocall editor "getValue")))))]
+
+(defprotocol TextEditor
+  (text [this] [this value])
+  (selected-text [this]))
+
+(defn code-editor [editor-ref config]
+  (let [mk-editor (fn [editor]
+                    (reify TextEditor
+                      (text [this] (ocall editor "getValue"))
+                      (text [this value] (ocall editor "setValue" (or value "") -1))
+                      (selected-text [this] (ocall editor "getSelectedText"))))]
     (r/create-class
-     {:render
-      (fn[c]
-        (some? @content)
-        [:div.editor.col.s12 ""])
-      :component-will-update
-      (fn[c [_ content config]]
-        (try
-          (binder (oget c "?editor") content config)
-          (catch js/Error e
-            (js/console.error e))))
+     {:reagent-render
+      (fn[editor config]
+        (some-> @editor-ref (text (:value config)))
+        [:div.editor.col.s12])
       :component-did-mount
       (fn[c]
         (try
-          (let [editor (js/ace.edit (r/dom-node c) (-> config (dissoc :theme) (clj->js config)))]
-            (-> editor (ocall "setTheme" (str "ace/theme/" (or (:theme config) "idle_fingers"))))
-            (binder editor content config)
-            (oset! c "!editor" editor))
+          (println "editor config...")
+          (let [editor (js/ace.edit (r/dom-node c)
+                                    (-> config (dissoc :theme :value :commands) (clj->js config)))]
+            (ocall editor "setTheme" (str "ace/theme/" (or (:theme config) "idle_fingers")))
+            (-> editor (oget "session") (ocall "setMode" (str "ace/mode/" (:mode config "sql"))))
+            (doseq [[cmd [key f]] (:commands config)]
+              (-> editor (oget "commands")
+                  (ocall "addCommand" #js{:name cmd :bindKey #js{:win key :mac key}
+                                          :exec (fn[_] (f))})))
+            ;; (-> editor (ocall "setOptions" #js{:enableBasicAutocompletion true
+            ;;                                  :enableSnippets true :enableLiveAutocompletion false}))
+            (oset! c "!editor" editor)
+            (reset! editor-ref (mk-editor editor)))
           (catch js/Error e
             (js/console.error e))))})))
 
@@ -141,24 +148,24 @@
       (.-Pass js/CodeMirror))))
 
 (defn sql-panel [id]
-  (let [cm (atom nil)
+  (let [editor (atom nil)
         query (subscribe [:query id])
         suggestions (subscribe [:db-queries id])
         query-assocs (subscribe [:state :query-assocs])
         model (atom {})
         save-fn #(if (nil? @query)
-                   (dispatch [:change :modal [query-form id {:sql (.getValue @cm)}]])
-                   (dispatch [:save-query (assoc @query :sql (.getValue @cm))]))
+                   (dispatch [:change :modal [query-form id {:sql (.getValue @editor)}]])
+                   (dispatch [:save-query (assoc @query :sql (.getValue @editor))]))
         query-filter (fn[text]
                        (let [re (re-pattern text)]
                          (filter #(re-find re (or (:name %) "")) @suggestions)))
         sql-query (fn []
-                    (if (empty? (.getSelection @cm))
-                      (.getValue @cm) (.getSelection @cm)))
+                    (if (empty? (selected-text @editor))
+                      (text @editor) (selected-text @editor)))
         exec-sql #(dispatch [:submit-sql id (sql-query)])
         reset-fn #(do
                     (dispatch [:set-in-active-db :query nil])
-                    (.setValue @cm ""))]
+                    (text @editor ""))]
     (fn[id]
       [:div.panel.panel-default.full-height {:style {:padding "0px" :margin "0px" :height "100%"}}
        [:div.panel-heading.compact
@@ -188,8 +195,10 @@
          [c/button-group
           [:span (:name @query)]]]]
        [:div.panel-body {:style {:padding "0px" :overflow "hidden" :height "calc(100% - 46px)"}}
-        [code-editor (atom (:sql @query))  {:mode "sql"}]
-        ;; [code-mirror cm {:mode "text/x-sql" :profile "xml"
+        [code-editor editor {:mode "sql" :value (:sql @query "")
+                             :commands {"execQuery" ["Ctrl-Enter" exec-sql]
+                                        "saveQuery" ["Alt-S" save-fn]}}]
+        ;; [code-mirror editor {:mode "text/x-sql" :profile "xml"
         ;;                  :tabindex 2 :theme "zenburn"
         ;;                  :extraKeys {:Ctrl-Enter exec-sql :Alt-S save-fn
         ;;                              :Tab autocomplete}
