@@ -60,6 +60,16 @@ body > div > div {
 .small-tabs ul li a {
   padding:4px !important;
 }
+.editor {
+  height: 100%;
+  /* background-color: inherit; */
+  /* margin-top: 10px; */
+  padding-bottom:10px;
+  font-size: 1.3em;
+  resize: vertical;
+  overflow-y: auto;
+}
+
 .CodeMirror {
   height:100% !important;
 }

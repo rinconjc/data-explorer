@@ -6,12 +6,40 @@
             [reagent.core :as r :refer [atom]]
             [widgets.splitter :as st]
             [cljsjs.codemirror]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [oops.core :refer [oset! oget ocall]]))
 
 
 (defonce expansions {"sf" "select * from "
                      "up" "update "
                      "de" "delete from "})
+(defn code-editor [content config]
+  (let [binder (fn [editor content config]
+                 (when editor
+                   (when (and @content (not= @content (ocall editor "getValue")))
+                     (ocall editor "setValue" @content -1))
+                   (-> editor (oget "session") (ocall "setMode" (str "ace/mode/" (or (:mode config) "json"))))
+                   (ocall editor "on" "change" #(reset! content (ocall editor "getValue")))))]
+    (r/create-class
+     {:render
+      (fn[c]
+        (some? @content)
+        [:div.editor.col.s12 ""])
+      :component-will-update
+      (fn[c [_ content config]]
+        (try
+          (binder (oget c "?editor") content config)
+          (catch js/Error e
+            (js/console.error e))))
+      :component-did-mount
+      (fn[c]
+        (try
+          (let [editor (js/ace.edit (r/dom-node c) (-> config (dissoc :theme) (clj->js config)))]
+            (-> editor (ocall "setTheme" (str "ace/theme/" (or (:theme config) "idle_fingers"))))
+            (binder editor content config)
+            (oset! c "!editor" editor))
+          (catch js/Error e
+            (js/console.error e))))})))
 
 (defn search-box [f]
   (r/create-class
@@ -131,7 +159,6 @@
         reset-fn #(do
                     (dispatch [:set-in-active-db :query nil])
                     (.setValue @cm ""))]
-    (println "panel for  " id)
     (fn[id]
       [:div.panel.panel-default.full-height {:style {:padding "0px" :margin "0px" :height "100%"}}
        [:div.panel-heading.compact
@@ -161,12 +188,14 @@
          [c/button-group
           [:span (:name @query)]]]]
        [:div.panel-body {:style {:padding "0px" :overflow "hidden" :height "calc(100% - 46px)"}}
-        [code-mirror cm {:mode "text/x-sql" :profile "xml"
-                         :tabindex 2 :theme "zenburn"
-                         :extraKeys {:Ctrl-Enter exec-sql :Alt-S save-fn
-                                     :Tab autocomplete}
-                         :lineNumbers true}
-         (or (:sql @query) "")]]])))
+        [code-editor (atom (:sql @query))  {:mode "sql"}]
+        ;; [code-mirror cm {:mode "text/x-sql" :profile "xml"
+        ;;                  :tabindex 2 :theme "zenburn"
+        ;;                  :extraKeys {:Ctrl-Enter exec-sql :Alt-S save-fn
+        ;;                              :Tab autocomplete}
+        ;;                  :lineNumbers true}
+        ;;  (or (:sql @query) "")]
+        ]])))
 
 (defn metadata-table [db-id {:keys [table] :as model}]
   (let [data (subscribe [:metadata db-id table])]
