@@ -3,7 +3,9 @@
             [goog.dom :as gdom]
             [cljsjs.react-bootstrap]
             [re-frame.core :refer [dispatch]]
-            [reagent.core :as r :refer [atom]]))
+            [reagent.core :as r :refer [atom]]
+            [cljs.core.async :refer [>! chan offer! sliding-buffer timeout]])
+  (:require-macros [cljs.core.async.macros :refer [go]]))
 
 (def navbar (r/adapt-react-class js/ReactBootstrap.Navbar))
 (def nav-brand (r/adapt-react-class js/ReactBootstrap.Navbar.Brand))
@@ -233,3 +235,17 @@
       (:title props)
       [:button.close {:type "button"} [:i.fa.fa-times]]]
      [:div.panel-body children]]))
+
+(defn throtled
+  "returns a wrapper function that invokes the function f at least msecs apart!"
+  [f msecs]
+  (let [c (chan (sliding-buffer 1))
+        wait (atom false)]
+    ; apply f to the latest args
+    (fn [& args]
+      (go (>! c (or args []))
+          (when-not @wait
+            (reset! wait (go (<! (timeout msecs))
+                             (apply f (<! c))
+                             (reset! wait false)
+                             true)))))))
