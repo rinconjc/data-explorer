@@ -40,7 +40,8 @@
                  [net.sourceforge.jtds/jtds "1.3.1"]
                  [com.mysql/connectorj "5.1.12"]
                  [thi.ng/geom "1.0.0-RC3"]
-                 [binaryage/oops "0.7.0"]]
+                 [binaryage/oops "0.7.0"]
+                 [org.clojure/core.async "0.4.500"]]
   :plugins [[lein-environ "1.0.1"]
             [lein-asset-minifier "0.2.7" :exclusions [org.clojure/clojure]]
             [lein-cljsasset "0.2.0"]]
@@ -53,6 +54,8 @@
               :js  ["cljsjs/codemirror/common/mode/sql.inc.js"]}
 
   :main dbquery.core
+
+  :jvm-opts ["-Dconf=conf.edn"]
 
   :aliases {"fig"       ["trampoline" "run" "-m" "figwheel.main"]
             "fig:build" ["trampoline" "run" "-m" "figwheel.main" "-b" "dev" "-r"]

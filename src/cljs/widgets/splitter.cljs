@@ -1,5 +1,6 @@
 (ns widgets.splitter
-  (:require [reagent.core :as r :refer [atom]]))
+  (:require [reagent.core :as r :refer [atom]]
+            [dbquery.commons :as c]))
 ;; [splitter :vertical panes]
 ;;
 
@@ -9,11 +10,15 @@
       {:height css-pos}
       {:width css-pos})))
 
+(defn trigger-window-resize []
+  (println "resize window...")
+  (js/window.dispatchEvent (js/Event. "resize")))
 
 (defn splitter [{:keys [orientation min-size split-at] :or {split-at "50%" min-size [0 0]}} pane1 pane2]
   (let [elem (atom nil)
         collapsed (atom false)
         styles (atom (pane1-style orientation split-at))
+        window-resize (c/throtled trigger-window-resize 500);
         update-pos (fn [full-size pos]
                      (when-not (or (< pos (min-size 0)) (< (- full-size pos) (min-size 1)))
                        (reset! styles (pane1-style orientation pos))))
@@ -24,6 +29,7 @@
                                      (- (.-clientY e) (.-top bounds)))
                          (update-pos (- (.-right bounds) (.-left bounds))
                                      (- (.-clientX e) (.-left bounds))))
+                       (window-resize)
                        (.preventDefault e)))]
 
     (.addEventListener js/document "mouseup" #(reset! elem nil))

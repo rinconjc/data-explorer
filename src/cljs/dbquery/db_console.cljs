@@ -5,7 +5,6 @@
             [re-frame.core :refer [dispatch subscribe]]
             [reagent.core :as r :refer [atom]]
             [widgets.splitter :as st]
-            [cljsjs.codemirror]
             [clojure.string :as str]
             [oops.core :refer [oset! oget ocall]]))
 
@@ -17,6 +16,15 @@
 (defprotocol TextEditor
   (text [this] [this value])
   (selected-text [this]))
+
+(defn editor-expand [editor]
+  (let [cursor (-> editor (ocall "getCursorPosition"))
+        line (-> editor (oget "session") (ocall "getLine" (oget cursor "row")))
+        prefix (subs line 0 (oget cursor "column"))
+        [abbr expansion] (some #(when (str/ends-with? prefix (first %)) %) expansions)]
+    (when expansion
+      (let [range (js/ace.Range. (oget cursor "row") (- (oget cursor "column") (count abbr)) (oget cursor "row") (oget cursor "column"))]
+        (-> editor (oget "session") (ocall "replace" range expansion))))))
 
 (defn code-editor [editor-ref config]
   (let [mk-editor (fn [editor]
@@ -37,10 +45,10 @@
                                     (-> config (dissoc :theme :value :commands) (clj->js config)))]
             (ocall editor "setTheme" (str "ace/theme/" (or (:theme config) "idle_fingers")))
             (-> editor (oget "session") (ocall "setMode" (str "ace/mode/" (:mode config "sql"))))
-            (doseq [[cmd [key f]] (:commands config)]
+            (doseq [[cmd [key f]] (assoc (:commands config) "ExpandAbbr" ["Ctrl-Space" editor-expand])]
               (-> editor (oget "commands")
                   (ocall "addCommand" #js{:name cmd :bindKey #js{:win key :mac key}
-                                          :exec (fn[_] (f))})))
+                                          :exec f})))
             ;; (-> editor (ocall "setOptions" #js{:enableBasicAutocompletion true
             ;;                                  :enableSnippets true :enableLiveAutocompletion false}))
             (oset! c "!editor" editor)
@@ -92,18 +100,6 @@
                    :on-double-click #(dispatch [:preview-table name])}
               [:i.fa {:class (icons type)}] name]) (:items @model)))]]])))
 
-(defn code-mirror [instance config value]
-  (r/create-class
-   {:reagent-render
-    (fn[instance config value]
-      (if @instance
-        (.setValue @instance value))
-      [:textarea.mousetrap {:rows 10 :style {:width "100%" :height "100%"} :default-value ""}])
-    :component-did-mount
-    (fn[c]
-      (let [cm (.fromTextArea js/CodeMirror (r/dom-node c) (clj->js config))]
-        (.setTimeout js/window #(.focus cm) 1000)
-        (reset! instance cm)))}))
 
 (defn query-form [tab-id initial-query]
   (let [query (atom initial-query)]
@@ -137,15 +133,6 @@
               (:name db)]]) db-list))
         [c/button {:bsStyle "primary"
                    :on-click #(dispatch [:assign-query q-id @ids])} "Save"]]])))
-
-(defn- autocomplete [cm]
-  (let [cur (.getCursor cm)
-        text (-> cm (.getRange #js{:line (.-line cur) :ch 0} cur)
-                 (str/split #"\s+") reverse first)
-        repl (some-> text expansions)]
-    (if repl
-      (.replaceRange cm repl #js{:line (.-line cur) :ch (- (.-ch cur) (.-length text))} cur)
-      (.-Pass js/CodeMirror))))
 
 (defn sql-panel [id]
   (let [editor (atom nil)
@@ -197,14 +184,7 @@
        [:div.panel-body {:style {:padding "0px" :overflow "hidden" :height "calc(100% - 46px)"}}
         [code-editor editor {:mode "sql" :value (:sql @query "")
                              :commands {"execQuery" ["Ctrl-Enter" exec-sql]
-                                        "saveQuery" ["Alt-S" save-fn]}}]
-        ;; [code-mirror editor {:mode "text/x-sql" :profile "xml"
-        ;;                  :tabindex 2 :theme "zenburn"
-        ;;                  :extraKeys {:Ctrl-Enter exec-sql :Alt-S save-fn
-        ;;                              :Tab autocomplete}
-        ;;                  :lineNumbers true}
-        ;;  (or (:sql @query) "")]
-        ]])))
+                                        "saveQuery" ["Alt-S" save-fn]}}]]])))
 
 (defn metadata-table [db-id {:keys [table] :as model}]
   (let [data (subscribe [:metadata db-id table])]
