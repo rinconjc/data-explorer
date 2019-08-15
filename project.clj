@@ -35,7 +35,6 @@
                  [org.jasypt/jasypt "1.9.2"]
                  [cljsjs/react-bootstrap "0.32.4-0" :exclusions [[org.webjars.bower/jquery] [cljsjs/react]]]
                  [cljsjs/mousetrap "1.6.2-0"]
-                 [cljsjs/codemirror "5.44.0-1"]
                  [com.zaxxer/HikariCP "2.7.2"]
                  [net.sourceforge.jtds/jtds "1.3.1"]
                  [com.mysql/connectorj "5.1.12"]
@@ -47,11 +46,6 @@
             [lein-cljsasset "0.2.0"]]
   :resource-paths ["lib/ojdbc6.jar" "resources"]
   :source-paths ["src/clj" "src/cljc" "src/cljs"]
-  :minify-assets
-  {:assets
-   {"resources/public/css/main.min.css" "resources/public/css/main.css"}}
-  :cljsasset {:css ["cljsjs/codemirror/production/codemirror.min.css"]
-              :js  ["cljsjs/codemirror/common/mode/sql.inc.js"]}
 
   :main dbquery.core
 
