@@ -340,4 +340,5 @@ end;
                                      (fn [e] (log/warn e "failed mapping row " row)
                                        [row e]))))
             rows-inserted (.executeBatch ps)]
-        {:importCount (reduce + rows-inserted) :invalidCount (count (filter some? errors))}))))
+        {:importCount (reduce + rows-inserted)
+         :invalidCount (count (filter some? errors))}))))
