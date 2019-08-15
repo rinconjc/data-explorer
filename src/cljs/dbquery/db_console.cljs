@@ -11,6 +11,11 @@
 
 (defonce expansions {"sf" "select * from "
                      "up" "update "
+                     "lj" "left join "
+                     "rj" "right join "
+                     "j" "join "
+                     "sc" "select count(*) from "
+                     "bd" "BEGIN\n\nDECLARE\n\nEND;\n/"
                      "de" "delete from "})
 
 (defprotocol TextEditor
@@ -40,9 +45,8 @@
       :component-did-mount
       (fn[c]
         (try
-          (println "editor config...")
-          (let [editor (js/ace.edit (r/dom-node c)
-                                    (-> config (dissoc :theme :value :commands) (clj->js config)))]
+          (let [editor (ocall js/ace "edit" (r/dom-node c)
+                              (-> config (dissoc :theme :value :commands) (clj->js config)))]
             (ocall editor "setTheme" (str "ace/theme/" (or (:theme config) "idle_fingers")))
             (-> editor (oget "session") (ocall "setMode" (str "ace/mode/" (:mode config "sql"))))
             (doseq [[cmd [key f]] (assoc (:commands config) "ExpandAbbr" ["Ctrl-Space" editor-expand])]
