@@ -44,7 +44,7 @@
       (is (some #(and (= "AID" (% :name)) (= "TABLEA" (:fk_table %))) cols))))
 
   (testing "exec raw sql - query"
-    (is (vector? (:rows (execute (dummy-ds) "SELECT 1 FROM DUAL")))))
+    (is (map? (execute (dummy-ds) "SELECT 1 FROM DUAL"))))
 
   (testing "accessing clob data"
     (let [ds (dummy-ds)
@@ -59,11 +59,12 @@
   (testing "data load"
     (let [ds (dummy-ds)
           _ (execute ds "create table loadtable(id int, name varchar(30))")]
-      (is (= {:importCount 2 :invalidCount 1} (load-data ds "loadtable" {:header ["id" "name"] :rows [["1" "first"] ["" "second"] ["aa" "third"]]}
-                                                         {:id {:source "id" :type Types/INTEGER}
-                                                          :name {:source "name" :type Types/VARCHAR}})))
-      (def rows (:rows  (execute ds "select * from loadtable")))
-      (is (= 2 (count rows)))))
+      (is (= {:importCount 2 :invalidCount 1}
+             (load-data ds "loadtable" {:header ["id" "name"]
+                                        :rows [["1" "first"] ["" "second"] ["aa" "third"]]}
+                        {:id {:source "id" :type Types/INTEGER}
+                         :name {:source "name" :type Types/VARCHAR}})))
+      (is (= 2 (count (-> (execute ds "select * from loadtable") :data :rows))))))
 
   (testing "db metadata retrieve"
     (let [m (db-meta (dummy-ds))]

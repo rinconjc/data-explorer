@@ -12,9 +12,11 @@
   @ds-ref)
 
 (defn fixture [f]
-  (let [db (safe-mk-ds {:dbms "H2" :url  "mem:test2;DB_CLOSE_DELAY=-1" :user_name  "sa" :password "sa"})]
+  (let [db (safe-mk-ds {:dbms "H2"
+                        :url  (format "mem:test%s;DB_CLOSE_DELAY=120" (System/currentTimeMillis))
+                        :user_name  "sa" :password "sa"})]
     (reset! ds-ref db)
-    (println "dummy ds connection active")
+    (println "dummy ds connection active:" db)
     (try
       (f)
       (finally
