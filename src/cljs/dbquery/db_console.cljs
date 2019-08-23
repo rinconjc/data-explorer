@@ -145,8 +145,8 @@
         query-assocs (subscribe [:state :query-assocs])
         model (atom {})
         save-fn #(if (nil? @query)
-                   (dispatch [:change :modal [query-form id {:sql (.getValue @editor)}]])
-                   (dispatch [:save-query (assoc @query :sql (.getValue @editor))]))
+                   (dispatch [:change :modal [query-form id {:sql (text @editor)}]])
+                   (dispatch [:save-query (assoc @query :sql (text @editor))]))
         query-filter (fn[text]
                        (let [re (re-pattern text)]
                          (filter #(re-find re (or (:name %) "")) @suggestions)))
