@@ -21,7 +21,8 @@
 (def ^:private executing-queries (atom {}))
 
 (defn- col-reader [sql-type]
-  (get result-extractors sql-type (fn [rs i] (.getObject rs i))))
+  (get result-extractors sql-type
+       (fn [^ResultSet rs ^Integer i] (.getObject rs i))))
 
 (defn ^:private rs-rows [rs row-reader offset limit]
   (if (and (> offset 0) (= ResultSet/TYPE_SCROLL_INSENSITIVE (.getType rs)))
@@ -51,8 +52,8 @@
   ([rs {:keys [offset limit fields] :or {offset 0 limit 100}}]
    (let [fields-map (key-map fields)
          meta (.getMetaData rs)
-         col-count (inc (.getColumnCount meta))
-         col-and-readers (doall (for [i (range 1 col-count)
+         col-count (-> (.getColumnCount meta) inc int)
+         col-and-readers (doall (for [i (range (int 1) col-count)
                                       :let [col-name (.getColumnLabel meta i)
                                             key (or (and (nil? fields) (keyword (s/lower-case col-name)))
                                                     (fields-map col-name))]
