@@ -98,8 +98,9 @@
              (.setMaxLifetime 300000))]
     (case  dbms
       "MS-SQL" (.setConnectionTestQuery ds "SELECT GETDATE()")
-      "Sybase" (doto ds (.setConnectionTestQuery "SELECT GETDATE()")
-                     (.setConnectionInitSql (str "USE " (or (:schema params) (:user_name params)))))
+      "Sybase" (do (.setConnectionTestQuery ds "SELECT GETDATE()")
+                   (when (not-empty (:schema params))
+                     (.setConnectionInitSql ds (str "USE " (:schema params)))))
       "ORACLE" (.setConnectionInitSql
                 ds (str "ALTER SESSION SET CURRENT_SCHEMA=" (or (:schema params) (:user_name params))))
       nil)
@@ -118,7 +119,7 @@
   ([ds table] (table-data ds table 100)))
 
 (defn- get-db-tables [meta schema]
-  (with-open [rs (.getTables meta nil schema "%"
+  (with-open [rs (.getTables meta nil (not-empty schema) "%"
                              (into-array ["TABLE" "VIEW"]))]
     (read-as-map rs {:fields [["TABLE_NAME" :name] ["TABLE_TYPE" :type]] :limit 1000})))
 
