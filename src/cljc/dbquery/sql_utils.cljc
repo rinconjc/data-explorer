@@ -2,8 +2,8 @@
   (:require [clojure.string :as s]
             [clojure.string :as str]))
 
-(def ^:const sort-icons {:up "fa-sort-up" :down "fa-sort-down" nil "fa-sort"})
-(def ^:const next-order {nil :up :up :down :down nil})
+(def sort-icons {:up "fa-sort-up" :down "fa-sort-down" nil "fa-sort"})
+(def next-order {nil :up :up :down :down nil})
 
 (def ^:private blanks #{\newline \return \space \tab \formfeed})
 
@@ -43,7 +43,7 @@
 
 (defn query-from-sql [raw-sql]
   ;; (SqlQuery. (atom ["*"]) (atom [(str "(" raw-sql ")")]) (atom {}) (atom []) (atom []))
-  {:cols ["*"] :tables [(str "(" raw-sql ")")] :conditions {} :order [] :group []})
+  {:cols ["*"] :tables [(str "(" raw-sql ") t")] :conditions {} :order [] :group []})
 
 (defn query-from-table [table]
   ;; (SqlQuery. (atom ["*"]) (atom [table]) (atom {}) (atom []) (atom []))
