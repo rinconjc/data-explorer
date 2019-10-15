@@ -27,7 +27,7 @@
                  [com.github.rinconjc/db-upgrader "1.0-beta15"]
                  [com.h2database/h2 "1.4.187"]
                  [org.postgresql/postgresql "42.2.6"]
-                 [org.clojure/java.jdbc "0.3.6"]
+                 [org.clojure/java.jdbc "0.7.10"]
                  [crypto-password "0.1.3"]
                  [org.clojure/core.cache "0.6.4"]
                  [liberator "0.15.2"]
