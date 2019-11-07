@@ -23,7 +23,7 @@
                  [org.clojure/clojure "1.10.0"]
                  [org.clojure/tools.logging "0.4.1"]
                  [org.slf4j/slf4j-jdk14 "1.7.13"]
-                 [korma "0.4.1"]
+                 [korma "0.4.3"]
                  [com.github.rinconjc/db-upgrader "1.0-beta15"]
                  [com.h2database/h2 "1.4.187"]
                  [org.postgresql/postgresql "42.2.6"]
@@ -49,7 +49,7 @@
 
   :main dbquery.core
 
-  :jvm-opts ["-Dconf=conf.edn"]
+  ;; :jvm-opts ["-Dconf=conf.edn"]
 
   :aliases {"fig"       ["trampoline" "run" "-m" "figwheel.main"]
             "fig:build" ["trampoline" "run" "-m" "figwheel.main" "-b" "dev" "-r"]
