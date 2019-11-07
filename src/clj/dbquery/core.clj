@@ -97,15 +97,19 @@
   )
 
 (defn handle-login [req]
+  (log/info "handling login...")
   (let [{user-name :userName pass :password} (:body req)
         session (:session req)]
-    (try-let [user (login user-name pass)]
-             (if (some? user)
-               {:body user
-                :session (assoc session
-                                :user (assoc user :session-id (swap! session-count inc)))}
-               {:status 401 :body "invalid user or password"})
-             (fn [e] {:status 500 :body (.getMessage e)}))))
+    (try-let
+     [user (login user-name pass)]
+     (if (some? user)
+       {:body user
+        :session (assoc session
+                        :user (assoc user :session-id (swap! session-count inc)))}
+       {:status 401 :body "invalid user or password"})
+     (fn [e]
+       (log/error e "failed login")
+       {:status 500 :body (.getMessage e)}))))
 
 (defn read-csv [file separator has-header]
   (let [csv (csv/read-csv (FileReader. file) :separator separator)
