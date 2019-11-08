@@ -125,7 +125,7 @@
 (defn share-query [db-list q-id]
   (let [ids (atom (into #{} (for [db db-list :when (:query_id db)] (:id db))))]
     (fn [db-list q-id]
-      [:div.my-popover.panel {:style {:margin-top "37px" :padding "5px"}}
+      [:div.my-popover.panel {:style {:margin-top "37px" :padding "5px" :max-height "300px" :overflow-y "scroll"}}
        [:form
         (doall
          (map-indexed
