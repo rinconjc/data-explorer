@@ -25,7 +25,7 @@
                  [org.slf4j/slf4j-jdk14 "1.7.13"]
                  [korma "0.4.3"]
                  [com.github.rinconjc/db-upgrader "1.0-beta15"]
-                 [com.h2database/h2 "1.4.187"]
+                 [com.h2database/h2 "1.4.200"]
                  [org.postgresql/postgresql "42.2.6"]
                  [org.clojure/java.jdbc "0.7.10"]
                  [crypto-password "0.1.3"]
