@@ -169,6 +169,15 @@ end;
     (catch Exception e
       (log/error e "failed retrieving db output"))))
 
+(defn find-last-result [stmt reader opts]
+  (loop []
+    (let [rs (or (some-> (.getResultSet stmt)
+                      (reader opts)
+                      (doall)
+                      (#(hash-map :data %)))
+                 {:rowsAffected (.getUpdateCount stmt)} )]
+      (if (or (.getMoreResults stmt) (not (neg? (.getUpdateCount stmt)))) (recur) rs))))
+
 (defn execute
   "executes the given sql statement returning the resulting rows or the number
   of rows affected by the statement"
@@ -182,7 +191,7 @@ end;
                _ (if (some? args) (reduce #(do (.setObject stmt %1 %2)
                                                (inc %1)) 1 args))
                _ (when id (swap! executing-queries assoc id stmt))
-               has-rs (try
+               _ (try
                         (.execute stmt)
                         (catch Exception e
                           (throw (ex-info (.getMessage e)
@@ -190,10 +199,8 @@ end;
                         (finally
                           (when id (swap! executing-queries dissoc id))))]
            (if (empty? sqls)
-             (if has-rs
-               {:data (rs-reader (.getResultSet stmt) opts)}
-               {:rowsAffected (.getUpdateCount stmt)
-                :output (fetch-db-output [dbms con])})
+             (assoc (find-last-result stmt rs-reader opts)
+                    :output (fetch-db-output [dbms con]))
              (recur (first sqls) (rest sqls))))))))
   ([ds sql] (execute ds sql {})))
 
