@@ -219,12 +219,12 @@ end;
                               "DATA_TYPE" "TYPE_NAME"
                               ["COLUMN_SIZE" :size] "NULLABLE"] :limit Integer/MAX_VALUE})))
 
-(defn- table-pks [meta table]
-  (with-open [rs (.getPrimaryKeys meta nil nil table)]
+(defn- table-pks [meta schema table]
+  (with-open [rs (.getPrimaryKeys meta nil schema table)]
     (read-as-map rs {:fields [["COLUMN_NAME" :name] "KEY_SEQ"]})))
 
-(defn- table-fks [meta table]
-  (with-open [rs (.getImportedKeys meta nil nil table)]
+(defn- table-fks [meta schema table]
+  (with-open [rs (.getImportedKeys meta nil schema table)]
     (read-as-map rs {:fields ["PKTABLE_NAME" "PKCOLUMN_NAME"
                               "FKCOLUMN_NAME" "KEY_SEQ"
                               "FK_NAME" "PK_NAME"]})))
@@ -241,9 +241,9 @@ end;
 (defn table-cols [ds name]
   "retrieves the columns of the given table"
   (with-db-metadata [meta ds]
-    (let [cols  (future (table-columns meta nil name))
-          pks (future (table-pks meta name))
-          fks (future (table-fks meta name))]
+    (let [cols  (future (table-columns meta (:schema ds) name))
+          pks (future (table-pks meta (:schema ds) name))
+          fks (future (table-fks meta (:schema ds) name))]
       (merge-col-keys @cols @pks @fks))))
 
 (defn db-meta [ds]
