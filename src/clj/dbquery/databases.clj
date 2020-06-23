@@ -172,9 +172,9 @@ end;
 (defn find-last-result [stmt reader opts]
   (loop []
     (let [rs (or (some-> (.getResultSet stmt)
-                      (reader opts)
-                      (doall)
-                      (#(hash-map :data %)))
+                         (reader opts)
+                         (doall)
+                         (#(hash-map :data %)))
                  {:rowsAffected (.getUpdateCount stmt)} )]
       (if (or (.getMoreResults stmt) (not (neg? (.getUpdateCount stmt)))) (recur) rs))))
 
@@ -192,12 +192,12 @@ end;
                                                (inc %1)) 1 args))
                _ (when id (swap! executing-queries assoc id stmt))
                _ (try
-                        (.execute stmt)
-                        (catch Exception e
-                          (throw (ex-info (.getMessage e)
-                                          {:output (fetch-db-output [dbms con])} e)))
-                        (finally
-                          (when id (swap! executing-queries dissoc id))))]
+                   (.execute stmt)
+                   (catch Exception e
+                     (throw (ex-info (.getMessage e)
+                                     {:output (fetch-db-output [dbms con])} e)))
+                   (finally
+                     (when id (swap! executing-queries dissoc id))))]
            (if (empty? sqls)
              (assoc (find-last-result stmt rs-reader opts)
                     :output (fetch-db-output [dbms con]))
@@ -240,11 +240,13 @@ end;
 
 (defn table-cols [ds name]
   "retrieves the columns of the given table"
-  (with-db-metadata [meta ds]
-    (let [cols  (future (table-columns meta (:schema ds) name))
-          pks (future (table-pks meta (:schema ds) name))
-          fks (future (table-fks meta (:schema ds) name))]
-      (merge-col-keys @cols @pks @fks))))
+  (log/info "table-cols for dbms" (:dbms ds))
+  (let [schema (when-not (= "Sybase" (:dbms ds)))]
+    (with-db-metadata [meta ds]
+      (let [cols  (future (table-columns meta schema name))
+            pks (future (table-pks meta schema name))
+            fks (future (table-fks meta schema name))]
+        (merge-col-keys @cols @pks @fks)))))
 
 (defn db-meta [ds]
   "retrieves all the tables and columns in the current schema"
@@ -299,7 +301,7 @@ end;
 (defn create-table [ds name cols pk]
   (let [col-defs (for [{:keys [column_name type_name size]} cols
                        :let [typedef (if (some? size) (str type_name "(" size ")") type_name)]]
-                   (str column_name " " typedef))
+                   (str column_name " " typedef " null"))
         pk-def (if (some? pk) (str ", PRIMARY KEY(" pk ")") "")]
     (execute ds (str "CREATE TABLE " name "(" (s/join "," col-defs) pk-def ")"))
     name))
