@@ -68,12 +68,17 @@
   (let [meta (.getMetaData rs)
         col-indexes (range 1 (inc (.getColumnCount meta)))
         headers (for [i col-indexes] (.getColumnLabel meta i))
-        readers (into {} (for [i col-indexes] [i (col-reader (.getColumnType meta i))]))
-        rows (->> (repeatedly #(if (.next rs)
-                                 (for [i col-indexes] (apply (readers i) [rs i]))))
-                  (take-while some?) (take limit))]
+        readers (into {} (for [i col-indexes] [i (col-reader (.getColumnType meta i))]))]
     (csv/write-csv writer [headers])
-    (csv/write-csv writer rows)))
+    (loop [has-next (.next rs)
+           count 1]
+      (when has-next
+        (->> (for [i col-indexes] (apply (readers i) [rs i]))
+             (vector)
+             (csv/write-csv writer))
+        (when (= 0 (mod count 100 ))
+          (.flush writer))
+        (recur (.next rs) (inc count))))))
 
 (defn mk-ds [{:keys [dbms url user_name password] :as params}]
   "Creates a datasource"

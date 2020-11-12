@@ -93,9 +93,6 @@
     (swap! download-jobs assoc id (future (handle-exec-query req ds-id)))
     {:body {:download-id id}}))
 
-(defn handle-download [id]
-  )
-
 (defn handle-login [req]
   (log/info "handling login...")
   (let [{user-name :userName pass :password} (:body req)
@@ -169,6 +166,7 @@
     {:body result}))
 
 (defn handle-download [ds-id query]
+  (log/info "downloading query output" query)
   (let [ds (get-ds ds-id)
         os (java.io.PipedOutputStream.)
         is (java.io.PipedInputStream. os)
@@ -179,7 +177,8 @@
         (catch Exception e (log/error "failed exporting to CSV" e)))
       (.close writer))
     {:body is
-     :headers {"Content-Disposition" "attachment; filename=data.csv"} }))
+     :headers { ;;"Transfer-Encoding" "chunked"
+               "Content-Disposition" "attachment; filename=data.csv"} }))
 
 (defn with-body [b]
   (cond
