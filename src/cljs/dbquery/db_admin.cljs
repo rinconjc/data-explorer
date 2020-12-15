@@ -4,6 +4,8 @@
             [reagent.core :as r :refer [atom]]
             [reagent.ratom :refer-macros [reaction]]))
 
+(def supported-dbms ["ORACLE" "H2" "POSTGRES" "Sybase" "MS-SQL" "MySQL" "Presto"])
+
 (defn database-window [db-initial]
   (let [model (subscribe [:state :edit-db])
         db-spec (atom db-initial)]
@@ -27,13 +29,9 @@
                   :placeholder "Select database type"
                   :label-class-name "col-sm-4"
                   :wrapper-class-name "col-sm-6"}
-           ^{:key 1}[:option {:value "ORACLE"} "ORACLE"]
-           ^{:key 2}[:option {:value "H2"} "H2"]
-           ^{:key 3}[:option {:value "POSTGRES"} "PostgreSQL"]
-           ^{:key 4}[:option {:value "Sybase"} "Sybase"]
-           ^{:key 5}[:option {:value "MS-SQL"} "MS SQL"]
-           ^{:key 6}[:option {:value "MySQL"} "MySQL"]]
-          [input {:model [db-spec :url]
+           (for [x supported-dbms]
+             ^{:key x} [:option {:value x} x])]
+         [input {:model [db-spec :url]
                   :type "text" :label "URL"
                   :placeholder "<server>:<port>..."
                   :label-class-name "col-sm-4"
