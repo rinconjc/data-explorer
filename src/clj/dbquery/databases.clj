@@ -90,6 +90,7 @@
           "MS-SQL" ["net.sourceforge.jtds.jdbcx.JtdsDataSource" (str "jdbc:jtds:sqlserver://" url)]
           "Sybase" ["net.sourceforge.jtds.jdbcx.JtdsDataSource" (str "jdbc:jtds:sybase://" url)]
           "MySQL" ["com.mysql.cj.jdbc.Driver" (str "jdbc:mysql://" url)]
+          "Presto" ["com.facebook.presto.jdbc.PrestoDriver" (str "jdbc:presto://" url)]
           (throw (Exception. (format "DBMS %s not supported." dbms))))
         ds (doto (HikariDataSource.)
              (.setJdbcUrl jdbc-url)
@@ -191,7 +192,7 @@ end;
      (let [sqlv (if (coll? sql) sql [sql])]
        (loop [sql (first sqlv)
               sqls (rest sqlv)]
-         (let [^PreparedStatement stmt (.prepareStatement con sql ResultSet/TYPE_SCROLL_INSENSITIVE
+         (let [^PreparedStatement stmt (.prepareStatement con sql ResultSet/TYPE_FORWARD_ONLY
                                                           ResultSet/CONCUR_READ_ONLY)
                _ (if (some? args) (reduce #(do (.setObject stmt %1 %2)
                                                (inc %1)) 1 args))
@@ -296,7 +297,7 @@ end;
                       :or {offset 0 limit 40}}]
   (with-open [con (.getConnection (:datasource ds))]
     (let [stmt (if (> offset 0)
-                 (.createStatement con ResultSet/TYPE_SCROLL_INSENSITIVE ResultSet/CONCUR_READ_ONLY)
+                 (.createStatement con ResultSet/TYPE_FORWARD_ONLY ResultSet/CONCUR_READ_ONLY)
                  (.createStatement con))
           where (if (empty? predicates) "" (str " where " (s/join " AND " predicates)))
           sql (str "select " (s/join "," fields) " from " (s/join "," tables) where)

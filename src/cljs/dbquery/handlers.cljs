@@ -5,6 +5,7 @@
             [ajax.protocols :refer [-body -status]]
             [clojure.set :as set]
             [clojure.string :as str]
+            [dbquery.cache :as cache]
             [dbquery.commons :refer [error-text]]
             [dbquery.sql-utils
              :refer
@@ -151,7 +152,8 @@
    (or (when-let [id (:id db)]
          (dispatch [:activate-db id])
          (if (get-in state [:db-tabs id]) state
-             (update state :db-tabs assoc id {:db db :name (:name db) :resultsets (array-map)})))
+             (update state :db-tabs assoc id {:db db :name (:name db) :resultsets (array-map)
+                                              :query {:sql (cache/get-entry [id :last-sql])}})))
        state)))
 
 (reg-event-db

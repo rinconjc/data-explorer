@@ -20,7 +20,7 @@
                  [org.clojure/clojurescript "1.10.520" :scope "provided"]
                  [secretary "1.2.3"]
                  [http-kit "2.3.0"]
-                 [org.clojure/clojure "1.10.0"]
+                 [org.clojure/clojure "1.10.1"]
                  [org.clojure/tools.logging "0.4.1"]
                  [org.slf4j/slf4j-jdk14 "1.7.13"]
                  [korma "0.4.3"]
@@ -40,26 +40,28 @@
                  [com.mysql/connectorj "5.1.12"]
                  [thi.ng/geom "1.0.0-RC3"]
                  [binaryage/oops "0.7.0"]
-                 [org.clojure/core.async "0.4.500"]]
+                 [org.clojure/core.async "1.3.610"]]
   :plugins [[lein-environ "1.0.1"]
-            [lein-asset-minifier "0.2.7" :exclusions [org.clojure/clojure]]
+            [lein-asset-minifier "0.4.6" :exclusions [org.clojure/clojure]]
             [lein-cljsasset "0.2.0"]]
   :resource-paths ["lib/ojdbc6.jar" "resources"]
   :source-paths ["src/clj" "src/cljc" "src/cljs"]
 
   :main dbquery.core
+  :manifest {"Class-Path" "extras"}
 
   ;; :jvm-opts ["-Dconf=conf.edn"]
 
   :aliases {"fig"       ["trampoline" "run" "-m" "figwheel.main"]
             "fig:build" ["trampoline" "run" "-m" "figwheel.main" "-b" "dev" "-r"]
-            "fig:min"   ["run" "-m" "figwheel.main" "-O" "advanced" "-bo" "dev"]
+            "fig:min"   ["with-profile" "dev" "run" "-m" "figwheel.main" "-O" "advanced" "-bo" "dev"]
             "fig:test"  ["run" "-m" "figwheel.main" "-co" "test.cljs.edn" "-m" dbquery.test-runner]}
 
   :profiles {:dev
              {:repl-options {:init (start-server 3001)}
               :dependencies [[com.bhauman/figwheel-main "0.2.0"]
-                             [com.bhauman/rebel-readline-cljs "0.1.4"]]
+                             [com.bhauman/rebel-readline-cljs "0.1.4"]
+                             [com.facebook.presto/presto-jdbc "0.244.1"]]
 
               }
              :uberjar {:hooks       [minify-assets.plugin/hooks]
