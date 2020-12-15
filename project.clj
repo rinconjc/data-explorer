@@ -48,7 +48,7 @@
   :source-paths ["src/clj" "src/cljc" "src/cljs"]
 
   :main dbquery.core
-  :manifest {"Class-Path" "extras"}
+  :manifest {"Class-Path" "lib/*"}
 
   ;; :jvm-opts ["-Dconf=conf.edn"]
 
