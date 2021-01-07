@@ -24,9 +24,16 @@
   (get result-extractors sql-type
        (fn [^ResultSet rs ^Integer i] (.getObject rs i))))
 
+(defn skip-rows [^ResultSet rs ^long offset]
+  (loop [offset offset]
+    (when (and (pos? offset) (.next rs))
+      (recur (dec offset)))))
+
 (defn ^:private rs-rows [rs row-reader offset limit]
-  (if (and (> offset 0) (= ResultSet/TYPE_SCROLL_INSENSITIVE (.getType rs)))
-    (.absolute rs offset))
+  (when (pos? offset)
+    (if (= ResultSet/TYPE_SCROLL_INSENSITIVE (.getType rs))
+      (.absolute rs offset)
+      (skip-rows rs offset)))
   (loop [rows [] count 0]
     (if (and (.next rs) (< count limit))
       (let [row (doall (apply row-reader [rs]))]
