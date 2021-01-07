@@ -10,6 +10,7 @@
 
 
 (defonce expansions {"sf" "select * from "
+                     "stt" "select top 10 * from "
                      "up" "update "
                      "lj" "left join "
                      "rj" "right join "
