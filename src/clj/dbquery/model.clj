@@ -3,14 +3,26 @@
   (:require [clojure.java.jdbc :as jdbc]
             [clojure.tools.logging :as log]
             [crypto.password.bcrypt :as password]
-            [dbquery
-             [conf :refer :all]
-             [databases :as db]]
-            [korma
-             [core :as k :refer [defentity transform entity-fields belongs-to
-                                 many-to-many prepare fields exec-raw values]]
-             [db :refer :all]])
-  (:import com.rinconj.dbupgrader.DbUpgrader
+            [dbquery.conf :refer :all]
+            [dbquery.databases :as db]
+            [korma.core
+             :as
+             k
+             :refer
+             [belongs-to
+              defentity
+              entity-fields
+              exec-raw
+              fields
+              many-to-many
+              prepare
+              transform
+              values]]
+            [korma.db :as kdb])
+  (:import [liquibase Contexts LabelExpression Liquibase]
+           liquibase.database.DatabaseFactory
+           liquibase.database.jvm.JdbcConnection
+           liquibase.resource.ClassLoaderResourceAccessor
            org.h2.jdbcx.JdbcDataSource
            org.jasypt.util.text.BasicTextEncryptor))
 
@@ -30,14 +42,15 @@
                  (.setUser (@db-conf :user))
                  (.setPassword (@db-conf :password)))))
 
-(defn sync-db
-  ([version env]
-   (log/info "starting db upgrade:" version env)
-   (-> (DbUpgrader. (force ds) env)
-       (.syncToVersion version false false))
-   (log/info "db upgrade complete")
-   (defdb appdb (h2 @db-conf)))
-  ([env] (sync-db 7 env)))
+(kdb/defdb appdb (kdb/h2 @db-conf))
+
+(defn upgrade-db []
+  (with-open [conn (.getConnection @ds)]
+    (doto (Liquibase. "/sql/change-log.sql"
+                      (ClassLoaderResourceAccessor.)
+                      (-> (DatabaseFactory/getInstance)
+                          (.findCorrectDatabaseImplementation (JdbcConnection. conn))))
+      (.update (Contexts.) (LabelExpression.)))))
 
 (declare data_source app_user query query_params)
 
@@ -90,8 +103,10 @@ WHERE ud.DATA_SOURCE_ID=d.ID AND ud.APP_USER_ID=?)" [user-id user-id]] :results)
           first))))
 
 (defn ds-queries [db-id]
-  (-> (db/execute {:datasource (force ds)} "select q.* from query q
-join data_source_query dq on dq.query_id = q.id where dq.data_source_id =?"
+  (-> (db/execute {:datasource (force ds)}
+                  "select q.* from query q
+join data_source ds on ds.label = q.label
+where ds.id = ?"
                   {:rs-reader db/read-as-map :args [db-id]})
       :data))
 
@@ -155,6 +170,19 @@ and query_id=?" (for [id ds-ids] [id q-id])) :multi? true))
           (k/delete ds_column (k/where {:table_id id}))
           (k/delete ds_table (k/where {:id id})))))
     tables))
+
+(defn save-query [q]
+  (log/info "query:" (map q [:name :label]))
+  (exec-raw ["merge into query q
+using (select cast(? as varchar) name, cast(? as varchar) sql,
+cast(? as varchar) label, cast(? as bit) shared, cast(? as int) app_user_id from dual) u
+on (q.name = u.name and q.label = u.label)
+when matched then
+update set sql=u.sql, shared=u.shared
+when not matched then
+insert (name, sql, label, shared, app_user_id)
+values (u.name, u.sql, u.label, u.shared, u.app_user_id)"
+             (into [] (map q [:name :sql :label :shared :app_user_id]))] ))
 
 ;; (defn get-table-joins [ds-id table]
 ;;   (->>(k/select
