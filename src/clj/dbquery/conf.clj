@@ -31,9 +31,11 @@
    (with-open [reader  (java.io.PushbackReader. (io/reader file))]
      (edn/read reader)))
   ([]
-   (if-let [conf-file (or (System/getProperty "conf"))]
+   (update
+    (if-let [conf-file (or (System/getProperty "conf"))]
      (load-conf (java.io.File. conf-file))
-     (load-conf (default-conf)))))
+     (load-conf (default-conf)))
+    :index-dir #(or % (str (System/getProperty "user.home") "/index")))))
 
 (def conf (delay (load-conf)))
 

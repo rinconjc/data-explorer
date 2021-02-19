@@ -9,7 +9,7 @@
             [compojure.route :as route]
             [crypto.password.bcrypt :as password]
             [dbquery.databases :as db :refer :all]
-            [dbquery.model :refer :all]
+            [dbquery.model :as model :refer :all]
             [dbquery.utils :refer :all]
             [korma.core :as k]
             [liberator.core :refer [defresource]]
@@ -77,6 +77,11 @@
         (log/error e "Exception handling request")
         {:status 500 :body (assoc (ex-data e )
                                   :error (or (.getMessage e) "Unknown internal error"))}))))
+
+(defn current-user [ctx]
+  (if-let [user-id (get-in ctx [:request :session :user :id])]
+    {:user-id user-id}))
+
 ;; ds checker middleware
 
 ;; handlers
@@ -123,10 +128,23 @@
 (defn query-id [q-id ds-id req]
   (str q-id  "/" ds-id "/" (get-in req [:session :user :session-id])))
 
+(defn parse-sql-meta [sql]
+  (let [[query-name meta] (rest (re-find #"(?m)\s*--\s*#\s*([^@\n]+)(@.+)?$" sql))]
+    (when query-name
+      {:name query-name
+       :label (or (and meta (second (re-find #"@label:([\w]+)" meta))) "default")
+       :shared (or (nil? (and meta (re-find #"@private" meta))) false)})))
+
 (defn handle-exec-sql [req ds-id]
   (let [{:keys [sql] :as opts} (:body req)
         ds (get-ds ds-id)
         r (execute ds sql (update opts :id query-id ds-id req))]
+    (future
+      (try
+        (when-let [meta (parse-sql-meta sql)]
+          (model/save-query (assoc meta :sql sql :app_user_id (:user-id (current-user req)))))
+        (catch Exception e
+          (log/error e "failed saving query"))))
     {:body r}))
 
 (defn handle-exec-query-by-id [id ds-id]
@@ -186,9 +204,7 @@
     (nil? b) {:status 404}
     true {:body b}))
 
-(defn current-user [ctx]
-  (if-let [user-id (get-in ctx [:request :session :user :id])]
-    {:user-id user-id}))
+
 ;; resources
 
 (defresource data-sources-list common-opts
@@ -287,8 +303,6 @@
            (POST "/cancel-sql/:id" [id] (fn[req]
                                           (cancel-query (query-id id ds-id req))
                                           {:status 201}))
-           (POST "/exec-query" req (handle-exec-query req ds-id)) ;not used
-           (POST "/exec-query/:id" [id] (handle-exec-query-by-id id)) ;not used
            (GET "/tables" req (with-body (handle-list-tables req ds-id)))
            (GET "/tables/:name" [name] (fn [req]
                                          (with-body (handle-table-meta req ds-id name))))
@@ -308,7 +322,7 @@
       (wrap-defaults (assoc site-defaults :security {:anti-forgery false}))))
 ;;
 (defn start-server [port]
-  (sync-db "dev")
+  ;; (sync-db "dev")
   (add-encoders)
   (run-server (reload/wrap-reload #'app)
               {:port port :thread 50}))

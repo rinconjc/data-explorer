@@ -13,7 +13,9 @@
   {Types/BIT (fn [rs i] (.getBoolean rs i))
    Types/TIMESTAMP (fn [rs i] (.getTimestamp rs i))
    -101 (fn [rs i] (.getTimestamp rs i))
-   Types/CLOB (fn [rs i] (some-> (.getClob rs i) .getCharacterStream slurp))})
+   Types/CLOB (fn [rs i] (some-> (.getClob rs i) .getCharacterStream slurp))
+   ; TODO: mapping for arrays
+   })
 
 (def ^:private sql-date-types #{Types/DATE Types/TIMESTAMP Types/TIME})
 (def ^:private sql-number-types #{Types/NUMERIC Types/DECIMAL Types/INTEGER Types/DOUBLE})
