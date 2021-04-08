@@ -324,7 +324,7 @@
       (wrap-defaults (assoc site-defaults :security {:anti-forgery false}))))
 ;;
 (defn start-server [port]
-  ;; (sync-db "dev")
+  (model/upgrade-db)
   (add-encoders)
   (run-server (reload/wrap-reload #'app)
               {:port port :thread 50}))
