@@ -63,20 +63,24 @@
            (fn [i [k v]]
              ^{:key i} [:option {:value k} v]) opts)))
 
-(defn typeahead [{:keys [model choice-fn result-fn data-source] :as attrs
+(defn typeahead [{:keys [model choice-fn result-fn data-source choice-hint] :as attrs
                   :or {choice-fn identity result-fn identity}}]
   (let [[doc & path] model
         typeahead-hidden? (atom true)
         mouse-on-list? (atom false)
         selected-index (atom -1)
         selections (atom [])
+        current-choice (atom nil)
         save! #(swap! doc assoc-in path %)
         value-of #(-> % .-target .-value)
         choose-selected #(when (and (not-empty @selections) (> @selected-index -1))
                            (let [choice (nth @selections @selected-index)]
                              (save! (result-fn choice))
-                             (choice-fn choice)
-                             (if % (reset! typeahead-hidden? true))))]
+                             (when choice-hint
+                               (reset! current-choice (if % nil (choice-hint choice))))
+                             (when %
+                               (choice-fn choice)
+                               (reset! typeahead-hidden? true))))]
     (fn [attrs]
       [:span
        [:input.form-control
@@ -128,7 +132,9 @@
                                     (save! (result-fn result))
                                     (choice-fn result))}
              (result-fn result)])
-          @selections))]])))
+          @selections))]
+       (when-not (and @typeahead-hidden? choice-hint)
+         [:pre.side-hint @current-choice])])))
 
 (def focus-wrapper
   (with-meta identity

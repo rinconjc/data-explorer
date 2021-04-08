@@ -147,3 +147,12 @@ a {
 .dragging{
   cursor:move;
 }
+.side-hint{
+    z-index: 990;
+    float: right;
+    position:absolute;
+    left:calc(100% + 25px);
+    top: calc(100% + 4px);
+    max-height: 400px;
+    overflow: auto;
+}
