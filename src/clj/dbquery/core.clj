@@ -19,7 +19,8 @@
             [ring.middleware.json :refer :all]
             [ring.middleware.multipart-params :as mp]
             [ring.middleware.reload :as reload]
-            [ring.util.response :refer [redirect]])
+            [ring.util.response :refer [redirect]]
+            [clojure.string :as str])
   (:import java.awt.Desktop
            java.io.FileReader
            java.net.URI
@@ -39,6 +40,7 @@
   (add-encoder java.sql.Date (date-time-encoder "dd/MM/yyyy"))
   (add-encoder java.sql.Timestamp (date-time-encoder "dd/MM/yyyy HH:mm:ss"))
   (add-encoder java.sql.RowId #(.writeString %2 %1))
+  (add-encoder java.sql.Array #(.writeString %2 (str/join ", " (.getArray %1))))
   (try
     (add-encoder (Class/forName "oracle.sql.ROWID") #(.writeString %2 (.stringValue %1)))
     (catch Exception e

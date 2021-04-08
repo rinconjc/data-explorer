@@ -168,8 +168,8 @@
            [:i.fa.fa-play]]
           [c/button {:title "Download" :on-click #(dispatch [:download (sql-query)])}
            [:i.fa.fa-download]]
-          [c/button {:title "Save" :on-click save-fn}
-           [:i.fa.fa-save]]
+          ;; [c/button {:title "Save" :on-click save-fn}
+          ;;  [:i.fa.fa-save]]
           [c/button {:on-click reset-fn}
            [:i.fa.fa-file-o]]]
          [c/button-group {:bsSize "small"}
@@ -177,15 +177,18 @@
            [c/input {:model [model :search] :type "typeahead"
                      :placeholder "search queries" :size 20 :tab-index 1
                      :data-source query-filter :result-fn #(:name %)
-                     :choice-fn #(dispatch [:set-in-active-db :query %]) }]
+                     :choice-fn #(dispatch [:set-in-active-db :query %])
+                     :choice-hint :sql}]
            [c/button {:on-click #(dispatch [:load-db-queries])} [:i.fa.fa-refresh]]]]
-         [c/button-group
-          [c/button {:title "share" :disabled (nil? (:id @query))
-                     :on-click #(dispatch [:query-sharings (:id @query)])} [:i.fa.fa-share]]
-          (if @query-assocs
-            [share-query @query-assocs (:id @query)])]
-         [c/button-group
-          [:span (:name @query)]]]]
+         
+         ;; [c/button-group
+         ;;  [c/button {:title "share" :disabled (nil? (:id @query))
+         ;;             :on-click #(dispatch [:query-sharings (:id @query)])} [:i.fa.fa-share]]
+         ;;  (if @query-assocs
+         ;;    [share-query @query-assocs (:id @query)])]
+         ;; [c/button-group
+         ;;  [:span (:name @query)]]
+         ]]
        [:div.panel-body {:style {:padding "0px" :overflow "hidden" :height "calc(100% - 46px)"}}
         [code-editor editor {:mode "sql" :value (:sql @query "")
                              :commands {"execQuery" ["Ctrl-Enter" exec-sql]
