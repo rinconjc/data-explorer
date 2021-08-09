@@ -3,6 +3,12 @@
       :db "mem:test-model"
       :user "sa"
       :password "sa"
+      :dbms "h2"
       }
  :secret-key "some secret phrase for password encryption"
+ :auth-method "password"                ; password | email | saml
+ :smtp {:host "smtp.gmail.com"
+        :port 587
+        :tls true}
+ 
  }

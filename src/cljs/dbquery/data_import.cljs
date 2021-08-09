@@ -6,7 +6,8 @@
             [clojure.walk :refer [postwalk]]))
 
 (defn- upload-file [params data error]
-  (POST "/upload" :body (reduce #(doto %1 (.append (name (first %2)) (second %2))) (js/FormData.) params)
+  (POST "/upload"
+        :body (reduce #(doto %1 (.append (name (first %2)) (second %2))) (js/FormData.) params)
         :response-format :json :keywords? true
         :handler #(reset! data %)
         :error-handler #(reset! error (error-text %))))
