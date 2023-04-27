@@ -42,7 +42,7 @@
                  [binaryage/oops "0.7.0"]
                  [org.clojure/core.async "1.3.610"]
                  [yogthos/config "1.1.7"]
-                 [clucy "0.4.2-SNAPSHOT"]
+                 [clucy "0.4.0"]
                  ;; https://mvnrepository.com/artifact/org.liquibase/liquibase-core
                  [org.liquibase/liquibase-core "4.3.1"]]
   :plugins [[lein-environ "1.0.1"]

@@ -22,6 +22,8 @@
 
 (def ^:private executing-queries (atom {}))
 
+(def ^:const POSTGRES "POSTGRES")
+
 (defn- col-reader [sql-type]
   (get result-extractors sql-type
        (fn [^ResultSet rs ^Integer i] (.getObject rs i))))
@@ -91,15 +93,16 @@
 
 (defn mk-ds [{:keys [dbms url user_name password] :as params}]
   "Creates a datasource"
-  (let [[driver jdbc-url]
-        (case dbms
-          "H2" ["org.h2.jdbcx.JdbcDataSource" (str "jdbc:h2:" url)]
-          "ORACLE" ["oracle.jdbc.pool.OracleDataSource" (str "jdbc:oracle:thin:@" url)]
-          "POSTGRES" ["org.postgresql.Driver" (str "jdbc:postgresql:" url)]
-          "MS-SQL" ["net.sourceforge.jtds.jdbcx.JtdsDataSource" (str "jdbc:jtds:sqlserver://" url)]
-          "Sybase" ["net.sourceforge.jtds.jdbcx.JtdsDataSource" (str "jdbc:jtds:sybase://" url)]
-          "MySQL" ["com.mysql.cj.jdbc.Driver" (str "jdbc:mysql://" url)]
-          "Presto" ["com.facebook.presto.jdbc.PrestoDriver" (str "jdbc:presto://" url)]
+  (let [dbms (keyword dbms)
+        [driver jdbc-url]
+        (case (keyword dbms)
+          :H2 ["org.h2.jdbcx.JdbcDataSource" (str "jdbc:h2:" url)]
+          :ORACLE ["oracle.jdbc.pool.OracleDataSource" (str "jdbc:oracle:thin:@" url)]
+          :POSTGRES ["org.postgresql.Driver" (str "jdbc:postgresql:" url)]
+          :MS-SQL ["net.sourceforge.jtds.jdbcx.JtdsDataSource" (str "jdbc:jtds:sqlserver://" url)]
+          :Sybase ["net.sourceforge.jtds.jdbcx.JtdsDataSource" (str "jdbc:jtds:sybase://" url)]
+          :MySQL ["com.mysql.cj.jdbc.Driver" (str "jdbc:mysql://" url)]
+          :Presto ["com.facebook.presto.jdbc.PrestoDriver" (str "jdbc:presto://" url)]
           (throw (Exception. (format "DBMS %s not supported." dbms))))
         ds (doto (HikariDataSource.)
              (.setJdbcUrl jdbc-url)
@@ -112,11 +115,11 @@
              (.setIdleTimeout 180000)
              (.setMaxLifetime 300000))]
     (case  dbms
-      "MS-SQL" (.setConnectionTestQuery ds "SELECT GETDATE()")
-      "Sybase" (do (.setConnectionTestQuery ds "SELECT GETDATE()")
+      :MS-SQL (.setConnectionTestQuery ds "SELECT GETDATE()")
+      :Sybase (do (.setConnectionTestQuery ds "SELECT GETDATE()")
                    (when (not-empty (:schema params))
                      (.setConnectionInitSql ds (str "USE " (:schema params)))))
-      "ORACLE" (.setConnectionInitSql
+      :ORACLE (.setConnectionInitSql
                 ds (str "ALTER SESSION SET CURRENT_SCHEMA=" (or (:schema params) (:user_name params))))
       nil)
     (with-open [con (.getConnection ds)]
@@ -133,17 +136,30 @@
    (db-query-with-resultset ds [(str "SELECT * FROM " table)] #(read-rs % {:limit limit})))
   ([ds table] (table-data ds table 100)))
 
-(defn- get-db-tables [meta schema]
-  (with-open [rs (.getTables meta nil (not-empty schema) "%"
-                             (into-array ["TABLE" "VIEW"]))]
-    (read-as-map rs {:fields [["TABLE_NAME" :name] ["TABLE_TYPE" :type]] :limit 1000})))
+(defmulti get-tables :dbms)
 
-(defn get-tables
-  "retrieves the tables in the given or (current) schema"
-  ([ds] (get-tables ds (:schema ds)))
-  ([ds schema]
-   (with-db-metadata [meta ds]
-     (get-db-tables meta schema))))
+(defmethod get-tables :default
+  [ds]
+  (log/info "default tables for ", (:dbms ds))
+  (with-db-metadata [meta ds]
+    (with-open [rs (.getTables meta nil (not-empty (:schema ds)) "%"
+                               (into-array ["TABLE" "VIEW"]))]
+      (read-as-map rs {:fields [["TABLE_NAME" :name] ["TABLE_TYPE" :type]] :limit 1000}))))
+
+(defmethod get-tables :POSTGRES
+  [ds]
+  (log/info "tables for ", (:dbms ds))
+  (with-db-metadata [meta ds]
+    (with-open [rs (.getTables meta nil (not-empty (:schema ds)) "%"
+                               (into-array ["TABLE" "VIEW"]))]
+      (read-as-map rs {:fields [["table_name" :name] ["table_type" :type]] :limit 1000}))))
+
+;; (defn get-tables
+;;   "retrieves the tables in the given or (current) schema"
+;;   ([ds] (get-tables ds (:schema ds)))
+;;   ([ds schema]
+;;    (with-db-metadata [meta ds]
+;;      (get-db-tables meta schema))))
 
 (defn data-types [ds]
   "retrieves the data types supported by the datasource"
@@ -153,7 +169,7 @@
 
 (defmulti fetch-db-output first)
 (defmethod fetch-db-output :default [_] nil)
-(defmethod fetch-db-output "ORACLE" [[_ ^Connection con]]
+(defmethod fetch-db-output :ORACLE [[_ ^Connection con]]
   (try
     (let [buffer (StringBuilder.)
           stmt (doto (.prepareCall con "
@@ -266,7 +282,7 @@ end;
 (defn db-meta [ds]
   "retrieves all the tables and columns in the current schema"
   (with-db-metadata [meta ds]
-    (let [tables (future (get-db-tables meta (:schema ds)))
+    (let [tables (future (get-tables ds))
           cols (future (group-by #(:table_name %) (table-columns meta (:schema ds) "%")))
           pks (into {} (for [tbl @tables :let [tbl-name (:name tbl)]]
                          [tbl-name (future (table-pks meta tbl-name))]))

@@ -61,9 +61,10 @@
   (many-to-many app_user :user_data_source)
   (prepare (fn [{pass :password :as ds}]
              (assoc ds :password (encrypt pass))))
-  (transform (fn [{pass :password :as ds}]
-               (if (some? pass) (assoc ds :password (decrypt pass))
-                   ds))))
+  (transform (fn [ds]
+               (-> ds
+                   (update :password (fnil decrypt nil))
+                   (update :dbms keyword)))))
 
 (defentity app_user
   (entity-fields :id :nick :full_name :active)
